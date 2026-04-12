@@ -35,9 +35,8 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
             IllegalArgumentException e
     ) {
-        String errorMessage = "잘못된 요청입니다: " + e.getMessage();
-        log.error("[*] IllegalArgumentException :", e);
-        return ApiResponse.error(ErrorStatus.BAD_REQUEST, errorMessage);
+        log.warn("[*] IllegalArgumentException : {}", e.getMessage());
+        return ApiResponse.error(ErrorStatus.BAD_REQUEST);
     }
 
     // null 참조로 발생한 서버 오류를 500 에러로 응답

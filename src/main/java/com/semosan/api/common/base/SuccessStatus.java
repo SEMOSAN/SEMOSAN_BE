@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @AllArgsConstructor
-public enum SuccessStatus implements BaseStatus{
+public enum SuccessStatus implements BaseStatus {
 
     COMMON_SUCCESS_STATUS(HttpStatus.OK, "COM_200", "성공적으로 처리되었습니다.");
 
