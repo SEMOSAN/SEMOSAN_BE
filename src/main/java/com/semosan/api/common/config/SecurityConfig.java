@@ -14,9 +14,7 @@ public class SecurityConfig {
 
     /** Swagger 관련 경로 */
     private static final String[] SWAGGER_URIS = {
-            "/",
             "/swagger-ui/**",
-            "/api-docs/**",
             "/v3/api-docs/**",
             "/swagger-resources/**",
             "/swagger-ui.html"
