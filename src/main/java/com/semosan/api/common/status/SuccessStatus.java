@@ -1,5 +1,6 @@
-package com.semosan.api.common.base;
+package com.semosan.api.common.status;
 
+import com.semosan.api.common.base.BaseStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
