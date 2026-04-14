@@ -85,6 +85,28 @@ public class OAuthKakaoClient {
         }
     }
 
+    // 카카오 연동 해제
+    public void unlinkKakaoUser(String kakaoOauthId) {
+        try {
+            kakaoApiWebClient.post()
+                    .uri("/v1/user/unlink")
+                    .header("Authorization", "KakaoAK " + kakaoProperties.adminKey())
+                    .body(BodyInserters.fromFormData("target_id_type", "user_id")
+                            .with("target_id", kakaoOauthId))
+                    .retrieve()
+                    .onStatus(
+                            HttpStatusCode::isError,
+                            r -> r.bodyToMono(String.class)
+                                    .flatMap(body -> handleError(r.statusCode(), body, "연동 해제"))
+                    )
+                    .bodyToMono(Void.class)
+                    .block();
+        } catch (WebClientResponseException e) {
+            log.error("[*] 카카오 연동 해제 실패 status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new GeneralException(ErrorStatus.KAKAO_UNLINK_FAILED);
+        }
+    }
+
     private Mono<Throwable> handleError(HttpStatusCode statusCode, String body, String action) {
         log.error("[*] 카카오 {} 실패 status={}, body={}", action, statusCode, body);
         return Mono.error(new GeneralException(ErrorStatus.KAKAO_TOKEN_REQUEST_FAILED));

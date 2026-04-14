@@ -55,7 +55,13 @@ public enum ErrorStatus implements BaseStatus {
      */
     APPLE_PUBLIC_KEY_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "APPLE_502_1", "애플 공개키 조회에 실패했습니다."),
     APPLE_PUBLIC_KEY_NOT_FOUND(HttpStatus.UNAUTHORIZED, "APPLE_401_1", "유효한 애플 공개키를 찾을 수 없습니다."),
-    APPLE_IDENTITY_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "APPLE_401_2", "애플 identity token이 유효하지 않습니다.");
+    APPLE_IDENTITY_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "APPLE_401_2", "애플 identity token이 유효하지 않습니다."),
+
+    /**
+     * Withdraw
+     */
+    KAKAO_UNLINK_FAILED(HttpStatus.BAD_GATEWAY, "KAKAO_502_3", "카카오 연동 해제에 실패했습니다."),
+    APPLE_REVOKE_FAILED(HttpStatus.BAD_GATEWAY, "APPLE_502_1", "애플 토큰 폐기에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

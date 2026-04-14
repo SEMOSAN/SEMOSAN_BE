@@ -1,13 +1,13 @@
 package com.semosan.api.domain.user.service;
 
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.oauth.dto.KakaoUserInfoResponse;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.DeviceType;
 import com.semosan.api.domain.user.enums.OAuthProvider;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import com.semosan.api.common.exception.GeneralException;
-import com.semosan.api.common.status.ErrorStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +17,7 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    // 카카오 유저 조회/등록/복구
+    // 카카오 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
     @Transactional
     public User findOrRegisterKakaoUser(KakaoUserInfoResponse userInfo, DeviceType deviceType) {
         KakaoUserInfoResponse.KakaoAccount account = userInfo.kakaoAccount();
@@ -38,7 +38,7 @@ public class UserService {
                 );
     }
 
-    // 애플 유저 조회/등록/복구
+    // 애플 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
     @Transactional
     public User findOrRegisterAppleUser(String appleId, String email, String name, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(appleId, OAuthProvider.APPLE)
@@ -52,14 +52,14 @@ public class UserService {
                 );
     }
 
-
+    // userId로 활성 유저 조회, 없으면 예외
     @Transactional(readOnly = true)
     public User findById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
 
-    // 테스트 유저 조회 or 생성
+    // 테스트 유저 조회 후 없으면 신규 생성
     @Transactional
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.KAKAO)

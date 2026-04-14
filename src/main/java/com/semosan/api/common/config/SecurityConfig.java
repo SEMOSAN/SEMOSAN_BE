@@ -37,7 +37,8 @@ public class SecurityConfig {
 
     /** 인증(회원가입, 로그인 등) 관련 경로 */
     private static final String[] AUTH_URIS = {
-            "/api/auth/test/login"
+            "/api/auth/test/login",
+            "/api/auth/token/reissue"
     };
 
     @Bean

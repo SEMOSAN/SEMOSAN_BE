@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 
@@ -62,6 +63,25 @@ public interface AuthControllerDocs {
     ResponseEntity<ApiResponse<ReissueResponse>> reissue(
             @Parameter(description = "Bearer {refreshToken}", required = true)
             @RequestHeader("Authorization") String authorizationHeader
+    );
+
+    @Operation(
+            summary = "회원 탈퇴",
+            description = "회원을 탈퇴 처리합니다. soft delete 방식으로 처리되며 동일 소셜 계정으로 재가입이 가능합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "회원 탈퇴 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 필요",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<Void>> withdraw(
+            @AuthenticationPrincipal Long userId
     );
 
 }

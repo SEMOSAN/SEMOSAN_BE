@@ -132,6 +132,12 @@ public class User extends BaseEntity {
         this.deleted = false;
     }
 
+    // 회원 탈퇴 처리
+    public void withdraw() {
+        this.deleted = true;
+        this.refreshToken = null;
+    }
+
     // 리프레시 토큰 업데이트
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
