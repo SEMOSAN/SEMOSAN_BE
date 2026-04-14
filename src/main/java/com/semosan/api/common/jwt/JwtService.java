@@ -82,14 +82,18 @@ public class JwtService {
         parseClaims(accessToken);
     }
 
-    // Refresh Token 검증 및 DB 저장값과 비교
-    public Claims validateRefreshToken(String refreshToken, String storedHashedToken) {
-        Claims claims = parseClaims(refreshToken);
-
-        if (!hashToken(refreshToken).equals(storedHashedToken)) {
-            throw new GeneralException(ErrorStatus.REFRESH_TOKEN_MISMATCH);
+    // Refresh Token 서명/만료 검증 후 Claims 반환 — DB 비교 전 1차 검증용
+    public Claims validateRefreshTokenSignature(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new GeneralException(ErrorStatus.JWT_TOKEN_NOT_FOUND);
         }
-        return claims;
+        return parseClaims(refreshToken);
+    }
+
+    // Refresh Token DB 저장 해시값과 비교 — 2차 검증용 (서명 검증은 1차에서 완료)
+    public void validateRefreshToken(String refreshToken, String storedHashedToken) {
+        if (!hashToken(refreshToken).equals(storedHashedToken))
+            throw new GeneralException(ErrorStatus.REFRESH_TOKEN_MISMATCH);
     }
 
     // AccessToken에서 userId 추출

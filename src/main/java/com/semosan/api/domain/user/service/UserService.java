@@ -6,6 +6,8 @@ import com.semosan.api.domain.user.enums.DeviceType;
 import com.semosan.api.domain.user.enums.OAuthProvider;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,6 +50,13 @@ public class UserService {
                 .orElseGet(() ->
                         userRepository.save(User.createAppleUser(appleId, email, name, deviceType))
                 );
+    }
+
+
+    @Transactional(readOnly = true)
+    public User findById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
 
     // 테스트 유저 조회 or 생성

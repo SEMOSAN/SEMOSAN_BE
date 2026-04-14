@@ -22,6 +22,7 @@ public class SecurityConfig {
     private static final String[] PUBLIC_URIS = {
             "/auth/**",
             "/api/auth/test/**",
+            "/api/auth/reissue",
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/swagger-resources/**",

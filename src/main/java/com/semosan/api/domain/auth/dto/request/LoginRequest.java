@@ -10,5 +10,8 @@ public record LoginRequest(
         String testUserId,
 
         @NotNull(message = "디바이스 타입은 필수입니다.")
-        DeviceType deviceType
+        DeviceType deviceType,
+
+        @NotBlank(message = "시크릿 키는 필수입니다.")
+        String secretKey
 ) {}
