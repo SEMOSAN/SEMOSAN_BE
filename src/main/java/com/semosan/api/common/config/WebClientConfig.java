@@ -21,4 +21,11 @@ public class WebClientConfig {
                 .build();
     }
 
+    @Bean
+    public WebClient appleApiWebClient() {
+        return WebClient.builder()
+                .baseUrl("https://appleid.apple.com")
+                .build();
+    }
+
 }

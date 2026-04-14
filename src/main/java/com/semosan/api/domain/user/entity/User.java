@@ -89,11 +89,11 @@ public class User extends BaseEntity {
                 .build();
     }
 
-    // 탈퇴한 유저 재가입 처리
+    // 탈퇴한 유저 재가입 처리 — null이면 기존 값 유지 (애플 재가입 시 email 유실 방지)
     public void restore(String email, String name, String profileUrl, DeviceType deviceType) {
-        this.email = email;
-        this.name = name;
-        this.profileUrl = profileUrl;
+        if (email != null) this.email = email;
+        if (name != null) this.name = name;
+        if (profileUrl != null) this.profileUrl = profileUrl;
         this.deviceType = deviceType;
         this.onboardingStatus = OnboardingStatus.INCOMPLETE;
         this.deleted = false;

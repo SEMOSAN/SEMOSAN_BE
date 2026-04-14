@@ -15,6 +15,7 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+    // 카카오 유저 조회/등록/복구
     @Transactional
     public User findOrRegisterKakaoUser(KakaoUserInfoResponse userInfo, DeviceType deviceType) {
         KakaoUserInfoResponse.KakaoAccount account = userInfo.kakaoAccount();
@@ -32,6 +33,21 @@ public class UserService {
                 })
                 .orElseGet(() ->
                         userRepository.save(User.createKakaoUser(kakaoId, email, name, profileUrl, deviceType))
+                );
+    }
+
+    // 애플 유저 조회/등록/복구
+    // 애플은 최초 로그인 시에만 name을 전달하므로 파라미터로 받음
+    @Transactional
+    public User findOrRegisterAppleUser(String appleId, String email, String name, DeviceType deviceType) {
+        return userRepository.findByOauthIdAndOauthProvider(appleId, OAuthProvider.APPLE)
+                .map(user -> {
+                    if (user.isDeleted())
+                        user.restore(email, name, null, deviceType);
+                    return user;
+                })
+                .orElseGet(() ->
+                        userRepository.save(User.createAppleUser(appleId, email, name, deviceType))
                 );
     }
 

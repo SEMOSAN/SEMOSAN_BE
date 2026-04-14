@@ -3,6 +3,7 @@ package com.semosan.api.domain.oauth.controller;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.oauth.controller.docs.OAuthControllerDocs;
+import com.semosan.api.domain.oauth.dto.request.OAuthAppleLoginRequest;
 import com.semosan.api.domain.oauth.dto.request.OAuthKakaoLoginRequest;
 import com.semosan.api.domain.oauth.dto.response.OAuthLoginResponse;
 import com.semosan.api.domain.oauth.service.OAuthService;
@@ -27,6 +28,15 @@ public class OAuthController implements OAuthControllerDocs {
             @Valid @RequestBody OAuthKakaoLoginRequest request
     ) {
         OAuthLoginResponse response = oAuthService.kakaoLogin(request);
+        return ApiResponse.success(SuccessStatus.LOGIN_SUCCESS, response);
+    }
+
+    @PostMapping("/apple/login")
+    @Override
+    public ResponseEntity<ApiResponse<OAuthLoginResponse>> appleLogin(
+            @Valid @RequestBody OAuthAppleLoginRequest request
+    ) {
+        OAuthLoginResponse response = oAuthService.appleLogin(request);
         return ApiResponse.success(SuccessStatus.LOGIN_SUCCESS, response);
     }
 

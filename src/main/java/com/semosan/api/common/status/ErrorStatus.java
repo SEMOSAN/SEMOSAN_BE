@@ -48,7 +48,14 @@ public enum ErrorStatus implements BaseStatus {
     /**
      * User
      */
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_1", "사용자를 찾을 수 없습니다.");
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_1", "사용자를 찾을 수 없습니다."),
+
+    /**
+     * Apple OAuth
+     */
+    APPLE_PUBLIC_KEY_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "APPLE_502_1", "애플 공개키 조회에 실패했습니다."),
+    APPLE_PUBLIC_KEY_NOT_FOUND(HttpStatus.UNAUTHORIZED, "APPLE_401_1", "유효한 애플 공개키를 찾을 수 없습니다."),
+    APPLE_IDENTITY_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "APPLE_401_2", "애플 identity token이 유효하지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
