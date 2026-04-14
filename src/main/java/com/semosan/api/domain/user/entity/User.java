@@ -10,10 +10,11 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+@Table(name = "users")
 @Getter
 @Entity
-@Builder
-@AllArgsConstructor
+@Builder(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
 
@@ -21,7 +22,7 @@ public class User extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "email", length = 50, nullable = false)
+    @Column(name = "email", length = 50)
     private String email;
 
     @Column(name = "name", length = 30)
@@ -67,5 +68,40 @@ public class User extends BaseEntity {
 
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
+
+    // 카카오 신규 유저 생성
+    public static User createKakaoUser(
+            String oauthId,
+            String email,
+            String name,
+            String profileUrl,
+            DeviceType deviceType
+    ) {
+        return User.builder()
+                .oauthId(oauthId)
+                .oauthProvider(OAuthProvider.KAKAO)
+                .email(email)
+                .name(name)
+                .profileUrl(profileUrl)
+                .deviceType(deviceType)
+                .onboardingStatus(OnboardingStatus.INCOMPLETE)
+                .deleted(false)
+                .build();
+    }
+
+    // 탈퇴한 유저 재가입 처리
+    public void restore(String email, String name, String profileUrl, DeviceType deviceType) {
+        this.email = email;
+        this.name = name;
+        this.profileUrl = profileUrl;
+        this.deviceType = deviceType;
+        this.onboardingStatus = OnboardingStatus.INCOMPLETE;
+        this.deleted = false;
+    }
+
+    // 리프레시 토큰 업데이트
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
 
 }

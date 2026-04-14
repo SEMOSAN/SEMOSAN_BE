@@ -11,7 +11,10 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
+import java.util.HexFormat;
 
 @Component
 public class JwtService {
@@ -33,9 +36,9 @@ public class JwtService {
     }
 
     // Access Token 생성
-    public String generateAccessToken(User user){
+    public String generateAccessToken(User user) {
         Date now = new Date();
-        Date expiration = new Date(now.getTime()+accessTokenExpiration);
+        Date expiration = new Date(now.getTime() + accessTokenExpiration);
 
         return Jwts.builder()
                 .subject(user.getId().toString())
@@ -48,7 +51,7 @@ public class JwtService {
     }
 
     // Refresh Token 생성
-    public String generateRefreshToken(User user){
+    public String generateRefreshToken(User user) {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + refreshTokenExpiration);
 
@@ -60,6 +63,17 @@ public class JwtService {
                 .compact();
     }
 
+    // Refresh Token을 SHA-256으로 해시 — DB 저장 전 사용
+    public String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new GeneralException(ErrorStatus.JWT_GENERAL_ERROR);
+        }
+    }
+
     // Access Token 검증
     public void validateAccessToken(String accessToken) {
         if (accessToken == null || accessToken.isBlank()) {
@@ -68,9 +82,14 @@ public class JwtService {
         parseClaims(accessToken);
     }
 
-    // Refresh Token 검증
-    public Claims validateRefreshToken(String refreshToken) {
-        return parseClaims(refreshToken);
+    // Refresh Token 검증 및 DB 저장값과 비교
+    public Claims validateRefreshToken(String refreshToken, String storedHashedToken) {
+        Claims claims = parseClaims(refreshToken);
+
+        if (!hashToken(refreshToken).equals(storedHashedToken)) {
+            throw new GeneralException(ErrorStatus.REFRESH_TOKEN_MISMATCH);
+        }
+        return claims;
     }
 
     // AccessToken에서 userId 추출
@@ -83,7 +102,7 @@ public class JwtService {
         }
     }
 
-    // 내부 Claims 파싱 로직, 만료된 토큰, 서명 불일치 등의 예외 처리
+    // 내부 Claims 파싱 로직
     private Claims parseClaims(String token) {
         try {
             return Jwts.parser()

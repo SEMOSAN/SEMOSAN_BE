@@ -18,8 +18,9 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
-    /** Swagger 관련 경로 */
-    private static final String[] SWAGGER_URIS = {
+    /** 인증 없이 접근 가능한 경로 */
+    private static final String[] PUBLIC_URIS = {
+            "/auth/**",
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/swagger-resources/**",
@@ -35,9 +36,8 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                // TODO: 인증 방식 결정 후 경로별 접근 제어로 교체
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(SWAGGER_URIS).permitAll()
+                        .requestMatchers(PUBLIC_URIS).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
