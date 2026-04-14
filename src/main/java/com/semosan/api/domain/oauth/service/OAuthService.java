@@ -1,6 +1,8 @@
 package com.semosan.api.domain.oauth.service;
 
 import com.semosan.api.common.jwt.JwtService;
+import com.semosan.api.domain.oauth.client.OAuthAppleClient;
+import com.semosan.api.domain.oauth.client.OAuthKakaoClient;
 import com.semosan.api.domain.oauth.dto.KakaoTokenResponse;
 import com.semosan.api.domain.oauth.dto.KakaoUserInfoResponse;
 import com.semosan.api.domain.oauth.dto.request.OAuthAppleLoginRequest;
@@ -21,14 +23,13 @@ public class OAuthService {
 
     private final UserService userService;
     private final JwtService jwtService;
-    private final OAuthKakaoService oAuthKakaoService;
-    private final OAuthAppleService oAuthAppleService;
+    private final OAuthKakaoClient oAuthKakaoClient;
+    private final OAuthAppleClient oAuthAppleClient;
 
     @Transactional
     public OAuthLoginResponse kakaoLogin(OAuthKakaoLoginRequest request) {
-
-        KakaoTokenResponse kakaoToken = oAuthKakaoService.getKakaoToken(request.code());
-        KakaoUserInfoResponse userInfo = oAuthKakaoService.getKakaoUserInfo(kakaoToken.accessToken());
+        KakaoTokenResponse kakaoToken = oAuthKakaoClient.getKakaoToken(request.code());
+        KakaoUserInfoResponse userInfo = oAuthKakaoClient.getKakaoUserInfo(kakaoToken.accessToken());
 
         User user = userService.findOrRegisterKakaoUser(userInfo, request.deviceType());
         return issueTokens(user);
@@ -36,8 +37,7 @@ public class OAuthService {
 
     @Transactional
     public OAuthLoginResponse appleLogin(OAuthAppleLoginRequest request) {
-
-        Claims claims = oAuthAppleService.getAppleClaims(request.identityToken());
+        Claims claims = oAuthAppleClient.getAppleClaims(request.identityToken());
 
         String appleId = claims.getSubject();
         String email = claims.get("email", String.class);
@@ -46,7 +46,6 @@ public class OAuthService {
         return issueTokens(user);
     }
 
-    // JWT 발급 및 리프레시 토큰 해시 저장 공통 로직
     private OAuthLoginResponse issueTokens(User user) {
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);

@@ -89,6 +89,25 @@ public class User extends BaseEntity {
                 .build();
     }
 
+
+    // 애플 신규 유저 생성
+    public static User createAppleUser(
+            String oauthId,
+            String email,
+            String name,
+            DeviceType deviceType
+    ) {
+        return User.builder()
+                .oauthId(oauthId)
+                .oauthProvider(OAuthProvider.APPLE)
+                .email(email)
+                .name(name)
+                .deviceType(deviceType)
+                .onboardingStatus(OnboardingStatus.INCOMPLETE)
+                .deleted(false)
+                .build();
+    }
+
     // 탈퇴한 유저 재가입 처리 — null이면 기존 값 유지 (애플 재가입 시 email 유실 방지)
     public void restore(String email, String name, String profileUrl, DeviceType deviceType) {
         if (email != null) this.email = email;

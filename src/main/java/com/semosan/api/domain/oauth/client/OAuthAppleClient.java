@@ -1,4 +1,4 @@
-package com.semosan.api.domain.oauth.service;
+package com.semosan.api.domain.oauth.client;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.semosan.api.common.exception.GeneralException;
@@ -22,7 +22,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class OAuthAppleService {
+public class OAuthAppleClient {
 
     private static final String APPLE_PUBLIC_KEYS_URI = "https://appleid.apple.com/auth/keys";
     private static final String APPLE_ISSUER = "https://appleid.apple.com";
