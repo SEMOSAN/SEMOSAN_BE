@@ -108,6 +108,20 @@ public class User extends BaseEntity {
                 .build();
     }
 
+
+    // 테스트 유저 생성 (로컬 전용)
+    public static User createTestUser(String testUserId, DeviceType deviceType) {
+        return User.builder()
+                .oauthId(testUserId)
+                .oauthProvider(OAuthProvider.KAKAO)
+                .email(testUserId + "@test.com")
+                .name("테스트유저_" + testUserId)
+                .deviceType(deviceType)
+                .onboardingStatus(OnboardingStatus.INCOMPLETE)
+                .deleted(false)
+                .build();
+    }
+
     // 탈퇴한 유저 재가입 처리 — null이면 기존 값 유지 (애플 재가입 시 email 유실 방지)
     public void restore(String email, String name, String profileUrl, DeviceType deviceType) {
         if (email != null) this.email = email;

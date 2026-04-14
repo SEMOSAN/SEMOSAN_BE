@@ -37,7 +37,6 @@ public class UserService {
     }
 
     // 애플 유저 조회/등록/복구
-    // 애플은 최초 로그인 시에만 name을 전달하므로 파라미터로 받음
     @Transactional
     public User findOrRegisterAppleUser(String appleId, String email, String name, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(appleId, OAuthProvider.APPLE)
@@ -49,6 +48,13 @@ public class UserService {
                 .orElseGet(() ->
                         userRepository.save(User.createAppleUser(appleId, email, name, deviceType))
                 );
+    }
+
+    // 테스트 유저 조회 or 생성
+    @Transactional
+    public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
+        return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.KAKAO)
+                .orElseGet(() -> userRepository.save(User.createTestUser(testUserId, deviceType)));
     }
 
 }

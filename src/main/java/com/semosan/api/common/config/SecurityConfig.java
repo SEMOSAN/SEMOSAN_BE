@@ -21,6 +21,7 @@ public class SecurityConfig {
     /** 인증 없이 접근 가능한 경로 */
     private static final String[] PUBLIC_URIS = {
             "/auth/**",
+            "/api/auth/test/**",
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/swagger-resources/**",
@@ -31,6 +32,11 @@ public class SecurityConfig {
     private static final String[] OAUTH_URIS = {
             "/api/oauth/kakao/login",
             "/api/oauth/apple/login",
+    };
+
+    /** 인증(회원가입, 로그인 등) 관련 경로 */
+    private static final String[] AUTH_URIS = {
+            "/api/auth/test/login"
     };
 
     @Bean
@@ -45,6 +51,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URIS).permitAll()
                         .requestMatchers(OAUTH_URIS).permitAll()
+                        .requestMatchers(AUTH_URIS).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
