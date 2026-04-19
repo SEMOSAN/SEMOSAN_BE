@@ -2,6 +2,7 @@ package com.semosan.api.domain.auth.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.jwt.JwtService;
+import com.semosan.api.common.jwt.TokenIssuance;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.auth.dto.request.LoginRequest;
 import com.semosan.api.domain.auth.dto.response.LoginResponse;
@@ -39,9 +40,8 @@ public class AuthService {
         }
 
         User user = userService.findOrCreateTestUser(request.testUserId(), request.deviceType());
-        log.warn("[TEST] 테스트 로그인 testUserId={}, userId={}", request.testUserId(), user.getId());
+        TokenIssuance tokens = jwtService.issueTokens(user);
 
-        TokenPair tokens = issueTokens(user);
         return new LoginResponse(user.getId(), tokens.accessToken(), tokens.refreshToken());
     }
 
@@ -57,7 +57,7 @@ public class AuthService {
             throw new GeneralException(ErrorStatus.REFRESH_TOKEN_NOT_FOUND);
         jwtService.validateRefreshToken(refreshToken, user.getRefreshToken());
 
-        TokenPair tokens = issueTokens(user);
+        TokenIssuance tokens = jwtService.issueTokens(user);
         return new ReissueResponse(tokens.accessToken(), tokens.refreshToken());
     }
 
@@ -67,15 +67,5 @@ public class AuthService {
         User user = userService.findById(userId);
         user.withdraw();
     }
-
-    // 액세스/리프레시 토큰 발급 및 리프레시 토큰 해시 저장
-    private TokenPair issueTokens(User user) {
-        String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-        user.updateRefreshToken(jwtService.hashToken(refreshToken));
-        return new TokenPair(accessToken, refreshToken);
-    }
-
-    private record TokenPair(String accessToken, String refreshToken) {}
 
 }

@@ -35,6 +35,14 @@ public class JwtService {
         this.refreshTokenExpiration = refreshTokenExpiration;
     }
 
+    // 액세스/리프레시 토큰 발급 및 리프레시 토큰 해시 저장
+    public TokenIssuance issueTokens(User user) {
+        String accessToken = generateAccessToken(user);
+        String refreshToken = generateRefreshToken(user);
+        user.updateRefreshToken(hashToken(refreshToken));
+        return new TokenIssuance(accessToken, refreshToken);
+    }
+
     // Access Token 생성
     public String generateAccessToken(User user) {
         Date now = new Date();

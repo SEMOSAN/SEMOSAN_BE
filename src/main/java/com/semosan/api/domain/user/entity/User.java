@@ -89,7 +89,6 @@ public class User extends BaseEntity {
                 .build();
     }
 
-
     // 애플 신규 유저 생성
     public static User createAppleUser(
             String oauthId,
@@ -108,12 +107,11 @@ public class User extends BaseEntity {
                 .build();
     }
 
-
     // 테스트 유저 생성 (로컬 전용)
     public static User createTestUser(String testUserId, DeviceType deviceType) {
         return User.builder()
                 .oauthId(testUserId)
-                .oauthProvider(OAuthProvider.KAKAO)
+                .oauthProvider(OAuthProvider.TEST)
                 .email(testUserId + "@test.com")
                 .name("테스트유저_" + testUserId)
                 .deviceType(deviceType)

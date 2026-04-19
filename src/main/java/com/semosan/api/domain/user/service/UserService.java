@@ -2,7 +2,6 @@ package com.semosan.api.domain.user.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
-import com.semosan.api.domain.oauth.dto.KakaoUserInfoResponse;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.DeviceType;
 import com.semosan.api.domain.user.enums.OAuthProvider;
@@ -19,14 +18,9 @@ public class UserService {
 
     // 카카오 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
     @Transactional
-    public User findOrRegisterKakaoUser(KakaoUserInfoResponse userInfo, DeviceType deviceType) {
-        KakaoUserInfoResponse.KakaoAccount account = userInfo.kakaoAccount();
-        String kakaoId = userInfo.id().toString();
-
-        String email = account != null ? account.email() : null;
-        String name = account != null && account.profile() != null ? account.profile().nickname() : null;
-        String profileUrl = account != null && account.profile() != null ? account.profile().profileImageUrl() : null;
-
+    public User findOrRegisterKakaoUser(
+            String kakaoId, String email, String name, String profileUrl, DeviceType deviceType
+    ) {
         return userRepository.findByOauthIdAndOauthProvider(kakaoId, OAuthProvider.KAKAO)
                 .map(user -> {
                     if (user.isDeleted())
@@ -52,7 +46,7 @@ public class UserService {
                 );
     }
 
-    // userId로 활성 유저 조회, 없으면 예외
+    // userId로 유저 조회, 없으면 예외
     @Transactional(readOnly = true)
     public User findById(Long userId) {
         return userRepository.findById(userId)
@@ -62,7 +56,7 @@ public class UserService {
     // 테스트 유저 조회 후 없으면 신규 생성
     @Transactional
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
-        return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.KAKAO)
+        return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.TEST)
                 .orElseGet(() -> userRepository.save(User.createTestUser(testUserId, deviceType)));
     }
 

@@ -1,6 +1,7 @@
 package com.semosan.api.domain.oauth.service;
 
 import com.semosan.api.common.jwt.JwtService;
+import com.semosan.api.common.jwt.TokenIssuance;
 import com.semosan.api.domain.oauth.client.OAuthAppleClient;
 import com.semosan.api.domain.oauth.client.OAuthKakaoClient;
 import com.semosan.api.domain.oauth.dto.KakaoTokenResponse;
@@ -31,8 +32,17 @@ public class OAuthService {
         KakaoTokenResponse kakaoToken = oAuthKakaoClient.getKakaoToken(request.code());
         KakaoUserInfoResponse userInfo = oAuthKakaoClient.getKakaoUserInfo(kakaoToken.accessToken());
 
-        User user = userService.findOrRegisterKakaoUser(userInfo, request.deviceType());
-        return issueTokens(user);
+        // DTO 파싱은 oauth 레이어에서 처리 후 순수 값만 UserService로 전달
+        KakaoUserInfoResponse.KakaoAccount account = userInfo.kakaoAccount();
+        String kakaoId = userInfo.id().toString();
+        String email = account != null ? account.email() : null;
+        String name = account != null && account.profile() != null ? account.profile().nickname() : null;
+        String profileUrl = account != null && account.profile() != null ? account.profile().profileImageUrl() : null;
+
+        User user = userService.findOrRegisterKakaoUser(kakaoId, email, name, profileUrl, request.deviceType());
+
+        TokenIssuance tokens = jwtService.issueTokens(user);
+        return new OAuthLoginResponse(user.getId(), tokens.accessToken(), tokens.refreshToken());
     }
 
     @Transactional
@@ -43,15 +53,9 @@ public class OAuthService {
         String email = claims.get("email", String.class);
 
         User user = userService.findOrRegisterAppleUser(appleId, email, request.name(), request.deviceType());
-        return issueTokens(user);
-    }
 
-    private OAuthLoginResponse issueTokens(User user) {
-        String accessToken = jwtService.generateAccessToken(user);
-        String refreshToken = jwtService.generateRefreshToken(user);
-        user.updateRefreshToken(jwtService.hashToken(refreshToken));
-
-        return new OAuthLoginResponse(user.getId(), accessToken, refreshToken);
+        TokenIssuance tokens = jwtService.issueTokens(user);
+        return new OAuthLoginResponse(user.getId(), tokens.accessToken(), tokens.refreshToken());
     }
 
 }

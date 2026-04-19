@@ -10,6 +10,11 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -18,24 +23,27 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
-    /** 인증 없이 접근 가능한 경로 */
-    private static final String[] PUBLIC_URIS = {
-            "/auth/**",
-            "/api/auth/test/**",
-            "/api/auth/reissue",
+    /**
+     * 스웨거 괸련 경로
+     */
+    private static final String[] SWAGGER_URIS = {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/swagger-resources/**",
             "/swagger-ui.html"
     };
 
-    /** 소셜 인증(카카오, 네이버) 관련 경로 */
+    /**
+     * 소셜 인증(카카오, 네이버) 관련 경로
+     */
     private static final String[] OAUTH_URIS = {
             "/api/oauth/kakao/login",
             "/api/oauth/apple/login",
     };
 
-    /** 인증(회원가입, 로그인 등) 관련 경로 */
+    /**
+     * 인증(회원가입, 로그인 등) 관련 경로
+     */
     private static final String[] AUTH_URIS = {
             "/api/auth/test/login",
             "/api/auth/token/reissue"
@@ -45,13 +53,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(PUBLIC_URIS).permitAll()
+                        .requestMatchers(SWAGGER_URIS).permitAll()
                         .requestMatchers(OAUTH_URIS).permitAll()
                         .requestMatchers(AUTH_URIS).permitAll()
                         .anyRequest().authenticated()
@@ -59,6 +68,19 @@ public class SecurityConfig {
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
 }
