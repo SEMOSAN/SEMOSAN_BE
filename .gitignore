@@ -38,3 +38,6 @@ out/
 
 ### .DS_Store
 .DS_Store
+### Sensitive configuration
+application-local.yaml
+application-prod.yaml

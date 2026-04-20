@@ -1,7 +1,7 @@
 package com.semosan.api.common.exception;
 
 import com.semosan.api.common.base.BaseStatus;
-import com.semosan.api.common.base.ErrorStatus;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.common.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
