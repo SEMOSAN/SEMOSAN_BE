@@ -1,0 +1,210 @@
+name: 🌿 PR 디스코드 알림
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
+
+jobs:
+  # ──────────────────────────────────────────────
+  # PR 열림 → 리뷰 요청 알림
+  # ──────────────────────────────────────────────
+  notify-review:
+    if: >-
+      github.event.action != 'closed'
+      && !github.event.pull_request.draft
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🎲 메시지 뽑기
+        id: message
+        run: |
+          MESSAGES=(
+            "살려주세요... 리뷰 안 하면 머지 못 해요... 🥺"
+            "따끈따끈한 PR이 나왔어요! 식기 전에 리뷰해주세요~ 🍞"
+            "리뷰 한 스푼만... 제발... 🥄"
+            "새 PR이 당신을 기다리고 있어요. 읽씹하지 마세요 💌"
+            "코드가 외로워하고 있어요. 누가 좀 봐주세요... 🐾"
+            "PR 승인 버튼은 세상에서 제일 아름다운 버튼이에요 💚"
+            "리뷰해주시면 오늘 하루 서버 안 터집니다 ☕✨"
+            "이 PR은 사랑과 정성으로 만들어졌습니다. 감상 부탁드립니다 🎨"
+            "긴급) 코드가 approve를 갈망하고 있습니다 🆘"
+            "[속보] 머지 대기 중인 PR 발견! 리뷰어 급구! 📰"
+            "스프링이 꽃을 피우려면 리뷰가 필요합니다 🌸"
+            "JPA가 울고 있어요. 제발 봐주세요 😭"
+            "500 Internal Server Error... 리뷰 안 해서 그래요 🔥"
+            "이 PR 안 보면 null pointer exception 납니다 (진짜임) 👀"
+            "빌드는 성공했어요. 이제 리뷰만 남았습니다 🛠️"
+            "커밋 하나하나에 땀이 배어있어요... 제발요 💦"
+            "오늘 야근 여부는 당신의 리뷰 속도에 달려있습니다 🌙"
+            "머지 못 하면 잠 못 자요. 제발 리뷰해주세요 😴"
+            "이 코드, 혼자 짜기 너무 외로웠어요 🥲"
+            "리뷰 안 하면... 다음 스프린트에 기억할게요 👁️"
+            "세모산이 당신의 approve를 기다리고 있어요 🏔️"
+            "어차피 다 같이 쓸 코드잖아요. 같이 봐요 🤝"
+          )
+          INDEX=$(( RANDOM % ${#MESSAGES[@]} ))
+          echo "cute_msg=${MESSAGES[$INDEX]}" >> "$GITHUB_OUTPUT"
+
+      - name: 📨 디스코드로 리뷰 요청 보내기
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.BE_PR_WEBHOOK }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          CUTE_MSG: ${{ steps.message.outputs.cute_msg }}
+          CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
+          ADDITIONS: ${{ github.event.pull_request.additions }}
+          DELETIONS: ${{ github.event.pull_request.deletions }}
+        run: |
+          TOTAL_CHANGES=$(( ADDITIONS + DELETIONS ))
+          if [ "$TOTAL_CHANGES" -lt 50 ]; then
+            SIZE_LABEL="🍰 한입 크기"
+          elif [ "$TOTAL_CHANGES" -lt 200 ]; then
+            SIZE_LABEL="🍔 적당한 크기"
+          elif [ "$TOTAL_CHANGES" -lt 500 ]; then
+            SIZE_LABEL="🍕 꽤 큰 편"
+          elif [ "$TOTAL_CHANGES" -lt 1000 ]; then
+            SIZE_LABEL="🏋️ 헬스장 급 (힘내세요...)"
+          else
+            SIZE_LABEL="💀 리뷰어 사망각 (커피 챙기세요)"
+          fi
+
+          DESCRIPTION=$(echo "$PR_BODY" | head -c 200)
+          if [ ${#PR_BODY} -gt 200 ]; then
+            DESCRIPTION="${DESCRIPTION}..."
+          fi
+          DESCRIPTION=$(echo "$DESCRIPTION" | jq -Rs '.')
+
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d @- \
+            "$DISCORD_WEBHOOK_URL" <<CURL_EOF
+          {
+            "username": "세모산 PR봇 🌿",
+            "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            "content": "📢 **[BE] 리뷰 요청이 도착했어요!** ${CUTE_MSG}",
+            "embeds": [
+              {
+                "title": "📝 ${PR_TITLE}",
+                "url": "${PR_URL}",
+                "color": 16750848,
+                "description": ${DESCRIPTION},
+                "fields": [
+                  {
+                    "name": "👤 작성자",
+                    "value": "${PR_AUTHOR}",
+                    "inline": true
+                  },
+                  {
+                    "name": "📦 PR 크기",
+                    "value": "${SIZE_LABEL}",
+                    "inline": true
+                  },
+                  {
+                    "name": "📊 변경 사항",
+                    "value": "\`${CHANGED_FILES}\`개 파일  |  +${ADDITIONS}  -${DELETIONS}",
+                    "inline": true
+                  }
+                ],
+                "footer": {
+                  "text": "SEMOSAN Backend 🌿 리뷰해주시면 복이 와요 🍀"
+                },
+                "timestamp": "${{ github.event.pull_request.created_at }}"
+              }
+            ]
+          }
+          CURL_EOF
+
+          echo "✅ 리뷰 요청 알림 전송 완료!"
+
+  # ──────────────────────────────────────────────
+  # 🎉 PR 머지됨 → 축하 알림
+  # ──────────────────────────────────────────────
+  notify-merged:
+    if: >-
+      github.event.action == 'closed'
+      && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🎲 축하 메시지 뽑기
+        id: message
+        run: |
+          MESSAGES=(
+            "코드가 무사히 새 집을 찾았어요! 이사 축하~ 🏠"
+            "머지 완료! 오늘의 영웅은 바로 당신! 🦸"
+            "main 브랜치가 한 뼘 더 자랐어요 🌱"
+            "성공적으로 합류! 세모산 백엔드 어벤져스 결성 완료 🛡️"
+            "Merge! 이 순간을 위해 살았다... 감동 🥲"
+            "브랜치여 안녕... 넌 main 속에서 영원히 살 거야 💐"
+            "축) 머지 기념 커피 한 잔 어때요? ☕🎊"
+            "드디어 해냈다! 리뷰어분들 감사합니다 🫡✨"
+            "Spring이 활짝 피었습니다 🌸"
+            "서버가 한층 더 강해졌어요 💪"
+            "git log --oneline 한 줄이 늘었습니다 📜"
+            "오늘도 무사 머지... 개발자의 하루가 빛납니다 🌟"
+            "리뷰어 여러분, 오늘도 세모산을 지켜주셔서 감사합니다 🏔️"
+            "배포까지 달려봐요! 화이팅 🚀"
+            "이제 다음 이슈로 고고씽~ 💨"
+          )
+          INDEX=$(( RANDOM % ${#MESSAGES[@]} ))
+          echo "cute_msg=${MESSAGES[$INDEX]}" >> "$GITHUB_OUTPUT"
+
+      - name: 🎊 디스코드로 머지 축하 보내기
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.BE_PR_WEBHOOK }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          MERGED_BY: ${{ github.event.pull_request.merged_by.login }}
+          CUTE_MSG: ${{ steps.message.outputs.cute_msg }}
+          CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
+          ADDITIONS: ${{ github.event.pull_request.additions }}
+          DELETIONS: ${{ github.event.pull_request.deletions }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d @- \
+            "$DISCORD_WEBHOOK_URL" <<CURL_EOF
+          {
+            "username": "세모산 PR봇 🌿",
+            "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+            "content": "🎊 **[BE] PR이 머지되었어요!** ${CUTE_MSG}",
+            "embeds": [
+              {
+                "title": "✅ ${PR_TITLE}",
+                "url": "${PR_URL}",
+                "color": 2067276,
+                "fields": [
+                  {
+                    "name": "👤 작성자",
+                    "value": "${PR_AUTHOR}",
+                    "inline": true
+                  },
+                  {
+                    "name": "🔀 머지한 사람",
+                    "value": "${MERGED_BY}",
+                    "inline": true
+                  },
+                  {
+                    "name": "🌿 브랜치",
+                    "value": "\`${HEAD_BRANCH}\` → \`${BASE_BRANCH}\`",
+                    "inline": true
+                  },
+                  {
+                    "name": "📊 최종 변경 사항",
+                    "value": "\`${CHANGED_FILES}\`개 파일  |  +${ADDITIONS}  -${DELETIONS}",
+                    "inline": false
+                  }
+                ],
+                "footer": {
+                  "text": "SEMOSAN Backend 🌿 수고하셨습니다! 🍀"
+                },
+                "timestamp": "${{ github.event.pull_request.merged_at }}"
+              }
+            ]
+          }
+          CURL_EOF
+
+          echo "✅ 머지 축하 알림 전송 완료!"
