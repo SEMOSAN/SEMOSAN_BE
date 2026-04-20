@@ -24,9 +24,9 @@ public class SecurityConfig {
     private final JwtFilter jwtFilter;
 
     /**
-     * 스웨거 괸련 경로
+     * 스웨거 관련 경로
      */
-    private static final String[] SWAGGER_URIS = {
+    public static final String[] SWAGGER_URIS = {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/swagger-resources/**",
@@ -34,9 +34,9 @@ public class SecurityConfig {
     };
 
     /**
-     * 소셜 인증(카카오, 네이버) 관련 경로
+     * 소셜 인증(카카오, 애플) 관련 경로
      */
-    private static final String[] OAUTH_URIS = {
+    public static final String[] OAUTH_URIS = {
             "/api/oauth/kakao/login",
             "/api/oauth/apple/login",
     };
@@ -44,7 +44,7 @@ public class SecurityConfig {
     /**
      * 인증(회원가입, 로그인 등) 관련 경로
      */
-    private static final String[] AUTH_URIS = {
+    public static final String[] AUTH_URIS = {
             "/api/auth/test/login",
             "/api/auth/token/reissue"
     };
