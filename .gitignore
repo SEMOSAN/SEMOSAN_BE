@@ -40,4 +40,9 @@ out/
 .DS_Store
 ### Sensitive configuration
 application-local.yaml
-application-prod.yaml
+
+### K8s secrets (contains real credentials)
+k8s/app/secret.yaml
+k8s/postgres/secret.yaml
+
+.omc
