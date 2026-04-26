@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: semosan-api
+  namespace: semosan
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: semosan-api
+  template:
+    metadata:
+      labels:
+        app: semosan-api
+    spec:
+      containers:
+        - name: semosan-api
+          image: ghcr.io/semosan/semosan_be:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: app-secret
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: semosan-api
+  namespace: semosan
+spec:
+  selector:
+    app: semosan-api
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 31080
