@@ -13,6 +13,8 @@ spec:
       labels:
         app: semosan-api
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: semosan-api
           image: ghcr.io/semosan/semosan_be:96414254612fd6667dbf9ef41845130662eade5f
