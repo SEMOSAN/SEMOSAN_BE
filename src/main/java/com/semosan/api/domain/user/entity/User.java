@@ -63,9 +63,6 @@ public class User extends BaseEntity {
     @Column(name = "weight")
     private Double weight;
 
-    @Column(name = "fcm_token", length = 255)
-    private String fcmToken;
-
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
 

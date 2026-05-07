@@ -45,4 +45,11 @@ application-local.yaml
 k8s/app/secret.yaml
 k8s/postgres/secret.yaml
 
+# OMC
 .omc
+
+# Firebase
+src/main/resources/firebase/
+
+## docs
+docs/**

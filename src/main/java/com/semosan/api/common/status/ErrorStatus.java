@@ -51,6 +51,11 @@ public enum ErrorStatus implements BaseStatus {
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_1", "사용자를 찾을 수 없습니다."),
 
     /**
+     * Notification
+     */
+    NOTIFICATION_PARAMS_INVALID(HttpStatus.BAD_REQUEST, "NOTIF_400_1", "알림 파라미터가 유효하지 않습니다."),
+
+    /**
      * Apple OAuth
      */
     APPLE_PUBLIC_KEY_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "APPLE_502_1", "애플 공개키 조회에 실패했습니다."),
