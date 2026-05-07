@@ -22,7 +22,7 @@ jobs:
           cache: gradle
 
       - name: Build with Gradle
-        run: ./gradlew build -x test --no-daemon
+        run: ./gradlew build -x test --no-daemon --parallel --build-cache
 
       - name: Set image name (lowercase)
         run: echo "IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
@@ -43,6 +43,8 @@ jobs:
           context: .
           platforms: linux/arm64
           push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ${{ env.IMAGE }}:${{ github.sha }}
             ${{ env.IMAGE }}:latest
