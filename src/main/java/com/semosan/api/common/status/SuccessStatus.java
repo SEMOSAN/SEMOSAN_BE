@@ -23,6 +23,18 @@ public enum SuccessStatus implements BaseStatus {
     WITHDRAW_SUCCESS(HttpStatus.OK, "USER_200_1", "회원 탈퇴가 완료되었습니다."),
 
     /**
+     * Mountain
+     */
+    MOUNTAIN_LIST_SUCCESS(HttpStatus.OK, "MTN_200_1", "산 목록 조회에 성공했습니다."),
+    MOUNTAIN_SEARCH_SUCCESS(HttpStatus.OK, "MTN_200_2", "산 검색에 성공했습니다."),
+    MOUNTAIN_DETAIL_SUCCESS(HttpStatus.OK, "MTN_200_3", "산 상세 정보 조회에 성공했습니다."),
+
+    /**
+     * Image
+     */
+    PRESIGNED_URL_SUCCESS(HttpStatus.OK, "IMG_200_1", "Presigned URL 발급에 성공했습니다.");
+  
+    /**
      * FCM / Notification
      */
     FCM_TOKEN_REGISTER_SUCCESS(HttpStatus.OK, "FCM_200_1", "FCM 토큰이 등록되었습니다."),

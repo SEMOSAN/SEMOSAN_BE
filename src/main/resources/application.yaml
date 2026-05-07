@@ -5,5 +5,32 @@ spring:
   profiles:
     default: local
 
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_ACCESS_TOKEN_EXPIRATION}
+  refresh-token-expiration: ${JWT_REFRESH_TOKEN_EXPIRATION}
+
+kakao:
+  client-id: ${KAKAO_CLIENT_ID}
+  redirect-uri: ${KAKAO_REDIRECT_URI}
+  client-secret: ${KAKAO_CLIENT_SECRET}
+  admin-key: ${KAKAO_ADMIN_KEY}
+
+test:
+  secret-key: ${TEST_SECRET_KEY}
 firebase:
   service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:firebase/semosan-b2593-firebase-adminsdk-fbsvc-0d55d3b4e9.json}

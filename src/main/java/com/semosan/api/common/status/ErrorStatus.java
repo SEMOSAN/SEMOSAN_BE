@@ -63,6 +63,16 @@ public enum ErrorStatus implements BaseStatus {
     APPLE_IDENTITY_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "APPLE_401_2", "애플 identity token이 유효하지 않습니다."),
 
     /**
+     * Mountain
+     */
+    MOUNTAIN_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_1", "산을 찾을 수 없습니다."),
+
+    /**
+     * Image
+     */
+    IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "IMG_502_1", "이미지 업로드 URL 생성에 실패했습니다."),
+
+    /**
      * Withdraw
      */
     KAKAO_UNLINK_FAILED(HttpStatus.BAD_GATEWAY, "KAKAO_502_3", "카카오 연동 해제에 실패했습니다."),

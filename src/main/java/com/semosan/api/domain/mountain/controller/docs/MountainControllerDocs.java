@@ -1,0 +1,67 @@
+package com.semosan.api.domain.mountain.controller.docs;
+
+import com.semosan.api.common.response.ApiResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
+
+@Tag(name = "Mountain", description = "산 관련 API")
+public interface MountainControllerDocs {
+
+    @Operation(
+            summary = "산 목록 조회",
+            description = "등록된 모든 산의 목록을 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "산 목록 조회 성공"
+            )
+    })
+    ResponseEntity<ApiResponse<List<MountainListResponse>>> getMountains();
+
+    @Operation(
+            summary = "산 검색",
+            description = "산 이름 또는 주소로 검색합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "산 검색 성공"
+            )
+    })
+    ResponseEntity<ApiResponse<List<MountainListResponse>>> searchMountains(
+            @Parameter(description = "검색 키워드 (산 이름 또는 주소)", required = true)
+            @RequestParam String keyword
+    );
+
+    @Operation(
+            summary = "산 상세 정보 조회",
+            description = "산의 상세 정보를 조회합니다. 코스, 교통, 편의시설, 맛집, 리뷰 정보를 포함합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "산 상세 정보 조회 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "산을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<MountainDetailResponse>> getMountainDetail(
+            @Parameter(description = "산 ID", required = true)
+            @PathVariable Long mountainId
+    );
+}
