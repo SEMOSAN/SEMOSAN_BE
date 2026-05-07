@@ -17,7 +17,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: semosan-api
-          image: ghcr.io/semosan/semosan_be:4ecdd51661b50db49ad8bf33d7a3951ae3475a00
+          image: ghcr.io/semosan/semosan_be:df57c95757a8e21babee1869ff0eaffa2f086903
           ports:
             - containerPort: 8080
           envFrom:
