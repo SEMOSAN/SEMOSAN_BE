@@ -33,9 +33,10 @@ public class FcmTokenController {
 
     @DeleteMapping("/tokens")
     public ResponseEntity<ApiResponse<Void>> delete(
+            @AuthenticationPrincipal Long userId,
             @Valid @RequestBody FcmTokenDeleteRequest request
     ) {
-        fcmTokenService.delete(request.token());
+        fcmTokenService.delete(userId, request.token());
         return ApiResponse.success(SuccessStatus.FCM_TOKEN_DELETE_SUCCESS);
     }
 }

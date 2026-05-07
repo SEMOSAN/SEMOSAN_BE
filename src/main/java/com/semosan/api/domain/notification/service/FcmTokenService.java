@@ -1,5 +1,7 @@
 package com.semosan.api.domain.notification.service;
 
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.notification.entity.FcmToken;
 import com.semosan.api.domain.notification.repository.FcmTokenRepository;
 import com.semosan.api.domain.user.enums.DeviceType;
@@ -28,11 +30,16 @@ public class FcmTokenService {
     }
 
     /**
-     * 토큰 삭제
-     * 로그아웃 시 호출하면 될 듯
+     * 토큰 삭제 (로그아웃 시 호출)
+     * 본인 소유 토큰만 삭제 가능. 토큰 없으면 idempotent하게 noop.
      */
     @Transactional
-    public void delete(String token) {
-        fcmTokenRepository.deleteByToken(token);
+    public void delete(Long userId, String token) {
+        fcmTokenRepository.findByToken(token).ifPresent(fcmToken -> {
+            if (!fcmToken.getUserId().equals(userId)) {
+                throw new GeneralException(ErrorStatus.FORBIDDEN);
+            }
+            fcmTokenRepository.deleteByToken(token);
+        });
     }
 }
