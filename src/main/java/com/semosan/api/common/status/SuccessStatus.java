@@ -32,8 +32,8 @@ public enum SuccessStatus implements BaseStatus {
     /**
      * Image
      */
-    PRESIGNED_URL_SUCCESS(HttpStatus.OK, "IMG_200_1", "Presigned URL 발급에 성공했습니다.");
-  
+    PRESIGNED_URL_SUCCESS(HttpStatus.OK, "IMG_200_1", "Presigned URL 발급에 성공했습니다."),
+
     /**
      * FCM / Notification
      */

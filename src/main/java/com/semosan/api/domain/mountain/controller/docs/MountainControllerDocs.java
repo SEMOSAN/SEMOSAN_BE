@@ -9,11 +9,12 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.util.List;
 
 @Tag(name = "Mountain", description = "산 관련 API")
 public interface MountainControllerDocs {
@@ -28,7 +29,9 @@ public interface MountainControllerDocs {
                     description = "산 목록 조회 성공"
             )
     })
-    ResponseEntity<ApiResponse<List<MountainListResponse>>> getMountains();
+    ResponseEntity<ApiResponse<Page<MountainListResponse>>> getMountains(
+            @PageableDefault(size = 10) Pageable pageable
+    );
 
     @Operation(
             summary = "산 검색",
@@ -40,9 +43,10 @@ public interface MountainControllerDocs {
                     description = "산 검색 성공"
             )
     })
-    ResponseEntity<ApiResponse<List<MountainListResponse>>> searchMountains(
+    ResponseEntity<ApiResponse<Page<MountainListResponse>>> searchMountains(
             @Parameter(description = "검색 키워드 (산 이름 또는 주소)", required = true)
-            @RequestParam String keyword
+            @RequestParam String keyword,
+            @PageableDefault(size = 10) Pageable pageable
     );
 
     @Operation(

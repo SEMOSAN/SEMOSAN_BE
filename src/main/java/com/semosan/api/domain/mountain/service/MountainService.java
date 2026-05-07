@@ -10,6 +10,8 @@ import com.semosan.api.domain.mountain.enums.AmenityType;
 import com.semosan.api.domain.mountain.repository.*;
 import com.semosan.api.domain.review.service.ReviewService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,19 +30,17 @@ public class MountainService {
     private final RestaurantSectionRepository restaurantSectionRepository;
     private final ReviewService reviewService;
 
-    public List<MountainListResponse> getMountains() {
-        return mountainRepository.findAll().stream()
-                .map(MountainListResponse::from)
-                .toList();
+    public Page<MountainListResponse> getMountains(Pageable pageable) {
+        return mountainRepository.findAll(pageable)
+                .map(MountainListResponse::from);
     }
 
-    public List<MountainListResponse> searchMountains(String keyword) {
+    public Page<MountainListResponse> searchMountains(String keyword, Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
             throw new GeneralException(ErrorStatus.BAD_REQUEST);
         }
-        return mountainRepository.searchByKeyword(keyword.trim()).stream()
-                .map(MountainListResponse::from)
-                .toList();
+        return mountainRepository.searchByKeyword(keyword.trim(), pageable)
+                .map(MountainListResponse::from);
     }
 
     public MountainDetailResponse getMountainDetail(Long mountainId) {

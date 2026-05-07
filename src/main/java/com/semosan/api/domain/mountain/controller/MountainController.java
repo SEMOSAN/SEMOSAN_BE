@@ -7,10 +7,11 @@ import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
 import com.semosan.api.domain.mountain.service.MountainService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/mountains")
@@ -21,17 +22,20 @@ public class MountainController implements MountainControllerDocs {
 
     @GetMapping
     @Override
-    public ResponseEntity<ApiResponse<List<MountainListResponse>>> getMountains() {
-        List<MountainListResponse> response = mountainService.getMountains();
+    public ResponseEntity<ApiResponse<Page<MountainListResponse>>> getMountains(
+            @PageableDefault(size = 10) Pageable pageable
+    ) {
+        Page<MountainListResponse> response = mountainService.getMountains(pageable);
         return ApiResponse.success(SuccessStatus.MOUNTAIN_LIST_SUCCESS, response);
     }
 
     @GetMapping("/search")
     @Override
-    public ResponseEntity<ApiResponse<List<MountainListResponse>>> searchMountains(
-            @RequestParam String keyword
+    public ResponseEntity<ApiResponse<Page<MountainListResponse>>> searchMountains(
+            @RequestParam String keyword,
+            @PageableDefault(size = 10) Pageable pageable
     ) {
-        List<MountainListResponse> response = mountainService.searchMountains(keyword);
+        Page<MountainListResponse> response = mountainService.searchMountains(keyword, pageable);
         return ApiResponse.success(SuccessStatus.MOUNTAIN_SEARCH_SUCCESS, response);
     }
 
