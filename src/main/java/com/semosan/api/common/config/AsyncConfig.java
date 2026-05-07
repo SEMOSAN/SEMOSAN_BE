@@ -21,7 +21,7 @@ public class AsyncConfig {
         executor.setThreadNamePrefix("notif-async-");
         // 큐 가득 차면 호출 스레드가 직접 실행 → 메시지 유실 방지
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.initialize();
+        // executor.initialize() 호출 안 함 → Spring이 afterPropertiesSet()에서 자동 호출
         return executor;
     }
 }
