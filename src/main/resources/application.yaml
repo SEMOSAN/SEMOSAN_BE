@@ -4,3 +4,6 @@ spring:
 
   profiles:
     default: local
+
+firebase:
+  service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:firebase/semosan-b2593-firebase-adminsdk-fbsvc-0d55d3b4e9.json}
