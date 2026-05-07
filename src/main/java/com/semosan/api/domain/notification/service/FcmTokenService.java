@@ -42,4 +42,13 @@ public class FcmTokenService {
             fcmTokenRepository.deleteByToken(token);
         });
     }
+
+    /**
+     * FCM 발송 실패(UNREGISTERED 등)로 만료된 토큰 정리.
+     * 시스템 정리용이라 본인 검증 없이 바로 삭제.
+     */
+    @Transactional
+    public void deleteExpired(String token) {
+        fcmTokenRepository.deleteByToken(token);
+    }
 }

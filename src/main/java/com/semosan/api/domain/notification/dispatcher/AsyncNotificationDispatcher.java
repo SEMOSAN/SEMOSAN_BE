@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.semosan.api.common.fcm.FcmService;
-import com.semosan.api.domain.notification.repository.FcmTokenRepository;
+import com.semosan.api.domain.notification.service.FcmTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -20,7 +20,7 @@ import java.util.Map;
 public class AsyncNotificationDispatcher implements NotificationDispatcher {
 
     private final FcmService fcmService;
-    private final FcmTokenRepository fcmTokenRepository;
+    private final FcmTokenService fcmTokenService;
     private final ObjectMapper objectMapper;
 
     /**
@@ -60,7 +60,7 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
         MessagingErrorCode code = e.getMessagingErrorCode();
         if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT) {
             log.warn("만료/잘못된 토큰 삭제 (token={}, code={})", token, code);
-            fcmTokenRepository.deleteByToken(token);
+            fcmTokenService.deleteExpired(token);
         } else {
             log.error("FCM 발송 실패 (token={}, code={}): {}", token, code, e.getMessage());
         }
