@@ -23,6 +23,13 @@ spec:
           envFrom:
             - secretRef:
                 name: app-secret
+          env:
+            - name: FIREBASE_SERVICE_ACCOUNT_PATH
+              value: /etc/firebase/firebase-service-account.json
+          volumeMounts:
+            - name: firebase-secret
+              mountPath: /etc/firebase
+              readOnly: true
           readinessProbe:
             tcpSocket:
               port: 8080
@@ -33,3 +40,7 @@ spec:
               port: 8080
             initialDelaySeconds: 60
             periodSeconds: 30
+      volumes:
+        - name: firebase-secret
+          secret:
+            secretName: firebase-secret
