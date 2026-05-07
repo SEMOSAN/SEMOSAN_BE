@@ -63,11 +63,6 @@ public class User extends BaseEntity {
     @Column(name = "weight")
     private Double weight;
 
-    // 이거 삭제해야할 듯 -> fcm_tokens 테이블을 따로 뺌
-    // 충돌날까봐 아직 건드리진 않음
-    @Column(name = "fcm_token", length = 255)
-    private String fcmToken;
-
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
 
