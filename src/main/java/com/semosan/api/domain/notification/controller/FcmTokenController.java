@@ -2,6 +2,7 @@ package com.semosan.api.domain.notification.controller;
 
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.SuccessStatus;
+import com.semosan.api.domain.notification.controller.docs.FcmTokenControllerDocs;
 import com.semosan.api.domain.notification.dto.FcmTokenDeleteRequest;
 import com.semosan.api.domain.notification.dto.FcmTokenRegisterRequest;
 import com.semosan.api.domain.notification.service.FcmTokenService;
@@ -18,11 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/fcm")
 @RequiredArgsConstructor
-public class FcmTokenController {
+public class FcmTokenController implements FcmTokenControllerDocs {
 
     private final FcmTokenService fcmTokenService;
 
     @PostMapping("/tokens")
+    @Override
     public ResponseEntity<ApiResponse<Void>> register(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody FcmTokenRegisterRequest request
@@ -32,6 +34,7 @@ public class FcmTokenController {
     }
 
     @DeleteMapping("/tokens")
+    @Override
     public ResponseEntity<ApiResponse<Void>> delete(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody FcmTokenDeleteRequest request
