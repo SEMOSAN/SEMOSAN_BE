@@ -2,6 +2,7 @@ package com.semosan.api.domain.mountain.controller.docs;
 
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
+import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,6 +48,21 @@ public interface MountainControllerDocs {
     ResponseEntity<ApiResponse<PageResponse<MountainListResponse>>> searchMountains(
             @Parameter(description = "검색 키워드 (산 이름 또는 주소)", required = true)
             @RequestParam String keyword,
+            @PageableDefault(size = 10) Pageable pageable
+    );
+
+    @Operation(
+            summary = "좋아요한 산 목록 조회",
+            description = "로그인한 사용자가 좋아요한 산 목록을 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "좋아요한 산 목록 조회 성공"
+            )
+    })
+    ResponseEntity<ApiResponse<PageResponse<LikedMountainResponse>>> getLikedMountains(
+            @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 10) Pageable pageable
     );
 

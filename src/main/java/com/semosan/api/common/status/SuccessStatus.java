@@ -30,6 +30,7 @@ public enum SuccessStatus implements BaseStatus {
     MOUNTAIN_DETAIL_SUCCESS(HttpStatus.OK, "MTN_200_3", "산 상세 정보 조회에 성공했습니다."),
     MOUNTAIN_LIKE_SUCCESS(HttpStatus.OK, "MTN_200_4", "산 좋아요 등록에 성공했습니다."),
     MOUNTAIN_UNLIKE_SUCCESS(HttpStatus.OK, "MTN_200_5", "산 좋아요 취소에 성공했습니다."),
+    LIKED_MOUNTAIN_LIST_SUCCESS(HttpStatus.OK, "MTN_200_6", "좋아요한 산 목록 조회에 성공했습니다."),
 
     /**
      * Image

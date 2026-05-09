@@ -2,6 +2,7 @@ package com.semosan.api.domain.mountain.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.entity.MountainLike;
 import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
@@ -10,6 +11,8 @@ import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,10 +43,20 @@ public class MountainLikeService {
     // 로그인한 사용자가 산 좋아요를 취소합니다.
     @Transactional
     public void unlikeMountain(Long userId, Long mountainId) {
+        // 탈퇴 후 남은 access token으로 조회되는 것을 방지합니다.
         findActiveUserById(userId);
         MountainLike mountainLike = mountainLikeRepository.findByUser_IdAndMountain_Id(userId, mountainId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MOUNTAIN_LIKE_NOT_FOUND));
         mountainLikeRepository.delete(mountainLike);
+    }
+
+    // 로그인한 사용자가 좋아요한 산 목록을 조회합니다.
+    @Transactional(readOnly = true)
+    public Page<LikedMountainResponse> getLikedMountains(Long userId, Pageable pageable) {
+        // 탈퇴 후 남은 access token으로 조회되는 것을 방지합니다.
+        findActiveUserById(userId);
+        return mountainLikeRepository.findAllByUserId(userId, pageable)
+                .map(LikedMountainResponse::from);
     }
 
     // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.
