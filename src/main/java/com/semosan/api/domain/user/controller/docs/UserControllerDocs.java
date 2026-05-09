@@ -3,6 +3,7 @@ package com.semosan.api.domain.user.controller.docs;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
+import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -64,5 +65,24 @@ public interface UserControllerDocs {
     ResponseEntity<ApiResponse<Void>> updateUserProfile(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody UpdateUserProfileRequest request
+    );
+
+    @Operation(
+            summary = "프로필 조회",
+            description = "로그인한 사용자의 프로필 수정 화면에 필요한 정보를 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "프로필 조회 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<GetUserProfileResponse>> getUserProfile(
+            @AuthenticationPrincipal Long userId
     );
 }

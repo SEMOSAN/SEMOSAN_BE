@@ -5,6 +5,7 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.user.dto.command.CompleteOnboardingCommand;
 import com.semosan.api.domain.user.dto.command.CreateUserOnboardingCommand;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
+import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserOnboarding;
 import com.semosan.api.domain.user.enums.FitnessLevel;
@@ -34,6 +35,16 @@ public class UserOnboardingService {
         FitnessLevel fitnessLevel = fitnessLevelCalculator.calculate(request);
         user.completeOnboarding(toCompleteOnboardingCommand(request));
         createUserOnboarding(user, request, fitnessLevel);
+    }
+
+    // 로그인한 사용자의 프로필 정보를 조회합니다.
+    @Transactional(readOnly = true)
+    public GetUserProfileResponse getUserProfile(Long userId) {
+        User user = findActiveUserById(userId);
+        // 현재는 온보딩이 없는 사용자도 조회 성공해야 하므로 쿼리 2번 방식을 유지합니다.
+        UserOnboarding userOnboarding = userOnboardingRepository.findByUser_Id(userId)
+                .orElse(null);
+        return GetUserProfileResponse.of(user, userOnboarding);
     }
 
     // 삭제되지 않은 활성 사용자를 조회합니다.

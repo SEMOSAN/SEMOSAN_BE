@@ -5,12 +5,14 @@ import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.user.controller.docs.UserControllerDocs;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
+import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import com.semosan.api.domain.user.service.UserOnboardingService;
 import com.semosan.api.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,7 +35,7 @@ public class UserController implements UserControllerDocs {
             @Valid @RequestBody RegisterOnboardingRequest request
     ) {
         userOnboardingService.registerUserOnboarding(userId, request);
-        return ApiResponse.success(SuccessStatus.ONBOARDING_REGISTER_SUCCESS);
+        return ApiResponse.success(SuccessStatus.REGISTER_ONBOARDING_SUCCESS);
     }
 
     // 로그인한 사용자의 프로필 정보를 수정합니다.
@@ -44,6 +46,16 @@ public class UserController implements UserControllerDocs {
             @Valid @RequestBody UpdateUserProfileRequest request
     ) {
         userService.updateUserProfile(userId, request);
-        return ApiResponse.success(SuccessStatus.PROFILE_UPDATE_SUCCESS);
+        return ApiResponse.success(SuccessStatus.UPDATE_PROFILE_SUCCESS);
+    }
+
+    // 로그인한 사용자의 프로필 정보를 조회합니다.
+    @GetMapping("/profile")
+    @Override
+    public ResponseEntity<ApiResponse<GetUserProfileResponse>> getUserProfile(
+            @AuthenticationPrincipal Long userId
+    ) {
+        GetUserProfileResponse response = userOnboardingService.getUserProfile(userId);
+        return ApiResponse.success(SuccessStatus.GET_PROFILE_SUCCESS, response);
     }
 }
