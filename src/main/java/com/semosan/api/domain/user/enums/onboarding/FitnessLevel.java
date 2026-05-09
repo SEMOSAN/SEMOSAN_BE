@@ -1,4 +1,4 @@
-package com.semosan.api.domain.user.enums;
+package com.semosan.api.domain.user.enums.onboarding;
 
 public enum FitnessLevel {
     LOW,

@@ -1,17 +1,17 @@
-package com.semosan.api.domain.user.service;
+package com.semosan.api.domain.user.policy;
 
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
-import com.semosan.api.domain.user.enums.ExerciseDuration;
-import com.semosan.api.domain.user.enums.ExerciseFrequency;
-import com.semosan.api.domain.user.enums.FitnessLevel;
-import com.semosan.api.domain.user.enums.HikingLevel;
+import com.semosan.api.domain.user.enums.onboarding.ExerciseDuration;
+import com.semosan.api.domain.user.enums.onboarding.ExerciseFrequency;
+import com.semosan.api.domain.user.enums.onboarding.FitnessLevel;
+import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FitnessLevelCalculator {
+public class FitnessLevelPolicy {
 
-    // 온보딩 응답을 점수화해 사용자의 체력 레벨을 계산합니다.
-    public FitnessLevel calculate(RegisterOnboardingRequest request) {
+    // 온보딩 응답을 점수화해 사용자의 체력 레벨을 판정합니다.
+    public FitnessLevel determine(RegisterOnboardingRequest request) {
         int score = hikingScore(request.hikingLevel())
                 + frequencyScore(request.exerciseFrequency())
                 + durationScore(request.exerciseDuration());

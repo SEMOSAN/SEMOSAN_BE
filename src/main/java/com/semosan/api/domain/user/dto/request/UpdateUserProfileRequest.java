@@ -1,6 +1,6 @@
 package com.semosan.api.domain.user.dto.request;
 
-import com.semosan.api.domain.user.enums.Gender;
+import com.semosan.api.domain.user.enums.user.Gender;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Past;

@@ -1,6 +1,6 @@
 package com.semosan.api.domain.user.dto.command;
 
-import com.semosan.api.domain.user.enums.Gender;
+import com.semosan.api.domain.user.enums.user.Gender;
 
 import java.time.LocalDate;
 

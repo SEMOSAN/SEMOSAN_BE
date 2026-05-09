@@ -2,8 +2,8 @@ package com.semosan.api.domain.user.dto.response;
 
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserOnboarding;
-import com.semosan.api.domain.user.enums.ExerciseType;
-import com.semosan.api.domain.user.enums.Gender;
+import com.semosan.api.domain.user.enums.onboarding.ExerciseType;
+import com.semosan.api.domain.user.enums.user.Gender;
 
 public record GetUserProfileResponse(
         String profileUrl,

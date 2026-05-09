@@ -8,8 +8,9 @@ import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
 import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserOnboarding;
-import com.semosan.api.domain.user.enums.FitnessLevel;
-import com.semosan.api.domain.user.enums.HikingLevel;
+import com.semosan.api.domain.user.enums.onboarding.FitnessLevel;
+import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
+import com.semosan.api.domain.user.policy.FitnessLevelPolicy;
 import com.semosan.api.domain.user.repository.UserRepository;
 import com.semosan.api.domain.user.repository.UserOnboardingRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class UserOnboardingService {
 
     private final UserOnboardingRepository userOnboardingRepository;
     private final UserRepository userRepository;
-    private final FitnessLevelCalculator fitnessLevelCalculator;
+    private final FitnessLevelPolicy fitnessLevelPolicy;
 
     // 사용자 프로필과 온보딩 정보를 최초 1회 등록합니다.
     @Transactional
@@ -32,7 +33,7 @@ public class UserOnboardingService {
         validateOnboardingNotCompleted(user.getId());
         validatePreferredDifficulty(request);
 
-        FitnessLevel fitnessLevel = fitnessLevelCalculator.calculate(request);
+        FitnessLevel fitnessLevel = fitnessLevelPolicy.determine(request);
         user.completeOnboarding(toCompleteOnboardingCommand(request));
         createUserOnboarding(user, request, fitnessLevel);
     }

@@ -4,7 +4,7 @@ import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.notification.entity.FcmToken;
 import com.semosan.api.domain.notification.repository.FcmTokenRepository;
-import com.semosan.api.domain.user.enums.DeviceType;
+import com.semosan.api.domain.user.enums.user.DeviceType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
