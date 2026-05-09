@@ -66,6 +66,7 @@ public enum ErrorStatus implements BaseStatus {
      * Mountain
      */
     MOUNTAIN_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_1", "산을 찾을 수 없습니다."),
+    MOUNTAIN_LIKE_ALREADY_EXISTS(HttpStatus.CONFLICT, "MTN_409_1", "이미 좋아요한 산입니다."),
 
     /**
      * Image
