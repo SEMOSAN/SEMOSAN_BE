@@ -4,22 +4,26 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.user.controller.docs.UserControllerDocs;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
+import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.service.UserOnboardingService;
+import com.semosan.api.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController implements UserControllerDocs {
 
     private final UserOnboardingService userOnboardingService;
+    private final UserService userService;
 
     // 로그인한 사용자의 온보딩 정보를 등록합니다.
     @PostMapping("/onboarding")
@@ -30,5 +34,16 @@ public class UserController implements UserControllerDocs {
     ) {
         userOnboardingService.registerUserOnboarding(userId, request);
         return ApiResponse.success(SuccessStatus.ONBOARDING_REGISTER_SUCCESS);
+    }
+
+    // 로그인한 사용자의 프로필 정보를 수정합니다.
+    @PatchMapping("/profile")
+    @Override
+    public ResponseEntity<ApiResponse<Void>> updateUserProfile(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody UpdateUserProfileRequest request
+    ) {
+        userService.updateUserProfile(userId, request);
+        return ApiResponse.success(SuccessStatus.PROFILE_UPDATE_SUCCESS);
     }
 }

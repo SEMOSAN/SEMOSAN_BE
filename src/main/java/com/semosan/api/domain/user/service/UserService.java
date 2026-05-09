@@ -2,6 +2,8 @@ package com.semosan.api.domain.user.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.user.dto.command.UpdateUserProfileCommand;
+import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.DeviceType;
 import com.semosan.api.domain.user.enums.OAuthProvider;
@@ -47,7 +49,6 @@ public class UserService {
     }
 
     // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.
-    @Transactional(readOnly = true)
     public User findActiveUserById(Long userId) {
         return userRepository.findByIdAndDeletedFalse(userId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
@@ -58,6 +59,38 @@ public class UserService {
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.TEST)
                 .orElseGet(() -> userRepository.save(User.createTestUser(testUserId, deviceType)));
+    }
+
+    // 로그인한 사용자의 프로필 정보를 수정합니다.
+    @Transactional
+    public void updateUserProfile(Long userId, UpdateUserProfileRequest request) {
+        validateProfileUpdateRequest(request);
+        User user = findActiveUserById(userId);
+        user.updateProfile(toUpdateUserProfileCommand(request));
+    }
+
+    // 프로필 수정 요청에 최소 하나 이상의 수정 값이 있는지 검증합니다.
+    private void validateProfileUpdateRequest(UpdateUserProfileRequest request) {
+        if (request.profileUrl() == null
+                && request.nickname() == null
+                && request.gender() == null
+                && request.birthDate() == null
+                && request.height() == null
+                && request.weight() == null) {
+            throw new GeneralException(ErrorStatus.PROFILE_UPDATE_FIELD_REQUIRED);
+        }
+    }
+
+    // 프로필 수정 요청 값을 User 엔티티 갱신용 command로 변환합니다.
+    private UpdateUserProfileCommand toUpdateUserProfileCommand(UpdateUserProfileRequest request) {
+        return new UpdateUserProfileCommand(
+                request.profileUrl(),
+                request.nickname(),
+                request.gender(),
+                request.birthDate(),
+                request.height(),
+                request.weight()
+        );
     }
 
 }

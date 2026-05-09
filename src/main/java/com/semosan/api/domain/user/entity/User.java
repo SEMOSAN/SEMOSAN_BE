@@ -2,6 +2,7 @@ package com.semosan.api.domain.user.entity;
 
 import com.semosan.api.common.base.BaseEntity;
 import com.semosan.api.domain.user.dto.command.CompleteOnboardingCommand;
+import com.semosan.api.domain.user.dto.command.UpdateUserProfileCommand;
 import com.semosan.api.domain.user.enums.DeviceType;
 import com.semosan.api.domain.user.enums.Gender;
 import com.semosan.api.domain.user.enums.OAuthProvider;
@@ -155,6 +156,19 @@ public class User extends BaseEntity {
         this.height = command.height();
         this.weight = command.weight();
         this.onboardingStatus = OnboardingStatus.COMPLETE;
+    }
+
+    // 프로필 수정 요청값 중 입력된 값만 반영합니다.
+    public void updateProfile(UpdateUserProfileCommand command) {
+        if (command.profileUrl() != null) this.profileUrl = command.profileUrl();
+        if (command.nickname() != null) this.nickname = command.nickname();
+        if (command.gender() != null) this.gender = command.gender();
+        if (command.birthDate() != null) {
+            this.birthDate = command.birthDate();
+            this.age = calculateAge(command.birthDate());
+        }
+        if (command.height() != null) this.height = command.height();
+        if (command.weight() != null) this.weight = command.weight();
     }
 
     // 생년월일을 기준으로 만 나이를 계산합니다.
