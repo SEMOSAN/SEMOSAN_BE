@@ -37,6 +37,15 @@ public class MountainLikeService {
         }
     }
 
+    // 로그인한 사용자가 산 좋아요를 취소합니다.
+    @Transactional
+    public void unlikeMountain(Long userId, Long mountainId) {
+        findActiveUserById(userId);
+        MountainLike mountainLike = mountainLikeRepository.findByUser_IdAndMountain_Id(userId, mountainId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MOUNTAIN_LIKE_NOT_FOUND));
+        mountainLikeRepository.delete(mountainLike);
+    }
+
     // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.
     private User findActiveUserById(Long userId) {
         return userRepository.findByIdAndDeletedFalse(userId)

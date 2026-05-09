@@ -60,4 +60,14 @@ public class MountainController implements MountainControllerDocs {
         mountainLikeService.likeMountain(userId, mountainId);
         return ApiResponse.success(SuccessStatus.MOUNTAIN_LIKE_SUCCESS);
     }
+
+    @DeleteMapping("/{mountainId}/like")
+    @Override
+    public ResponseEntity<ApiResponse<Void>> unlikeMountain(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long mountainId
+    ) {
+        mountainLikeService.unlikeMountain(userId, mountainId);
+        return ApiResponse.success(SuccessStatus.MOUNTAIN_UNLIKE_SUCCESS);
+    }
 }

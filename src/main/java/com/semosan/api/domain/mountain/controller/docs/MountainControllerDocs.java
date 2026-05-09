@@ -90,4 +90,25 @@ public interface MountainControllerDocs {
             @Parameter(description = "산 ID", required = true)
             @PathVariable Long mountainId
     );
+
+    @Operation(
+            summary = "산 좋아요 취소",
+            description = "로그인한 사용자가 산 좋아요를 취소합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "산 좋아요 취소 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "좋아요한 산이 아니거나 산을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<Void>> unlikeMountain(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "산 ID", required = true)
+            @PathVariable Long mountainId
+    );
 }
