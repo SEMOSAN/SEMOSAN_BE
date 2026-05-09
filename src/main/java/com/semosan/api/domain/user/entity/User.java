@@ -1,6 +1,7 @@
 package com.semosan.api.domain.user.entity;
 
 import com.semosan.api.common.base.BaseEntity;
+import com.semosan.api.domain.user.dto.command.CompleteOnboardingCommand;
 import com.semosan.api.domain.user.enums.DeviceType;
 import com.semosan.api.domain.user.enums.Gender;
 import com.semosan.api.domain.user.enums.OAuthProvider;
@@ -9,6 +10,9 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+
+import java.time.LocalDate;
+import java.time.Period;
 
 @Table(name = "users")
 @Getter
@@ -27,6 +31,9 @@ public class User extends BaseEntity {
 
     @Column(name = "name", length = 30)
     private String name;
+
+    @Column(name = "nickname", length = 30)
+    private String nickname;
 
     @Column(name = "profile_url", length = 255)
     private String profileUrl;
@@ -59,6 +66,12 @@ public class User extends BaseEntity {
 
     @Column(name = "age")
     private Integer age;
+
+    @Column(name = "birth_date")
+    private LocalDate birthDate;
+
+    @Column(name = "height")
+    private Double height;
 
     @Column(name = "weight")
     private Double weight;
@@ -131,6 +144,22 @@ public class User extends BaseEntity {
     public void withdraw() {
         this.deleted = true;
         this.refreshToken = null;
+    }
+
+    // 온보딩 완료 처리
+    public void completeOnboarding(CompleteOnboardingCommand command) {
+        this.nickname = command.nickname();
+        this.birthDate = command.birthDate();
+        this.gender = command.gender();
+        this.age = calculateAge(command.birthDate());
+        this.height = command.height();
+        this.weight = command.weight();
+        this.onboardingStatus = OnboardingStatus.COMPLETE;
+    }
+
+    // 생년월일을 기준으로 만 나이를 계산합니다.
+    private Integer calculateAge(LocalDate birthDate) {
+        return Period.between(birthDate, LocalDate.now()).getYears();
     }
 
     // 리프레시 토큰 업데이트

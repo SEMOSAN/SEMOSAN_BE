@@ -51,7 +51,7 @@ public class AuthService {
         Claims claims = jwtService.validateRefreshTokenSignature(refreshToken);
         Long userId = Long.parseLong(claims.getSubject());
 
-        User user = userService.findById(userId);
+        User user = userService.findActiveUserById(userId);
 
         if (user.getRefreshToken() == null)
             throw new GeneralException(ErrorStatus.REFRESH_TOKEN_NOT_FOUND);
@@ -64,7 +64,7 @@ public class AuthService {
     // 유저 조회 후 soft delete 및 리프레시 토큰 무효화
     @Transactional
     public void withdraw(Long userId) {
-        User user = userService.findById(userId);
+        User user = userService.findActiveUserById(userId);
         user.withdraw();
     }
 

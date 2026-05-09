@@ -49,6 +49,9 @@ public enum ErrorStatus implements BaseStatus {
      * User
      */
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_1", "사용자를 찾을 수 없습니다."),
+    ONBOARDING_ALREADY_COMPLETED(HttpStatus.CONFLICT, "USER_409_1", "이미 온보딩을 완료한 사용자입니다."),
+    PREFERRED_DIFFICULTY_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_1", "숙련자는 선호 난이도를 선택해야 합니다."),
+    PREFERRED_DIFFICULTY_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "USER_400_2", "선호 난이도는 숙련자만 선택할 수 있습니다."),
 
     /**
      * Notification

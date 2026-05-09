@@ -21,6 +21,7 @@ public enum SuccessStatus implements BaseStatus {
      * User
      */
     WITHDRAW_SUCCESS(HttpStatus.OK, "USER_200_1", "회원 탈퇴가 완료되었습니다."),
+    ONBOARDING_REGISTER_SUCCESS(HttpStatus.OK, "USER_200_2", "온보딩 등록에 성공했습니다."),
 
     /**
      * Mountain

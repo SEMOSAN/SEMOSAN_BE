@@ -46,10 +46,10 @@ public class UserService {
                 );
     }
 
-    // userId로 유저 조회, 없으면 예외
+    // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.
     @Transactional(readOnly = true)
-    public User findById(Long userId) {
-        return userRepository.findById(userId)
+    public User findActiveUserById(Long userId) {
+        return userRepository.findByIdAndDeletedFalse(userId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
 
