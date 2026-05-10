@@ -53,6 +53,7 @@ public enum ErrorStatus implements BaseStatus {
     PREFERRED_DIFFICULTY_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_1", "숙련자는 선호 난이도를 선택해야 합니다."),
     PREFERRED_DIFFICULTY_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "USER_400_2", "선호 난이도는 숙련자만 선택할 수 있습니다."),
     PROFILE_UPDATE_FIELD_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_3", "수정할 프로필 정보가 없습니다."),
+    NOTIFICATION_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_2", "알림 설정을 찾을 수 없습니다."),
 
     /**
      * Notification

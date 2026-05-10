@@ -4,8 +4,10 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.user.controller.docs.UserControllerDocs;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
+import com.semosan.api.domain.user.dto.request.UpdatePushNotificationSettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
+import com.semosan.api.domain.user.service.UserNotificationSettingService;
 import com.semosan.api.domain.user.service.UserOnboardingService;
 import com.semosan.api.domain.user.service.UserService;
 import jakarta.validation.Valid;
@@ -26,6 +28,7 @@ public class UserController implements UserControllerDocs {
 
     private final UserOnboardingService userOnboardingService;
     private final UserService userService;
+    private final UserNotificationSettingService userNotificationSettingService;
 
     // 로그인한 사용자의 온보딩 정보를 등록합니다.
     @PostMapping("/onboarding")
@@ -57,5 +60,16 @@ public class UserController implements UserControllerDocs {
     ) {
         GetUserProfileResponse response = userOnboardingService.getUserProfile(userId);
         return ApiResponse.success(SuccessStatus.GET_PROFILE_SUCCESS, response);
+    }
+
+    // 로그인한 사용자의 푸시알림 설정을 변경합니다.
+    @PatchMapping("/notification-settings/push")
+    @Override
+    public ResponseEntity<ApiResponse<Void>> updatePushNotificationSetting(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody UpdatePushNotificationSettingRequest request
+    ) {
+        userNotificationSettingService.updatePushNotificationSetting(userId, request);
+        return ApiResponse.success(SuccessStatus.UPDATE_PUSH_NOTIFICATION_SETTING_SUCCESS);
     }
 }

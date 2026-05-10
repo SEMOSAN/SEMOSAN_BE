@@ -5,8 +5,10 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.user.dto.command.UpdateUserProfileCommand;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.entity.User;
+import com.semosan.api.domain.user.entity.UserNotificationSetting;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
+import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserNotificationSettingRepository userNotificationSettingRepository;
 
     // 카카오 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
     @Transactional
@@ -29,9 +32,9 @@ public class UserService {
                         user.restore(email, name, profileUrl, deviceType);
                     return user;
                 })
-                .orElseGet(() ->
-                        userRepository.save(User.createKakaoUser(kakaoId, email, name, profileUrl, deviceType))
-                );
+                .orElseGet(() -> saveNewUserWithNotificationSetting(
+                        User.createKakaoUser(kakaoId, email, name, profileUrl, deviceType)
+                ));
     }
 
     // 애플 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
@@ -43,9 +46,9 @@ public class UserService {
                         user.restore(email, name, null, deviceType);
                     return user;
                 })
-                .orElseGet(() ->
-                        userRepository.save(User.createAppleUser(appleId, email, name, deviceType))
-                );
+                .orElseGet(() -> saveNewUserWithNotificationSetting(
+                        User.createAppleUser(appleId, email, name, deviceType)
+                ));
     }
 
     // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.
@@ -58,7 +61,14 @@ public class UserService {
     @Transactional
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.TEST)
-                .orElseGet(() -> userRepository.save(User.createTestUser(testUserId, deviceType)));
+                .orElseGet(() -> saveNewUserWithNotificationSetting(User.createTestUser(testUserId, deviceType)));
+    }
+
+    // 신규 유저 저장 후 기본 알림 설정을 생성합니다.
+    private User saveNewUserWithNotificationSetting(User user) {
+        User savedUser = userRepository.save(user);
+        userNotificationSettingRepository.save(UserNotificationSetting.createDefault(savedUser));
+        return savedUser;
     }
 
     // 로그인한 사용자의 프로필 정보를 수정합니다.

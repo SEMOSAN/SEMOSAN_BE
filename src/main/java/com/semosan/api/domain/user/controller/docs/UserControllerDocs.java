@@ -2,6 +2,7 @@ package com.semosan.api.domain.user.controller.docs;
 
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
+import com.semosan.api.domain.user.dto.request.UpdatePushNotificationSettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -84,5 +85,30 @@ public interface UserControllerDocs {
     })
     ResponseEntity<ApiResponse<GetUserProfileResponse>> getUserProfile(
             @AuthenticationPrincipal Long userId
+    );
+
+    @Operation(
+            summary = "푸시알림 설정 변경",
+            description = "로그인한 사용자의 푸시알림 on/off 설정을 변경합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "푸시알림 설정 변경 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "푸시알림 설정 요청 값이 유효하지 않음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<Void>> updatePushNotificationSetting(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody UpdatePushNotificationSettingRequest request
     );
 }
