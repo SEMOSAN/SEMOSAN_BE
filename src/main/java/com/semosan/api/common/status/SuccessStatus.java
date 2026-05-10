@@ -63,7 +63,16 @@ public enum SuccessStatus implements BaseStatus {
      * Post Like (좋아요)
      */
     POST_LIKE_TOGGLE_SUCCESS(HttpStatus.OK, "LIKE_200_1", "좋아요 처리에 성공했습니다."),
-    POST_LIKE_COUNT_SUCCESS(HttpStatus.OK, "LIKE_200_2", "좋아요 수 조회에 성공했습니다.");
+    POST_LIKE_COUNT_SUCCESS(HttpStatus.OK, "LIKE_200_2", "좋아요 수 조회에 성공했습니다."),
+
+    /**
+     * Free Post (자유게시판 게시글)
+     */
+    FREE_POST_CREATE_SUCCESS(HttpStatus.CREATED, "FPOST_201_1", "자유게시판 게시글이 작성되었습니다."),
+    FREE_POST_LIST_SUCCESS(HttpStatus.OK, "FPOST_200_1", "자유게시판 게시글 목록 조회에 성공했습니다."),
+    FREE_POST_MY_LIST_SUCCESS(HttpStatus.OK, "FPOST_200_2", "내 자유게시판 게시글 목록 조회에 성공했습니다."),
+    FREE_POST_DETAIL_SUCCESS(HttpStatus.OK, "FPOST_200_3", "자유게시판 게시글 상세 조회에 성공했습니다."),
+    FREE_POST_DELETE_SUCCESS(HttpStatus.OK, "FPOST_200_4", "자유게시판 게시글이 삭제되었습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
