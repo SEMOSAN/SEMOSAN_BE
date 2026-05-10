@@ -4,6 +4,7 @@ import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.user.dto.request.UpdateLiveActivitySettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdatePushNotificationSettingRequest;
+import com.semosan.api.domain.user.dto.request.UpdateVoiceSettingRequest;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserNotificationSetting;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
@@ -33,6 +34,14 @@ public class UserNotificationSettingService {
         findActiveUserById(userId);
         UserNotificationSetting setting = findSetting(userId);
         setting.updateLiveActivity(request.enabled());
+    }
+
+    // 로그인한 사용자의 음성 설정을 변경합니다.
+    @Transactional
+    public void updateVoiceSetting(Long userId, UpdateVoiceSettingRequest request) {
+        findActiveUserById(userId);
+        UserNotificationSetting setting = findSetting(userId);
+        setting.updateVoice(request.enabled());
     }
 
     // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.

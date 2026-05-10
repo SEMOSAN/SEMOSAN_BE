@@ -7,6 +7,7 @@ import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateLiveActivitySettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdatePushNotificationSettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
+import com.semosan.api.domain.user.dto.request.UpdateVoiceSettingRequest;
 import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import com.semosan.api.domain.user.service.UserNotificationSettingService;
 import com.semosan.api.domain.user.service.UserOnboardingService;
@@ -83,5 +84,16 @@ public class UserController implements UserControllerDocs {
     ) {
         userNotificationSettingService.updateLiveActivitySetting(userId, request);
         return ApiResponse.success(SuccessStatus.UPDATE_LIVE_ACTIVITY_SETTING_SUCCESS);
+    }
+
+    // 로그인한 사용자의 음성 설정을 변경합니다.
+    @PatchMapping("/notification-settings/voice")
+    @Override
+    public ResponseEntity<ApiResponse<Void>> updateVoiceSetting(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody UpdateVoiceSettingRequest request
+    ) {
+        userNotificationSettingService.updateVoiceSetting(userId, request);
+        return ApiResponse.success(SuccessStatus.UPDATE_VOICE_SETTING_SUCCESS);
     }
 }

@@ -60,4 +60,9 @@ public class UserNotificationSetting extends BaseEntity {
     public void updateLiveActivity(boolean enabled) {
         this.liveActivityEnabled = enabled;
     }
+
+    // 음성 설정을 변경합니다.
+    public void updateVoice(boolean enabled) {
+        this.voiceEnabled = enabled;
+    }
 }

@@ -5,6 +5,7 @@ import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateLiveActivitySettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdatePushNotificationSettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
+import com.semosan.api.domain.user.dto.request.UpdateVoiceSettingRequest;
 import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -136,5 +137,30 @@ public interface UserControllerDocs {
     ResponseEntity<ApiResponse<Void>> updateLiveActivitySetting(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody UpdateLiveActivitySettingRequest request
+    );
+
+    @Operation(
+            summary = "음성 설정 변경",
+            description = "로그인한 사용자의 음성 on/off 설정을 변경합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "음성 설정 변경 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "음성 설정 요청 값이 유효하지 않음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자 또는 알림 설정을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<Void>> updateVoiceSetting(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody UpdateVoiceSettingRequest request
     );
 }
