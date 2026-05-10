@@ -7,6 +7,9 @@ resources:
   - postgres/deployment.yaml
   - postgres/service.yaml
   - postgres/pvc.yaml
+  - redis/deployment.yaml
+  - redis/service.yaml
+  - redis/pvc.yaml
 images:
   - name: ghcr.io/semosan/semosan_be
     newTag: d478edb1ff6f35bd62da2ca5902af0b38a4914fe
