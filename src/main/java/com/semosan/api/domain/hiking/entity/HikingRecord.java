@@ -30,7 +30,7 @@ public class HikingRecord extends BaseEntity {
     @Column(name = "duration", nullable = false)
     private Integer duration;
 
-    /** 등산 중 도달한 최고 고도 (m) */
+    /** TODO: 등산 중 도달한 최고 고도 (m)가 맞는지 확인 필요 */
     @Column(name = "max_altitude", nullable = false)
     private Double altitude;
 
