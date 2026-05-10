@@ -1,5 +1,7 @@
 package com.semosan.api.domain.community.post.service;
 
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.comment.repository.CommentRepository;
 import com.semosan.api.domain.community.like.repository.PostLikeRepository;
 import com.semosan.api.domain.community.post.dto.FreePostDetailResponse;
@@ -40,10 +42,10 @@ public class FreePostService {
             Integer mainImageIndex
     ) {
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("자유게시판 본문은 비어있을 수 없습니다.");
+            throw new GeneralException(ErrorStatus.POST_CONTENT_REQUIRED);
         }
         User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
 
         FreePost post = FreePost.create(author, title, content);
         freePostRepository.save(post);
@@ -59,7 +61,7 @@ public class FreePostService {
 
     public Page<FreePostListResponse> getMyList(Long authorId, Pageable pageable) {
         User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
         return enrichWithCounts(freePostRepository.findByAuthorAndDeletedFalse(author, pageable));
     }
 
@@ -79,7 +81,7 @@ public class FreePostService {
     public void delete(Long postId, Long requesterId) {
         FreePost post = findActivePostOrThrow(postId);
         if (!post.getAuthor().getId().equals(requesterId)) {
-            throw new IllegalStateException("본인의 게시글만 삭제할 수 있습니다.");
+            throw new GeneralException(ErrorStatus.POST_FORBIDDEN);
         }
         post.softDelete();
     }
@@ -90,7 +92,7 @@ public class FreePostService {
         }
         int main = (mainImageIndex != null) ? mainImageIndex : 0;
         if (main < 0 || main >= imageUrls.size()) {
-            throw new IllegalArgumentException("대표 이미지 인덱스가 잘못되었습니다.");
+            throw new GeneralException(ErrorStatus.POST_IMAGE_INDEX_INVALID);
         }
         List<PostImage> saved = new java.util.ArrayList<>();
         for (int i = 0; i < imageUrls.size(); i++) {
@@ -122,9 +124,9 @@ public class FreePostService {
 
     private FreePost findActivePostOrThrow(Long postId) {
         FreePost post = freePostRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.POST_NOT_FOUND));
         if (post.isDeleted()) {
-            throw new IllegalArgumentException("삭제된 게시글입니다.");
+            throw new GeneralException(ErrorStatus.POST_DELETED);
         }
         return post;
     }
