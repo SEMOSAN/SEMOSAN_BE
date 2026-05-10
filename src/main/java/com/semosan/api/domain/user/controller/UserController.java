@@ -4,10 +4,8 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.user.controller.docs.UserControllerDocs;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
-import com.semosan.api.domain.user.dto.request.UpdateLiveActivitySettingRequest;
-import com.semosan.api.domain.user.dto.request.UpdatePushNotificationSettingRequest;
+import com.semosan.api.domain.user.dto.request.UpdateNotificationSettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
-import com.semosan.api.domain.user.dto.request.UpdateVoiceSettingRequest;
 import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import com.semosan.api.domain.user.service.UserNotificationSettingService;
 import com.semosan.api.domain.user.service.UserOnboardingService;
@@ -69,7 +67,7 @@ public class UserController implements UserControllerDocs {
     @Override
     public ResponseEntity<ApiResponse<Void>> updatePushNotificationSetting(
             @AuthenticationPrincipal Long userId,
-            @Valid @RequestBody UpdatePushNotificationSettingRequest request
+            @Valid @RequestBody UpdateNotificationSettingRequest request
     ) {
         userNotificationSettingService.updatePushNotificationSetting(userId, request);
         return ApiResponse.success(SuccessStatus.UPDATE_PUSH_NOTIFICATION_SETTING_SUCCESS);
@@ -80,7 +78,7 @@ public class UserController implements UserControllerDocs {
     @Override
     public ResponseEntity<ApiResponse<Void>> updateLiveActivitySetting(
             @AuthenticationPrincipal Long userId,
-            @Valid @RequestBody UpdateLiveActivitySettingRequest request
+            @Valid @RequestBody UpdateNotificationSettingRequest request
     ) {
         userNotificationSettingService.updateLiveActivitySetting(userId, request);
         return ApiResponse.success(SuccessStatus.UPDATE_LIVE_ACTIVITY_SETTING_SUCCESS);
@@ -91,7 +89,7 @@ public class UserController implements UserControllerDocs {
     @Override
     public ResponseEntity<ApiResponse<Void>> updateVoiceSetting(
             @AuthenticationPrincipal Long userId,
-            @Valid @RequestBody UpdateVoiceSettingRequest request
+            @Valid @RequestBody UpdateNotificationSettingRequest request
     ) {
         userNotificationSettingService.updateVoiceSetting(userId, request);
         return ApiResponse.success(SuccessStatus.UPDATE_VOICE_SETTING_SUCCESS);

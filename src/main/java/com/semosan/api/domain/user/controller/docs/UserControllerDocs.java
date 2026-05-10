@@ -2,10 +2,8 @@ package com.semosan.api.domain.user.controller.docs;
 
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
-import com.semosan.api.domain.user.dto.request.UpdateLiveActivitySettingRequest;
-import com.semosan.api.domain.user.dto.request.UpdatePushNotificationSettingRequest;
+import com.semosan.api.domain.user.dto.request.UpdateNotificationSettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
-import com.semosan.api.domain.user.dto.request.UpdateVoiceSettingRequest;
 import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -111,7 +109,7 @@ public interface UserControllerDocs {
     })
     ResponseEntity<ApiResponse<Void>> updatePushNotificationSetting(
             @AuthenticationPrincipal Long userId,
-            @Valid @RequestBody UpdatePushNotificationSettingRequest request
+            @Valid @RequestBody UpdateNotificationSettingRequest request
     );
 
     @Operation(
@@ -136,7 +134,7 @@ public interface UserControllerDocs {
     })
     ResponseEntity<ApiResponse<Void>> updateLiveActivitySetting(
             @AuthenticationPrincipal Long userId,
-            @Valid @RequestBody UpdateLiveActivitySettingRequest request
+            @Valid @RequestBody UpdateNotificationSettingRequest request
     );
 
     @Operation(
@@ -161,6 +159,6 @@ public interface UserControllerDocs {
     })
     ResponseEntity<ApiResponse<Void>> updateVoiceSetting(
             @AuthenticationPrincipal Long userId,
-            @Valid @RequestBody UpdateVoiceSettingRequest request
+            @Valid @RequestBody UpdateNotificationSettingRequest request
     );
 }
