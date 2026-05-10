@@ -4,6 +4,7 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.user.controller.docs.UserControllerDocs;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
+import com.semosan.api.domain.user.dto.request.UpdateLiveActivitySettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdatePushNotificationSettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
@@ -71,5 +72,16 @@ public class UserController implements UserControllerDocs {
     ) {
         userNotificationSettingService.updatePushNotificationSetting(userId, request);
         return ApiResponse.success(SuccessStatus.UPDATE_PUSH_NOTIFICATION_SETTING_SUCCESS);
+    }
+
+    // 로그인한 사용자의 라이브 액티비티 설정을 변경합니다.
+    @PatchMapping("/notification-settings/live-activity")
+    @Override
+    public ResponseEntity<ApiResponse<Void>> updateLiveActivitySetting(
+            @AuthenticationPrincipal Long userId,
+            @Valid @RequestBody UpdateLiveActivitySettingRequest request
+    ) {
+        userNotificationSettingService.updateLiveActivitySetting(userId, request);
+        return ApiResponse.success(SuccessStatus.UPDATE_LIVE_ACTIVITY_SETTING_SUCCESS);
     }
 }

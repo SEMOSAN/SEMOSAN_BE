@@ -2,6 +2,7 @@ package com.semosan.api.domain.user.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.user.dto.request.UpdateLiveActivitySettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdatePushNotificationSettingRequest;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserNotificationSetting;
@@ -24,6 +25,14 @@ public class UserNotificationSettingService {
         findActiveUserById(userId);
         UserNotificationSetting setting = findSetting(userId);
         setting.updatePushNotification(request.enabled());
+    }
+
+    // 로그인한 사용자의 라이브 액티비티 설정을 변경합니다.
+    @Transactional
+    public void updateLiveActivitySetting(Long userId, UpdateLiveActivitySettingRequest request) {
+        findActiveUserById(userId);
+        UserNotificationSetting setting = findSetting(userId);
+        setting.updateLiveActivity(request.enabled());
     }
 
     // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.

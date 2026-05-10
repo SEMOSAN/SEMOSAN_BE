@@ -55,4 +55,9 @@ public class UserNotificationSetting extends BaseEntity {
     public void updatePushNotification(boolean enabled) {
         this.pushNotificationEnabled = enabled;
     }
+
+    // 라이브 액티비티 설정을 변경합니다.
+    public void updateLiveActivity(boolean enabled) {
+        this.liveActivityEnabled = enabled;
+    }
 }
