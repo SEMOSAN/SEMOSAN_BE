@@ -48,8 +48,15 @@ k8s/postgres/secret.yaml
 # OMC
 .omc
 
+# Claude Code
+.claude/
+
 # Firebase
 src/main/resources/firebase/
 
 ## docs
 docs/**
+
+## Local data / scripts (산림청 수집 데이터, 수집 스크립트)
+data/
+scripts/
