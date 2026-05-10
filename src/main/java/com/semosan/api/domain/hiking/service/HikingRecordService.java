@@ -3,7 +3,9 @@ package com.semosan.api.domain.hiking.service;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse;
+import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
+import com.semosan.api.domain.hiking.repository.projection.UserHikingRecordSummaryProjection;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,18 @@ public class HikingRecordService {
         findActiveUserById(userId);
         return hikingRecordRepository.findUserHikingRecordsByUserId(userId, pageable)
                 .map(GetUserHikingRecordResponse::from);
+    }
+
+    // 유저의 등산 기록 요약 정보를 조회합니다.
+    @Transactional(readOnly = true)
+    public GetUserHikingRecordSummaryResponse getUserHikingRecordSummary(Long userId) {
+        findActiveUserById(userId);
+        UserHikingRecordSummaryProjection projection =
+                hikingRecordRepository.findUserHikingRecordSummaryByUserId(userId);
+        if (projection == null) {
+            return GetUserHikingRecordSummaryResponse.empty();
+        }
+        return GetUserHikingRecordSummaryResponse.from(projection);
     }
 
     // 활성 상태의 유저를 조회합니다.

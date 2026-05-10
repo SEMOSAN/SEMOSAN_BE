@@ -3,6 +3,7 @@ package com.semosan.api.domain.hiking.controller.docs;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse;
+import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -29,5 +30,20 @@ public interface HikingRecordControllerDocs {
             @Parameter(hidden = true)
             @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 10) Pageable pageable
+    );
+
+    @Operation(
+            summary = "나의 등산 기록 요약 조회",
+            description = "마이페이지에서 사용하는 누적 등산 횟수, 정복한 산 수, 누적 등산 고도를 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "나의 등산 기록 요약 조회 성공"
+            )
+    })
+    ResponseEntity<ApiResponse<GetUserHikingRecordSummaryResponse>> getUserHikingRecordSummary(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal Long userId
     );
 }

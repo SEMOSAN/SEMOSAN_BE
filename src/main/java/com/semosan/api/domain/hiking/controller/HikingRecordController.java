@@ -5,6 +5,7 @@ import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.hiking.controller.docs.HikingRecordControllerDocs;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse;
+import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
 import com.semosan.api.domain.hiking.service.HikingRecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -31,5 +32,15 @@ public class HikingRecordController implements HikingRecordControllerDocs {
     ) {
         PageResponse<GetUserHikingRecordResponse> response = PageResponse.from(hikingRecordService.getUserHikingRecords(userId, pageable));
         return ApiResponse.success(SuccessStatus.GET_HIKING_RECORD_LIST_SUCCESS, response);
+    }
+
+    // 나의 등산 기록 요약 정보를 조회합니다.
+    @GetMapping("/me/summary")
+    @Override
+    public ResponseEntity<ApiResponse<GetUserHikingRecordSummaryResponse>> getUserHikingRecordSummary(
+            @AuthenticationPrincipal Long userId
+    ) {
+        GetUserHikingRecordSummaryResponse response = hikingRecordService.getUserHikingRecordSummary(userId);
+        return ApiResponse.success(SuccessStatus.GET_HIKING_RECORD_SUMMARY_SUCCESS, response);
     }
 }
