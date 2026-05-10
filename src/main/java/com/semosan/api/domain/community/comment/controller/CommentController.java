@@ -3,6 +3,7 @@ package com.semosan.api.domain.community.comment.controller;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
+import com.semosan.api.domain.community.comment.controller.docs.CommentControllerDocs;
 import com.semosan.api.domain.community.comment.dto.CommentCreateRequest;
 import com.semosan.api.domain.community.comment.dto.CommentReplyRequest;
 import com.semosan.api.domain.community.comment.dto.CommentResponse;
@@ -23,7 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/community")
 @RequiredArgsConstructor
-public class CommentController {
+public class CommentController implements CommentControllerDocs {
 
     private final CommentService commentService;
 

@@ -3,6 +3,7 @@ package com.semosan.api.domain.community.post.controller;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
+import com.semosan.api.domain.community.post.controller.docs.FreePostControllerDocs;
 import com.semosan.api.domain.community.post.dto.FreePostCreateRequest;
 import com.semosan.api.domain.community.post.dto.FreePostDetailResponse;
 import com.semosan.api.domain.community.post.dto.FreePostListResponse;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/community/free-posts")
 @RequiredArgsConstructor
-public class FreePostController {
+public class FreePostController implements FreePostControllerDocs {
 
     private final FreePostService freePostService;
 
