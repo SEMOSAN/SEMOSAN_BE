@@ -3,6 +3,7 @@ package com.semosan.api.domain.hiking.service;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse;
+import com.semosan.api.domain.hiking.dto.response.GetUserHikingMountainRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
 import com.semosan.api.domain.hiking.repository.projection.UserHikingRecordSummaryProjection;
@@ -22,6 +23,14 @@ public class HikingRecordService {
     private final UserRepository userRepository;
 
     // 유저가 다녀온 산 목록을 산 단위로 묶어 조회합니다.
+    @Transactional(readOnly = true)
+    public Page<GetUserHikingMountainRecordResponse> getUserHikingMountainRecords(Long userId, Pageable pageable) {
+        findActiveUserById(userId);
+        return hikingRecordRepository.findUserHikingMountainRecordsByUserId(userId, pageable)
+                .map(GetUserHikingMountainRecordResponse::from);
+    }
+
+    // 유저의 등산 기록 목록을 기록 단위로 조회합니다.
     @Transactional(readOnly = true)
     public Page<GetUserHikingRecordResponse> getUserHikingRecords(Long userId, Pageable pageable) {
         findActiveUserById(userId);

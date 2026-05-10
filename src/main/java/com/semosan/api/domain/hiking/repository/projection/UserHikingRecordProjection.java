@@ -4,13 +4,21 @@ import java.time.LocalDateTime;
 
 public interface UserHikingRecordProjection {
 
+    Long getHikingRecordId();
+
     Long getMountainId();
 
     String getMountainName();
 
+    Long getCourseId();
+
+    String getCourseName();
+
     String getImageUrl();
 
-    Long getHikingCount();
+    Double getDistance();
 
-    LocalDateTime getLastHikedAt();
+    Integer getDuration();
+
+    LocalDateTime getHikedAt();
 }

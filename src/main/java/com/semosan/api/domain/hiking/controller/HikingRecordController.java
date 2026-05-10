@@ -5,6 +5,7 @@ import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.hiking.controller.docs.HikingRecordControllerDocs;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse;
+import com.semosan.api.domain.hiking.dto.response.GetUserHikingMountainRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
 import com.semosan.api.domain.hiking.service.HikingRecordService;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +24,8 @@ public class HikingRecordController implements HikingRecordControllerDocs {
 
     private final HikingRecordService hikingRecordService;
 
-    // 내가 다녀온 산 목록을 조회합니다.
-    @GetMapping("/me/mountains")
+    // 나의 등산 기록 목록을 조회합니다.
+    @GetMapping("/me")
     @Override
     public ResponseEntity<ApiResponse<PageResponse<GetUserHikingRecordResponse>>> getUserHikingRecords(
             @AuthenticationPrincipal Long userId,
@@ -32,6 +33,17 @@ public class HikingRecordController implements HikingRecordControllerDocs {
     ) {
         PageResponse<GetUserHikingRecordResponse> response = PageResponse.from(hikingRecordService.getUserHikingRecords(userId, pageable));
         return ApiResponse.success(SuccessStatus.GET_HIKING_RECORD_LIST_SUCCESS, response);
+    }
+
+    // 내가 다녀온 산 목록을 조회합니다.
+    @GetMapping("/me/mountains")
+    @Override
+    public ResponseEntity<ApiResponse<PageResponse<GetUserHikingMountainRecordResponse>>> getUserHikingMountainRecords(
+            @AuthenticationPrincipal Long userId,
+            @PageableDefault(size = 10) Pageable pageable
+    ) {
+        PageResponse<GetUserHikingMountainRecordResponse> response = PageResponse.from(hikingRecordService.getUserHikingMountainRecords(userId, pageable));
+        return ApiResponse.success(SuccessStatus.GET_HIKING_RECORD_MOUNTAIN_LIST_SUCCESS, response);
     }
 
     // 나의 등산 기록 요약 정보를 조회합니다.
