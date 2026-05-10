@@ -3,6 +3,7 @@ package com.semosan.api.domain.user.service;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.user.dto.request.UpdateNotificationSettingRequest;
+import com.semosan.api.domain.user.dto.response.GetNotificationSettingResponse;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserNotificationSetting;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
@@ -36,6 +37,13 @@ public class UserNotificationSettingService {
     @Transactional
     public void updateVoiceSetting(Long userId, UpdateNotificationSettingRequest request) {
         updateSetting(userId, setting -> setting.updateVoice(request.enabled()));
+    }
+
+    // 로그인한 사용자의 알림 설정을 조회합니다.
+    @Transactional(readOnly = true)
+    public GetNotificationSettingResponse getNotificationSetting(Long userId) {
+        findActiveUserById(userId);
+        return GetNotificationSettingResponse.from(findSetting(userId));
     }
 
     // 사용자 알림 설정을 조회한 뒤 전달받은 변경 동작을 적용합니다.

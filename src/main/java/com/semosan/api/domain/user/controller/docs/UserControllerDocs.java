@@ -4,6 +4,7 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateNotificationSettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
+import com.semosan.api.domain.user.dto.response.GetNotificationSettingResponse;
 import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -84,6 +85,25 @@ public interface UserControllerDocs {
             )
     })
     ResponseEntity<ApiResponse<GetUserProfileResponse>> getUserProfile(
+            @AuthenticationPrincipal Long userId
+    );
+
+    @Operation(
+            summary = "알림 설정 조회",
+            description = "로그인한 사용자의 푸시알림, 라이브 액티비티, 음성 설정을 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "알림 설정 조회 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자 또는 알림 설정을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<GetNotificationSettingResponse>> getNotificationSetting(
             @AuthenticationPrincipal Long userId
     );
 

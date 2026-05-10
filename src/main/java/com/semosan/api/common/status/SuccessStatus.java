@@ -27,6 +27,7 @@ public enum SuccessStatus implements BaseStatus {
     UPDATE_PUSH_NOTIFICATION_SETTING_SUCCESS(HttpStatus.OK, "USER_200_5", "푸시알림 설정 변경에 성공했습니다."),
     UPDATE_LIVE_ACTIVITY_SETTING_SUCCESS(HttpStatus.OK, "USER_200_6", "라이브 액티비티 설정 변경에 성공했습니다."),
     UPDATE_VOICE_SETTING_SUCCESS(HttpStatus.OK, "USER_200_7", "음성 설정 변경에 성공했습니다."),
+    GET_NOTIFICATION_SETTING_SUCCESS(HttpStatus.OK, "USER_200_8", "알림 설정 조회에 성공했습니다."),
 
     /**
      * Mountain

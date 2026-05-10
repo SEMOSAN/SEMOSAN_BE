@@ -6,6 +6,7 @@ import com.semosan.api.domain.user.controller.docs.UserControllerDocs;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateNotificationSettingRequest;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
+import com.semosan.api.domain.user.dto.response.GetNotificationSettingResponse;
 import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import com.semosan.api.domain.user.service.UserNotificationSettingService;
 import com.semosan.api.domain.user.service.UserOnboardingService;
@@ -60,6 +61,16 @@ public class UserController implements UserControllerDocs {
     ) {
         GetUserProfileResponse response = userOnboardingService.getUserProfile(userId);
         return ApiResponse.success(SuccessStatus.GET_PROFILE_SUCCESS, response);
+    }
+
+    // 로그인한 사용자의 알림 설정을 조회합니다.
+    @GetMapping("/notification-settings")
+    @Override
+    public ResponseEntity<ApiResponse<GetNotificationSettingResponse>> getNotificationSetting(
+            @AuthenticationPrincipal Long userId
+    ) {
+        GetNotificationSettingResponse response = userNotificationSettingService.getNotificationSetting(userId);
+        return ApiResponse.success(SuccessStatus.GET_NOTIFICATION_SETTING_SUCCESS, response);
     }
 
     // 로그인한 사용자의 푸시알림 설정을 변경합니다.
