@@ -66,6 +66,25 @@ public interface AuthControllerDocs {
     );
 
     @Operation(
+            summary = "로그아웃",
+            description = "로그인한 사용자의 리프레시 토큰을 무효화합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "로그아웃 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 필요",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<Void>> logout(
+            @AuthenticationPrincipal Long userId
+    );
+
+    @Operation(
             summary = "회원 탈퇴",
             description = "회원을 탈퇴 처리합니다. soft delete 방식으로 처리되며 동일 소셜 계정으로 재가입이 가능합니다."
     )

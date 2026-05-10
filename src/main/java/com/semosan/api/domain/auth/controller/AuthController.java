@@ -46,6 +46,15 @@ public class AuthController implements AuthControllerDocs {
         return ApiResponse.success(SuccessStatus.REISSUE_SUCCESS, response);
     }
 
+    @PostMapping("/logout")
+    @Override
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @AuthenticationPrincipal Long userId
+    ) {
+        authService.logout(userId);
+        return ApiResponse.success(SuccessStatus.LOGOUT_SUCCESS);
+    }
+
     @DeleteMapping("/withdraw")
     @Override
     public ResponseEntity<ApiResponse<Void>> withdraw(
