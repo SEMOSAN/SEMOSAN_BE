@@ -30,6 +30,11 @@ public enum SuccessStatus implements BaseStatus {
     MOUNTAIN_DETAIL_SUCCESS(HttpStatus.OK, "MTN_200_3", "산 상세 정보 조회에 성공했습니다."),
 
     /**
+     * Hiking Record
+     */
+    GET_HIKING_RECORD_LIST_SUCCESS(HttpStatus.OK, "HIKING_200_1", "내가 다녀온 산 목록 조회에 성공했습니다."),
+
+    /**
      * Image
      */
     PRESIGNED_URL_SUCCESS(HttpStatus.OK, "IMG_200_1", "Presigned URL 발급에 성공했습니다."),
