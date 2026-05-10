@@ -1,0 +1,79 @@
+package com.semosan.api.domain.community.comment.controller;
+
+import com.semosan.api.common.response.ApiResponse;
+import com.semosan.api.common.response.PageResponse;
+import com.semosan.api.common.status.SuccessStatus;
+import com.semosan.api.domain.community.comment.dto.CommentCreateRequest;
+import com.semosan.api.domain.community.comment.dto.CommentReplyRequest;
+import com.semosan.api.domain.community.comment.dto.CommentResponse;
+import com.semosan.api.domain.community.comment.entity.Comment;
+import com.semosan.api.domain.community.comment.service.CommentService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/community")
+@RequiredArgsConstructor
+public class CommentController {
+
+    private final CommentService commentService;
+
+    @PostMapping("/posts/{postId}/comments")
+    public ResponseEntity<ApiResponse<CommentResponse>> create(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody CommentCreateRequest request
+    ) {
+        Comment comment = commentService.create(postId, userId, request.content());
+        return ApiResponse.success(SuccessStatus.COMMENT_CREATE_SUCCESS, CommentResponse.from(comment));
+    }
+
+    @PostMapping("/posts/{postId}/comments/replies")
+    public ResponseEntity<ApiResponse<CommentResponse>> reply(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody CommentReplyRequest request
+    ) {
+        Comment reply = commentService.reply(
+                postId, userId, request.parentId(), request.mentionedUserId(), request.content()
+        );
+        return ApiResponse.success(SuccessStatus.COMMENT_REPLY_SUCCESS, CommentResponse.from(reply));
+    }
+
+    @GetMapping("/posts/{postId}/comments")
+    public ResponseEntity<ApiResponse<PageResponse<CommentResponse>>> getComments(
+            @PathVariable Long postId,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable
+    ) {
+        Page<CommentResponse> page = commentService.getCommentsByPost(postId, pageable).map(CommentResponse::from);
+        return ApiResponse.success(SuccessStatus.COMMENT_LIST_SUCCESS, PageResponse.from(page));
+    }
+
+    @GetMapping("/comments/{commentId}/replies")
+    public ResponseEntity<ApiResponse<List<CommentResponse>>> getReplies(
+            @PathVariable Long commentId
+    ) {
+        List<CommentResponse> replies = commentService.getReplies(commentId).stream()
+                .map(CommentResponse::from)
+                .toList();
+        return ApiResponse.success(SuccessStatus.COMMENT_REPLY_LIST_SUCCESS, replies);
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    public ResponseEntity<ApiResponse<Void>> delete(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long commentId
+    ) {
+        commentService.delete(commentId, userId);
+        return ApiResponse.success(SuccessStatus.COMMENT_DELETE_SUCCESS);
+    }
+}
