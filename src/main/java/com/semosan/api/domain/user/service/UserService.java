@@ -8,6 +8,7 @@ import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserNotificationSetting;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
+import com.semosan.api.domain.user.policy.NicknamePolicy;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
+    private final NicknamePolicy nicknamePolicy;
 
     // 카카오 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
     @Transactional
@@ -70,6 +72,12 @@ public class UserService {
         // 온보딩 권한 설정 초기화 전에 항상 기본 알림 설정 row가 존재하도록 생성합니다.
         userNotificationSettingRepository.save(UserNotificationSetting.createDefault(savedUser));
         return savedUser;
+    }
+
+    // 닉네임 사용 가능 여부를 조회합니다.
+    @Transactional(readOnly = true)
+    public void checkNickname(String nickname) {
+        nicknamePolicy.validate(nickname);
     }
 
     // 로그인한 사용자의 프로필 정보를 수정합니다.

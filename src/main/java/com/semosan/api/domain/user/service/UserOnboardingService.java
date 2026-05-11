@@ -10,6 +10,7 @@ import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserNotificationSetting;
 import com.semosan.api.domain.user.entity.UserOnboarding;
 import com.semosan.api.domain.user.enums.onboarding.ExerciseType;
+import com.semosan.api.domain.user.policy.NicknamePolicy;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
 import com.semosan.api.domain.user.repository.UserRepository;
 import com.semosan.api.domain.user.repository.UserOnboardingRepository;
@@ -20,38 +21,22 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
-import java.util.Set;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 public class UserOnboardingService {
 
-    private static final Pattern NICKNAME_PATTERN = Pattern.compile("^[가-힣A-Za-z0-9]{2,10}$");
-    private static final Pattern JAMO_ONLY_PATTERN = Pattern.compile("^[ㄱ-ㅎㅏ-ㅣ]+$");
-    private static final Pattern NUMBER_ONLY_PATTERN = Pattern.compile("^[0-9]+$");
-    private static final Pattern CONTACT_PATTERN = Pattern.compile(".*(\\d{2,4}[- ]?\\d{3,4}[- ]?\\d{4}).*");
-    private static final Pattern URL_PATTERN = Pattern.compile(".*(https?://|www\\.|\\.com|\\.net|\\.kr|\\.org).*", Pattern.CASE_INSENSITIVE);
-    private static final Set<String> RESERVED_NICKNAME_WORDS = Set.of("admin", "official", "운영자", "관리자");
-    private static final Set<String> BLOCKED_WORDS = Set.of(
-            "시발",
-            "씨발",
-            "병신",
-            "개새끼",
-            "fuck",
-            "shit"
-    );
-
     private final UserOnboardingRepository userOnboardingRepository;
     private final UserRepository userRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
+    private final NicknamePolicy nicknamePolicy;
 
     // 사용자 프로필과 온보딩 정보를 최초 1회 등록합니다.
     @Transactional
     public void registerUserOnboarding(Long userId, RegisterOnboardingRequest request) {
         User user = findActiveUserById(userId);
         validateOnboardingNotCompleted(user.getId());
-        validateNickname(request.nickname());
+        nicknamePolicy.validate(request.nickname());
         validateBirthDate(request.birthDate());
         validateExerciseDetail(request);
 
@@ -106,28 +91,6 @@ public class UserOnboardingService {
     private void validateOnboardingNotCompleted(Long userId) {
         if (existsUserOnboarding(userId)) {
             throw new GeneralException(ErrorStatus.ONBOARDING_ALREADY_COMPLETED);
-        }
-    }
-
-    // 닉네임 형식, 금칙어, 중복 여부를 검증합니다.
-    private void validateNickname(String nickname) {
-        String normalizedNickname = nickname.toLowerCase();
-        if (!NICKNAME_PATTERN.matcher(nickname).matches()
-                || JAMO_ONLY_PATTERN.matcher(nickname).matches()
-                || NUMBER_ONLY_PATTERN.matcher(nickname).matches()) {
-            throw new GeneralException(ErrorStatus.INVALID_NICKNAME_FORMAT);
-        }
-        // 관리자 사칭 가능성이 있는 표현은 닉네임 일부에 포함되어도 차단합니다.
-        if (RESERVED_NICKNAME_WORDS.stream().anyMatch(normalizedNickname::contains)) {
-            throw new GeneralException(ErrorStatus.NICKNAME_RESERVED);
-        }
-        if (CONTACT_PATTERN.matcher(nickname).matches()
-                || URL_PATTERN.matcher(nickname).matches()
-                || BLOCKED_WORDS.stream().anyMatch(normalizedNickname::contains)) {
-            throw new GeneralException(ErrorStatus.NICKNAME_BLOCKED_WORD);
-        }
-        if (userRepository.existsByNicknameAndDeletedFalse(nickname)) {
-            throw new GeneralException(ErrorStatus.DUPLICATED_NICKNAME);
         }
     }
 

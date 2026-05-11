@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "User", description = "유저 관련 API")
 public interface UserControllerDocs {
@@ -42,6 +43,20 @@ public interface UserControllerDocs {
     ResponseEntity<ApiResponse<Void>> registerUserOnboarding(
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody RegisterOnboardingRequest request
+    );
+
+    @Operation(
+            summary = "닉네임 사용 가능 여부 조회",
+            description = "온보딩 입력 과정에서 닉네임 형식, 금칙어, 사칭 표현, 중복 여부를 확인합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "닉네임 사용 가능 여부 조회 성공"
+            )
+    })
+    ResponseEntity<ApiResponse<Void>> checkNickname(
+            @RequestParam String nickname
     );
 
     @Operation(

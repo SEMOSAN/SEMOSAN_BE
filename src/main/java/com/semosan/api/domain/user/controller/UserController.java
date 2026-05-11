@@ -18,6 +18,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,6 +41,16 @@ public class UserController implements UserControllerDocs {
     ) {
         userOnboardingService.registerUserOnboarding(userId, request);
         return ApiResponse.success(SuccessStatus.REGISTER_ONBOARDING_SUCCESS);
+    }
+
+    // 닉네임 사용 가능 여부를 조회합니다.
+    @GetMapping("/nickname")
+    @Override
+    public ResponseEntity<ApiResponse<Void>> checkNickname(
+            @RequestParam String nickname
+    ) {
+        userService.checkNickname(nickname);
+        return ApiResponse.success(SuccessStatus.CHECK_NICKNAME_SUCCESS);
     }
 
     // 로그인한 사용자의 프로필 정보를 수정합니다.
