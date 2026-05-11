@@ -35,9 +35,10 @@ public enum ErrorStatus implements BaseStatus {
     JWT_EXTRACT_ID_FAILED(HttpStatus.UNAUTHORIZED, "JWT_401_7", "토큰에서 사용자 정보를 추출할 수 없습니다."),
     JWT_GENERAL_ERROR(HttpStatus.UNAUTHORIZED, "JWT_401_8", "JWT 토큰 처리 중 알 수 없는 오류가 발생했습니다."),
     JWT_INVALID_TYPE(HttpStatus.UNAUTHORIZED, "JWT_401_9", "토큰 타입이 유효하지 않습니다."),
-    REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "JWT_401_10", "DB에 저장된 토큰과 일치하지 않습니다."),
-    REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "JWT_401_11", "리프레시 토큰 정보가 사용자 정보와 일치하지 않습니다."),
-    JWT_EXTRACT_ROLE_FAILED(HttpStatus.UNAUTHORIZED, "JWT_401_12", "토큰에서 사용자 Role을 추출할 수 없습니다."),
+    JWT_BLACKLISTED(HttpStatus.UNAUTHORIZED, "JWT_401_10", "로그아웃된 토큰입니다."),
+    REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "JWT_401_11", "리프레시 토큰이 존재하지 않습니다."),
+    REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "JWT_401_12", "리프레시 토큰 정보가 사용자 정보와 일치하지 않습니다."),
+    JWT_EXTRACT_ROLE_FAILED(HttpStatus.UNAUTHORIZED, "JWT_401_13", "토큰에서 사용자 Role을 추출할 수 없습니다."),
 
     /**
      * Kakao OAuth
