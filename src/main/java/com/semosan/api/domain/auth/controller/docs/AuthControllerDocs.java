@@ -67,7 +67,7 @@ public interface AuthControllerDocs {
 
     @Operation(
             summary = "로그아웃",
-            description = "로그인한 사용자의 리프레시 토큰을 무효화합니다."
+            description = "Access Token을 블랙리스트에 등록하고 Refresh Token을 삭제합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -81,7 +81,9 @@ public interface AuthControllerDocs {
             )
     })
     ResponseEntity<ApiResponse<Void>> logout(
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "Bearer {accessToken}", required = true)
+            @RequestHeader("Authorization") String authorizationHeader
     );
 
     @Operation(
@@ -100,7 +102,9 @@ public interface AuthControllerDocs {
             )
     })
     ResponseEntity<ApiResponse<Void>> withdraw(
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "Bearer {accessToken}", required = true)
+            @RequestHeader("Authorization") String authorizationHeader
     );
 
 }
