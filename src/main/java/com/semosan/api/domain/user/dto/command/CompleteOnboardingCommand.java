@@ -6,6 +6,7 @@ import java.time.LocalDate;
 
 public record CompleteOnboardingCommand(
         String nickname,
+        String profileUrl,
         LocalDate birthDate,
         Gender gender,
         Double height,

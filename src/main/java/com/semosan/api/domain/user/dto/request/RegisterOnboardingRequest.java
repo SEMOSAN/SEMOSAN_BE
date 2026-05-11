@@ -4,10 +4,7 @@ import com.semosan.api.domain.user.enums.onboarding.ExerciseDuration;
 import com.semosan.api.domain.user.enums.onboarding.ExerciseFrequency;
 import com.semosan.api.domain.user.enums.onboarding.ExerciseType;
 import com.semosan.api.domain.user.enums.user.Gender;
-import com.semosan.api.domain.user.enums.onboarding.HikingGoalType;
 import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
-import com.semosan.api.domain.user.enums.onboarding.HikingPurpose;
-import com.semosan.api.domain.user.enums.onboarding.PreferredDifficulty;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -19,8 +16,11 @@ import java.time.LocalDate;
 
 public record RegisterOnboardingRequest(
         @NotBlank
-        @Size(max = 30)
+        @Size(min = 2, max = 10)
         String nickname,
+
+        @Size(max = 255)
+        String profileUrl,
 
         @NotNull
         @Past
@@ -40,23 +40,22 @@ public record RegisterOnboardingRequest(
         Double weight,
 
         @NotNull
-        HikingLevel hikingLevel,
+        Boolean pushNotificationEnabled,
 
-        PreferredDifficulty preferredDifficulty,
+        @NotNull
+        Boolean liveActivityEnabled,
+
+        @NotNull
+        Boolean voiceEnabled,
+
+        @NotNull
+        HikingLevel hikingLevel,
 
         @NotNull
         ExerciseType exerciseType,
 
-        @NotNull
         ExerciseFrequency exerciseFrequency,
 
-        @NotNull
-        ExerciseDuration exerciseDuration,
-
-        @NotNull
-        HikingGoalType hikingGoalType,
-
-        @NotNull
-        HikingPurpose hikingPurpose
+        ExerciseDuration exerciseDuration
 ) {
 }

@@ -5,11 +5,7 @@ import com.semosan.api.domain.user.dto.command.CreateUserOnboardingCommand;
 import com.semosan.api.domain.user.enums.onboarding.ExerciseDuration;
 import com.semosan.api.domain.user.enums.onboarding.ExerciseFrequency;
 import com.semosan.api.domain.user.enums.onboarding.ExerciseType;
-import com.semosan.api.domain.user.enums.onboarding.FitnessLevel;
-import com.semosan.api.domain.user.enums.onboarding.HikingGoalType;
 import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
-import com.semosan.api.domain.user.enums.onboarding.HikingPurpose;
-import com.semosan.api.domain.user.enums.onboarding.PreferredDifficulty;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -48,45 +44,25 @@ public class UserOnboarding extends BaseEntity {
     private HikingLevel hikingLevel;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "preferred_difficulty", length = 20)
-    private PreferredDifficulty preferredDifficulty;
-
-    @Enumerated(EnumType.STRING)
     @Column(name = "exercise_type", nullable = false, length = 30)
     private ExerciseType exerciseType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "exercise_frequency", nullable = false, length = 30)
+    @Column(name = "exercise_frequency", length = 30)
     private ExerciseFrequency exerciseFrequency;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "exercise_duration", nullable = false, length = 30)
+    @Column(name = "exercise_duration", length = 30)
     private ExerciseDuration exerciseDuration;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "hiking_goal_type", nullable = false, length = 30)
-    private HikingGoalType hikingGoalType;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "hiking_purpose", nullable = false, length = 30)
-    private HikingPurpose hikingPurpose;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "fitness_level", nullable = false, length = 20)
-    private FitnessLevel fitnessLevel;
 
     // command 값으로 UserOnboarding 엔티티를 생성합니다.
     public static UserOnboarding create(CreateUserOnboardingCommand command) {
         return UserOnboarding.builder()
                 .user(command.user())
                 .hikingLevel(command.hikingLevel())
-                .preferredDifficulty(command.preferredDifficulty())
                 .exerciseType(command.exerciseType())
                 .exerciseFrequency(command.exerciseFrequency())
                 .exerciseDuration(command.exerciseDuration())
-                .hikingGoalType(command.hikingGoalType())
-                .hikingPurpose(command.hikingPurpose())
-                .fitnessLevel(command.fitnessLevel())
                 .build();
     }
 }

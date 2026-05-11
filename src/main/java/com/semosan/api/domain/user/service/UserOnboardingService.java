@@ -7,10 +7,10 @@ import com.semosan.api.domain.user.dto.command.CreateUserOnboardingCommand;
 import com.semosan.api.domain.user.dto.request.RegisterOnboardingRequest;
 import com.semosan.api.domain.user.dto.response.GetUserProfileResponse;
 import com.semosan.api.domain.user.entity.User;
+import com.semosan.api.domain.user.entity.UserNotificationSetting;
 import com.semosan.api.domain.user.entity.UserOnboarding;
-import com.semosan.api.domain.user.enums.onboarding.FitnessLevel;
-import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
-import com.semosan.api.domain.user.policy.FitnessLevelPolicy;
+import com.semosan.api.domain.user.enums.onboarding.ExerciseType;
+import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
 import com.semosan.api.domain.user.repository.UserRepository;
 import com.semosan.api.domain.user.repository.UserOnboardingRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,24 +18,46 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.Set;
+import java.util.regex.Pattern;
+
 @Service
 @RequiredArgsConstructor
 public class UserOnboardingService {
 
+    private static final Pattern NICKNAME_PATTERN = Pattern.compile("^[가-힣A-Za-z0-9]{2,10}$");
+    private static final Pattern JAMO_ONLY_PATTERN = Pattern.compile("^[ㄱ-ㅎㅏ-ㅣ]+$");
+    private static final Pattern NUMBER_ONLY_PATTERN = Pattern.compile("^[0-9]+$");
+    private static final Pattern CONTACT_PATTERN = Pattern.compile(".*(\\d{2,4}[- ]?\\d{3,4}[- ]?\\d{4}).*");
+    private static final Pattern URL_PATTERN = Pattern.compile(".*(https?://|www\\.|\\.com|\\.net|\\.kr|\\.org).*", Pattern.CASE_INSENSITIVE);
+    private static final Set<String> RESERVED_NICKNAME_WORDS = Set.of("admin", "official", "운영자", "관리자");
+    private static final Set<String> BLOCKED_WORDS = Set.of(
+            "시발",
+            "씨발",
+            "병신",
+            "개새끼",
+            "fuck",
+            "shit"
+    );
+
     private final UserOnboardingRepository userOnboardingRepository;
     private final UserRepository userRepository;
-    private final FitnessLevelPolicy fitnessLevelPolicy;
+    private final UserNotificationSettingRepository userNotificationSettingRepository;
 
     // 사용자 프로필과 온보딩 정보를 최초 1회 등록합니다.
     @Transactional
     public void registerUserOnboarding(Long userId, RegisterOnboardingRequest request) {
         User user = findActiveUserById(userId);
         validateOnboardingNotCompleted(user.getId());
-        validatePreferredDifficulty(request);
+        validateNickname(request.nickname());
+        validateBirthDate(request.birthDate());
+        validateExerciseDetail(request);
 
-        FitnessLevel fitnessLevel = fitnessLevelPolicy.determine(request);
         user.completeOnboarding(toCompleteOnboardingCommand(request));
-        createUserOnboarding(user, request, fitnessLevel);
+        initializeNotificationSetting(user.getId(), request);
+        createUserOnboarding(user, request);
     }
 
     // 로그인한 사용자의 프로필 정보를 조회합니다.
@@ -55,9 +77,9 @@ public class UserOnboardingService {
     }
 
     // 사용자 온보딩 상세 정보를 저장합니다.
-    public void createUserOnboarding(User user, RegisterOnboardingRequest request, FitnessLevel fitnessLevel) {
+    private void createUserOnboarding(User user, RegisterOnboardingRequest request) {
         UserOnboarding userOnboarding = UserOnboarding.create(
-                toCreateUserOnboardingCommand(user, request, fitnessLevel)
+                toCreateUserOnboardingCommand(user, request)
         );
         try {
             userOnboardingRepository.save(userOnboarding);
@@ -67,8 +89,17 @@ public class UserOnboardingService {
     }
 
     // 해당 사용자의 온보딩 정보가 이미 존재하는지 확인합니다.
-    public boolean existsUserOnboarding(Long userId) {
+    private boolean existsUserOnboarding(Long userId) {
         return userOnboardingRepository.existsByUser_Id(userId);
+    }
+
+    // 온보딩에서 선택한 권한 설정값으로 사용자 알림 설정을 초기화합니다.
+    private void initializeNotificationSetting(Long userId, RegisterOnboardingRequest request) {
+        UserNotificationSetting setting = userNotificationSettingRepository.findByUser_Id(userId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.NOTIFICATION_SETTING_NOT_FOUND));
+        setting.updatePushNotification(request.pushNotificationEnabled());
+        setting.updateLiveActivity(request.liveActivityEnabled());
+        setting.updateVoice(request.voiceEnabled());
     }
 
     // 이미 온보딩 정보가 존재하면 중복 등록 예외를 발생시킵니다.
@@ -78,13 +109,45 @@ public class UserOnboardingService {
         }
     }
 
-    // 숙련자 여부에 따라 선호 난이도 입력값을 검증합니다. => 암의로 만든 메서드로 와프가 좀 더 세부화되면 그때 수정
-    private void validatePreferredDifficulty(RegisterOnboardingRequest request) {
-        if (request.hikingLevel() == HikingLevel.EXPERT && request.preferredDifficulty() == null) {
-            throw new GeneralException(ErrorStatus.PREFERRED_DIFFICULTY_REQUIRED);
+    // 닉네임 형식, 금칙어, 중복 여부를 검증합니다.
+    private void validateNickname(String nickname) {
+        String normalizedNickname = nickname.toLowerCase();
+        if (!NICKNAME_PATTERN.matcher(nickname).matches()
+                || JAMO_ONLY_PATTERN.matcher(nickname).matches()
+                || NUMBER_ONLY_PATTERN.matcher(nickname).matches()) {
+            throw new GeneralException(ErrorStatus.INVALID_NICKNAME_FORMAT);
         }
-        if (request.hikingLevel() != HikingLevel.EXPERT && request.preferredDifficulty() != null) {
-            throw new GeneralException(ErrorStatus.PREFERRED_DIFFICULTY_NOT_ALLOWED);
+        // 관리자 사칭 가능성이 있는 표현은 닉네임 일부에 포함되어도 차단합니다.
+        if (RESERVED_NICKNAME_WORDS.stream().anyMatch(normalizedNickname::contains)) {
+            throw new GeneralException(ErrorStatus.NICKNAME_RESERVED);
+        }
+        if (CONTACT_PATTERN.matcher(nickname).matches()
+                || URL_PATTERN.matcher(nickname).matches()
+                || BLOCKED_WORDS.stream().anyMatch(normalizedNickname::contains)) {
+            throw new GeneralException(ErrorStatus.NICKNAME_BLOCKED_WORD);
+        }
+        if (userRepository.existsByNicknameAndDeletedFalse(nickname)) {
+            throw new GeneralException(ErrorStatus.DUPLICATED_NICKNAME);
+        }
+    }
+
+    // 선택한 운동 종류에 따라 운동 빈도와 운동 시간 입력 여부를 검증합니다.
+    private void validateExerciseDetail(RegisterOnboardingRequest request) {
+        // 운동 안함 선택 시 운동 빈도와 운동 시간은 둘 다 입력하지 않아야 합니다.
+        boolean hasExerciseDetail = request.exerciseFrequency() != null || request.exerciseDuration() != null;
+        if (request.exerciseType() == ExerciseType.NONE && hasExerciseDetail) {
+            throw new GeneralException(ErrorStatus.EXERCISE_DETAIL_NOT_ALLOWED);
+        }
+        if (request.exerciseType() != ExerciseType.NONE
+                && (request.exerciseFrequency() == null || request.exerciseDuration() == null)) {
+            throw new GeneralException(ErrorStatus.EXERCISE_DETAIL_REQUIRED);
+        }
+    }
+
+    // 생년월일 기준 만 14세 이상인지 검증합니다.
+    private void validateBirthDate(LocalDate birthDate) {
+        if (Period.between(birthDate, LocalDate.now()).getYears() < 14) {
+            throw new GeneralException(ErrorStatus.UNDER_AGE_NOT_ALLOWED);
         }
     }
 
@@ -92,6 +155,7 @@ public class UserOnboardingService {
     private CompleteOnboardingCommand toCompleteOnboardingCommand(RegisterOnboardingRequest request) {
         return new CompleteOnboardingCommand(
                 request.nickname(),
+                request.profileUrl(),
                 request.birthDate(),
                 request.gender(),
                 request.height(),
@@ -102,19 +166,14 @@ public class UserOnboardingService {
     // 온보딩 요청 값을 UserOnboarding 엔티티 생성용 command로 변환합니다.
     private CreateUserOnboardingCommand toCreateUserOnboardingCommand(
             User user,
-            RegisterOnboardingRequest request,
-            FitnessLevel fitnessLevel
+            RegisterOnboardingRequest request
     ) {
         return new CreateUserOnboardingCommand(
                 user,
                 request.hikingLevel(),
-                request.preferredDifficulty(),
                 request.exerciseType(),
                 request.exerciseFrequency(),
-                request.exerciseDuration(),
-                request.hikingGoalType(),
-                request.hikingPurpose(),
-                fitnessLevel
+                request.exerciseDuration()
         );
     }
 }

@@ -150,6 +150,7 @@ public class User extends BaseEntity {
     // 온보딩 완료 처리
     public void completeOnboarding(CompleteOnboardingCommand command) {
         this.nickname = command.nickname();
+        this.profileUrl = command.profileUrl();
         this.birthDate = command.birthDate();
         this.gender = command.gender();
         this.age = calculateAge(command.birthDate());

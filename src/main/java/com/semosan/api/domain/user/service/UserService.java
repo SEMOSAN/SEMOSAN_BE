@@ -67,6 +67,7 @@ public class UserService {
     // 신규 유저 저장 후 기본 알림 설정을 생성합니다.
     private User saveNewUserWithNotificationSetting(User user) {
         User savedUser = userRepository.save(user);
+        // 온보딩 권한 설정 초기화 전에 항상 기본 알림 설정 row가 존재하도록 생성합니다.
         userNotificationSettingRepository.save(UserNotificationSetting.createDefault(savedUser));
         return savedUser;
     }

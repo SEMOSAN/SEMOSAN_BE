@@ -2,11 +2,11 @@ package com.semosan.api.domain.user.enums.onboarding;
 
 public enum ExerciseType {
     GYM,
-    CARDIO,
     HOME_TRAINING,
-    PILATES,
-    YOGA,
-    WALKING_HIKING,
+    PILATES_YOGA,
+    WALKING,
+    RUNNING,
+    HIKING,
     SPORTS,
     CROSSFIT,
     SWIMMING,
