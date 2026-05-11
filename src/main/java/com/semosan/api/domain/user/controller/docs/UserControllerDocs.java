@@ -47,15 +47,21 @@ public interface UserControllerDocs {
 
     @Operation(
             summary = "닉네임 사용 가능 여부 조회",
-            description = "온보딩 입력 과정에서 닉네임 형식, 금칙어, 사칭 표현, 중복 여부를 확인합니다."
+            description = "로그인한 사용자가 온보딩 입력 과정에서 닉네임 형식, 금칙어, 사칭 표현, 중복 여부를 확인합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "닉네임 사용 가능 여부 조회 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증되지 않은 사용자",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
             )
     })
     ResponseEntity<ApiResponse<Void>> checkNickname(
+            @AuthenticationPrincipal Long userId,
             @RequestParam String nickname
     );
 

@@ -86,7 +86,8 @@ public class UserService {
 
     // 닉네임 사용 가능 여부를 조회합니다.
     @Transactional(readOnly = true)
-    public void checkNickname(String nickname) {
+    public void checkNickname(Long userId, String nickname) {
+        findActiveUserById(userId);
         nicknamePolicy.validate(nickname);
     }
 

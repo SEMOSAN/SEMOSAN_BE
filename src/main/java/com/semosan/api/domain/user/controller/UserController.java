@@ -47,9 +47,10 @@ public class UserController implements UserControllerDocs {
     @GetMapping("/nickname")
     @Override
     public ResponseEntity<ApiResponse<Void>> checkNickname(
+            @AuthenticationPrincipal Long userId,
             @RequestParam String nickname
     ) {
-        userService.checkNickname(nickname);
+        userService.checkNickname(userId, nickname);
         return ApiResponse.success(SuccessStatus.CHECK_NICKNAME_SUCCESS);
     }
 
