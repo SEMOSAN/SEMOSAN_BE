@@ -62,6 +62,7 @@ public enum ErrorStatus implements BaseStatus {
     NICKNAME_BLOCKED_WORD(HttpStatus.BAD_REQUEST, "USER_400_8", "금칙어가 포함된 닉네임입니다."),
     EXERCISE_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_9", "운동 빈도와 운동 시간을 입력해야 합니다."),
     EXERCISE_DETAIL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "USER_400_10", "운동 안함 선택 시 운동 빈도와 운동 시간을 입력할 수 없습니다."),
+    ONBOARDING_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_3", "온보딩 정보를 찾을 수 없습니다."),
 
     /**
      * Notification

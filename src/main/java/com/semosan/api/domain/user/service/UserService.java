@@ -6,10 +6,12 @@ import com.semosan.api.domain.user.dto.command.UpdateUserProfileCommand;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserNotificationSetting;
+import com.semosan.api.domain.user.entity.UserOnboarding;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import com.semosan.api.domain.user.policy.NicknamePolicy;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
+import com.semosan.api.domain.user.repository.UserOnboardingRepository;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
+    private final UserOnboardingRepository userOnboardingRepository;
     private final NicknamePolicy nicknamePolicy;
 
     // 카카오 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
@@ -84,8 +87,10 @@ public class UserService {
     @Transactional
     public void updateUserProfile(Long userId, UpdateUserProfileRequest request) {
         validateProfileUpdateRequest(request);
+        validateNicknameIfPresent(request.nickname());
         User user = findActiveUserById(userId);
         user.updateProfile(toUpdateUserProfileCommand(request));
+        updateUserOnboardingProfile(userId, request);
     }
 
     // 프로필 수정 요청에 최소 하나 이상의 수정 값이 있는지 검증합니다.
@@ -95,8 +100,32 @@ public class UserService {
                 && request.gender() == null
                 && request.birthDate() == null
                 && request.height() == null
-                && request.weight() == null) {
+                && request.weight() == null
+                && request.hikingLevel() == null
+                && request.exerciseType() == null) {
             throw new GeneralException(ErrorStatus.PROFILE_UPDATE_FIELD_REQUIRED);
+        }
+    }
+
+    // 닉네임 수정 값이 있으면 형식, 금칙어, 중복 여부를 검증합니다.
+    private void validateNicknameIfPresent(String nickname) {
+        if (nickname != null) {
+            nicknamePolicy.validate(nickname);
+        }
+    }
+
+    // 프로필 수정 요청에 포함된 온보딩 항목을 갱신합니다.
+    private void updateUserOnboardingProfile(Long userId, UpdateUserProfileRequest request) {
+        if (request.hikingLevel() == null && request.exerciseType() == null) {
+            return;
+        }
+        UserOnboarding userOnboarding = userOnboardingRepository.findByUser_Id(userId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.ONBOARDING_NOT_FOUND));
+        if (request.hikingLevel() != null) {
+            userOnboarding.updateHikingLevel(request.hikingLevel());
+        }
+        if (request.exerciseType() != null) {
+            userOnboarding.updateExerciseType(request.exerciseType());
         }
     }
 

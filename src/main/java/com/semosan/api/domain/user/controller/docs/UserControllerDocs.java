@@ -61,7 +61,7 @@ public interface UserControllerDocs {
 
     @Operation(
             summary = "프로필 수정",
-            description = "로그인한 사용자의 프로필 정보를 수정합니다. 요청에 포함된 값만 변경됩니다."
+            description = "로그인한 사용자의 프로필 정보와 프로필 화면의 온보딩 항목을 수정합니다. 요청에 포함된 값만 변경됩니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

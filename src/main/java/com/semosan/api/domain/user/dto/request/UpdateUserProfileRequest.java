@@ -1,5 +1,7 @@
 package com.semosan.api.domain.user.dto.request;
 
+import com.semosan.api.domain.user.enums.onboarding.ExerciseType;
+import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
 import com.semosan.api.domain.user.enums.user.Gender;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -26,6 +28,10 @@ public record UpdateUserProfileRequest(
 
         @DecimalMin("20.0")
         @DecimalMax("300.0")
-        Double weight
+        Double weight,
+
+        HikingLevel hikingLevel,
+
+        ExerciseType exerciseType
 ) {
 }

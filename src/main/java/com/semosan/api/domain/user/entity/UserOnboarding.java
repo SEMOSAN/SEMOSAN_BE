@@ -65,4 +65,18 @@ public class UserOnboarding extends BaseEntity {
                 .exerciseDuration(command.exerciseDuration())
                 .build();
     }
+
+    // 등산 경험 레벨을 변경합니다.
+    public void updateHikingLevel(HikingLevel hikingLevel) {
+        this.hikingLevel = hikingLevel;
+    }
+
+    // 주로 하는 운동 종류를 변경합니다.
+    public void updateExerciseType(ExerciseType exerciseType) {
+        this.exerciseType = exerciseType;
+        if (exerciseType == ExerciseType.NONE) {
+            this.exerciseFrequency = null;
+            this.exerciseDuration = null;
+        }
+    }
 }
