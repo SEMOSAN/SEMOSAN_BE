@@ -62,6 +62,13 @@ public class UserService {
                 .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
 
+    // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.
+    @Transactional(readOnly = true)
+    public User findActiveUserById(Long userId) {
+        return userRepository.findByIdAndDeletedFalse(userId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
+    }
+
     // 테스트 유저 조회 후 없으면 신규 생성
     @Transactional
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {

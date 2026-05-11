@@ -6,6 +6,7 @@ import com.semosan.api.domain.user.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -24,22 +25,24 @@ public class JwtService {
     private final long accessTokenExpiration;
     @Getter
     private final long refreshTokenExpiration;
+    private final TokenRedisService tokenRedisService;
 
     public JwtService(
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.access-token-expiration}") long accessTokenExpiration,
-            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration
+            @Value("${jwt.refresh-token-expiration}") long refreshTokenExpiration,
+            TokenRedisService tokenRedisService
     ) {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenExpiration = accessTokenExpiration;
         this.refreshTokenExpiration = refreshTokenExpiration;
+        this.tokenRedisService = tokenRedisService;
     }
 
-    // 액세스/리프레시 토큰 발급 및 리프레시 토큰 해시 저장
     public TokenIssuance issueTokens(User user) {
         String accessToken = generateAccessToken(user);
         String refreshToken = generateRefreshToken(user);
-        user.updateRefreshToken(hashToken(refreshToken));
+        tokenRedisService.saveRefreshToken(user.getId(), hashToken(refreshToken), refreshTokenExpiration);
         return new TokenIssuance(accessToken, refreshToken);
     }
 
@@ -98,10 +101,28 @@ public class JwtService {
         return parseClaims(refreshToken);
     }
 
-    // Refresh Token DB 저장 해시값과 비교 — 2차 검증용 (서명 검증은 1차에서 완료)
-    public void validateRefreshToken(String refreshToken, String storedHashedToken) {
-        if (!hashToken(refreshToken).equals(storedHashedToken))
+    public void validateRefreshToken(String refreshToken, Long userId) {
+        String storedHash = tokenRedisService.getRefreshToken(userId);
+        if (storedHash == null)
+            throw new GeneralException(ErrorStatus.REFRESH_TOKEN_NOT_FOUND);
+        if (!hashToken(refreshToken).equals(storedHash))
             throw new GeneralException(ErrorStatus.REFRESH_TOKEN_MISMATCH);
+    }
+
+    public void blacklistAccessToken(String accessToken) {
+        Claims claims = parseClaims(accessToken);
+        long remainingMs = claims.getExpiration().getTime() - System.currentTimeMillis();
+        if (remainingMs > 0) {
+            tokenRedisService.addToBlacklist(accessToken, remainingMs);
+        }
+    }
+
+    public boolean isAccessTokenBlacklisted(String accessToken) {
+        return tokenRedisService.isBlacklisted(accessToken);
+    }
+
+    public void deleteRefreshToken(Long userId) {
+        tokenRedisService.deleteRefreshToken(userId);
     }
 
     // AccessToken에서 userId 추출

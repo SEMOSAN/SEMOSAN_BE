@@ -57,9 +57,6 @@ public class User extends BaseEntity {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private OAuthProvider oauthProvider;
 
-    @Column(name = "refresh_token", length = 512)
-    private String refreshToken;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "gender", columnDefinition = "gender_enum")
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
@@ -80,7 +77,6 @@ public class User extends BaseEntity {
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
 
-    // 카카오 신규 유저 생성
     public static User createKakaoUser(
             String oauthId,
             String email,
@@ -100,7 +96,6 @@ public class User extends BaseEntity {
                 .build();
     }
 
-    // 애플 신규 유저 생성
     public static User createAppleUser(
             String oauthId,
             String email,
@@ -118,7 +113,6 @@ public class User extends BaseEntity {
                 .build();
     }
 
-    // 테스트 유저 생성 (로컬 전용)
     public static User createTestUser(String testUserId, DeviceType deviceType) {
         return User.builder()
                 .oauthId(testUserId)
@@ -131,7 +125,6 @@ public class User extends BaseEntity {
                 .build();
     }
 
-    // 탈퇴한 유저 재가입 처리 — null이면 기존 값 유지 (애플 재가입 시 email 유실 방지)
     public void restore(String email, String name, String profileUrl, DeviceType deviceType) {
         if (email != null) this.email = email;
         if (name != null) this.name = name;
@@ -141,9 +134,9 @@ public class User extends BaseEntity {
         this.deleted = false;
     }
 
-    // 회원 탈퇴 처리
     public void withdraw() {
         this.deleted = true;
+<<<<<<< feat/#23-my-page
         this.refreshToken = null;
     }
 
@@ -180,6 +173,8 @@ public class User extends BaseEntity {
     // 리프레시 토큰 업데이트
     public void updateRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
+=======
+>>>>>>> develop
     }
 
 }
