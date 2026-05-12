@@ -8,7 +8,7 @@ import com.semosan.api.domain.mountain.entity.MountainLike;
 import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.user.entity.User;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -22,12 +22,12 @@ public class MountainLikeService {
 
     private final MountainLikeRepository mountainLikeRepository;
     private final MountainRepository mountainRepository;
-    private final UserRepository userRepository;
+    private final UserReader userReader;
 
     // 로그인한 사용자가 산에 좋아요를 등록합니다.
     @Transactional
     public void likeMountain(Long userId, Long mountainId) {
-        User user = findActiveUserById(userId);
+        User user = userReader.findActiveUserById(userId);
         Mountain mountain = findMountainById(mountainId);
         if (mountainLikeRepository.existsByUser_IdAndMountain_Id(userId, mountainId)) {
             throw new GeneralException(ErrorStatus.MOUNTAIN_LIKE_ALREADY_EXISTS);
@@ -44,7 +44,7 @@ public class MountainLikeService {
     @Transactional
     public void unlikeMountain(Long userId, Long mountainId) {
         // 탈퇴 후 남은 access token으로 조회되는 것을 방지합니다.
-        findActiveUserById(userId);
+        userReader.findActiveUserById(userId);
         MountainLike mountainLike = mountainLikeRepository.findByUser_IdAndMountain_Id(userId, mountainId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MOUNTAIN_LIKE_NOT_FOUND));
         mountainLikeRepository.delete(mountainLike);
@@ -54,15 +54,9 @@ public class MountainLikeService {
     @Transactional(readOnly = true)
     public Page<LikedMountainResponse> getLikedMountains(Long userId, Pageable pageable) {
         // 탈퇴 후 남은 access token으로 조회되는 것을 방지합니다.
-        findActiveUserById(userId);
+        userReader.findActiveUserById(userId);
         return mountainLikeRepository.findAllByUserId(userId, pageable)
                 .map(LikedMountainResponse::from);
-    }
-
-    // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.
-    private User findActiveUserById(Long userId) {
-        return userRepository.findByIdAndDeletedFalse(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
 
     // mountainId로 산을 조회하고, 없으면 예외를 발생시킵니다.

@@ -8,6 +8,7 @@ import com.semosan.api.domain.auth.dto.request.LoginRequest;
 import com.semosan.api.domain.auth.dto.response.LoginResponse;
 import com.semosan.api.domain.auth.dto.response.ReissueResponse;
 import com.semosan.api.domain.user.entity.User;
+import com.semosan.api.domain.user.service.UserReader;
 import com.semosan.api.domain.user.service.UserService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.security.MessageDigest;
 public class AuthService {
 
     private final UserService userService;
+    private final UserReader userReader;
     private final JwtService jwtService;
 
     @Value("${test.secret-key}")
@@ -47,7 +49,7 @@ public class AuthService {
         Claims claims = jwtService.validateRefreshTokenSignature(refreshToken);
         Long userId = Long.parseLong(claims.getSubject());
 
-        User user = userService.findActiveUserById(userId);
+        User user = userReader.findActiveUserById(userId);
         jwtService.validateRefreshToken(refreshToken, userId);
 
         TokenIssuance tokens = jwtService.issueTokens(user);
@@ -63,7 +65,7 @@ public class AuthService {
     public void withdraw(Long userId, String accessToken) {
         jwtService.blacklistAccessToken(accessToken);
         jwtService.deleteRefreshToken(userId);
-        User user = userService.findActiveUserById(userId);
+        User user = userReader.findActiveUserById(userId);
         user.withdraw();
     }
 

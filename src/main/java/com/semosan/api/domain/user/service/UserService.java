@@ -57,12 +57,6 @@ public class UserService {
                 ));
     }
 
-    // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.
-    @Transactional(readOnly = true)
-    public User findActiveUserById(Long userId) {
-        return userReader.findActiveUserById(userId);
-    }
-
     // 테스트 유저 조회 후 없으면 신규 생성
     @Transactional
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
@@ -81,7 +75,7 @@ public class UserService {
     // 닉네임 사용 가능 여부를 조회합니다.
     @Transactional(readOnly = true)
     public void checkNickname(Long userId, String nickname) {
-        findActiveUserById(userId);
+        userReader.findActiveUserById(userId);
         nicknamePolicy.validate(nickname);
     }
 
@@ -90,7 +84,7 @@ public class UserService {
     public void updateUserProfile(Long userId, UpdateUserProfileRequest request) {
         validateProfileUpdateRequest(request);
         validateNicknameIfPresent(request.nickname());
-        User user = findActiveUserById(userId);
+        User user = userReader.findActiveUserById(userId);
         user.updateProfile(toUpdateUserProfileCommand(request));
         updateUserOnboardingProfile(userId, request);
     }
