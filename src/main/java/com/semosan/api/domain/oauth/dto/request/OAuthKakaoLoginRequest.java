@@ -1,6 +1,6 @@
 package com.semosan.api.domain.oauth.dto.request;
 
-import com.semosan.api.domain.user.enums.DeviceType;
+import com.semosan.api.domain.user.enums.user.DeviceType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 

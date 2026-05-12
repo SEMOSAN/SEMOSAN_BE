@@ -16,11 +16,20 @@ public enum SuccessStatus implements BaseStatus {
      */
     LOGIN_SUCCESS(HttpStatus.OK, "AUTH_200_1", "로그인에 성공했습니다."),
     REISSUE_SUCCESS(HttpStatus.OK, "AUTH_200_2", "토큰 재발급에 성공했습니다."),
+    LOGOUT_SUCCESS(HttpStatus.OK, "AUTH_200_3", "로그아웃에 성공했습니다."),
 
     /**
      * User
      */
     WITHDRAW_SUCCESS(HttpStatus.OK, "USER_200_1", "회원 탈퇴가 완료되었습니다."),
+    REGISTER_ONBOARDING_SUCCESS(HttpStatus.OK, "USER_200_2", "온보딩 등록에 성공했습니다."),
+    UPDATE_PROFILE_SUCCESS(HttpStatus.OK, "USER_200_3", "프로필 수정에 성공했습니다."),
+    GET_PROFILE_SUCCESS(HttpStatus.OK, "USER_200_4", "프로필 조회에 성공했습니다."),
+    UPDATE_PUSH_NOTIFICATION_SETTING_SUCCESS(HttpStatus.OK, "USER_200_5", "푸시알림 설정 변경에 성공했습니다."),
+    UPDATE_LIVE_ACTIVITY_SETTING_SUCCESS(HttpStatus.OK, "USER_200_6", "라이브 액티비티 설정 변경에 성공했습니다."),
+    UPDATE_VOICE_SETTING_SUCCESS(HttpStatus.OK, "USER_200_7", "음성 설정 변경에 성공했습니다."),
+    GET_NOTIFICATION_SETTING_SUCCESS(HttpStatus.OK, "USER_200_8", "알림 설정 조회에 성공했습니다."),
+    CHECK_NICKNAME_SUCCESS(HttpStatus.OK, "USER_200_9", "닉네임 사용 가능 여부 조회에 성공했습니다."),
 
     /**
      * Mountain
@@ -28,6 +37,9 @@ public enum SuccessStatus implements BaseStatus {
     MOUNTAIN_LIST_SUCCESS(HttpStatus.OK, "MTN_200_1", "산 목록 조회에 성공했습니다."),
     MOUNTAIN_SEARCH_SUCCESS(HttpStatus.OK, "MTN_200_2", "산 검색에 성공했습니다."),
     MOUNTAIN_DETAIL_SUCCESS(HttpStatus.OK, "MTN_200_3", "산 상세 정보 조회에 성공했습니다."),
+    MOUNTAIN_LIKE_SUCCESS(HttpStatus.OK, "MTN_200_4", "산 좋아요 등록에 성공했습니다."),
+    MOUNTAIN_UNLIKE_SUCCESS(HttpStatus.OK, "MTN_200_5", "산 좋아요 취소에 성공했습니다."),
+    LIKED_MOUNTAIN_LIST_SUCCESS(HttpStatus.OK, "MTN_200_6", "좋아요한 산 목록 조회에 성공했습니다."),
 
     /**
      * Hiking Record
