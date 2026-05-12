@@ -50,6 +50,20 @@ public enum ErrorStatus implements BaseStatus {
      * User
      */
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_1", "사용자를 찾을 수 없습니다."),
+    ONBOARDING_ALREADY_COMPLETED(HttpStatus.CONFLICT, "USER_409_1", "이미 온보딩을 완료한 사용자입니다."),
+    PREFERRED_DIFFICULTY_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_1", "숙련자는 선호 난이도를 선택해야 합니다."),
+    PREFERRED_DIFFICULTY_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "USER_400_2", "선호 난이도는 숙련자만 선택할 수 있습니다."),
+    PROFILE_UPDATE_FIELD_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_3", "수정할 프로필 정보가 없습니다."),
+    NOTIFICATION_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_2", "알림 설정을 찾을 수 없습니다."),
+    INVALID_NICKNAME(HttpStatus.BAD_REQUEST, "USER_400_4", "사용할 수 없는 닉네임입니다."),
+    DUPLICATED_NICKNAME(HttpStatus.CONFLICT, "USER_409_2", "이미 사용 중인 닉네임입니다."),
+    UNDER_AGE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "USER_400_5", "만 14세 미만은 가입할 수 없습니다."),
+    INVALID_NICKNAME_FORMAT(HttpStatus.BAD_REQUEST, "USER_400_6", "닉네임 형식이 올바르지 않습니다."),
+    NICKNAME_RESERVED(HttpStatus.BAD_REQUEST, "USER_400_7", "사용할 수 없는 사칭 표현이 포함된 닉네임입니다."),
+    NICKNAME_BLOCKED_WORD(HttpStatus.BAD_REQUEST, "USER_400_8", "금칙어가 포함된 닉네임입니다."),
+    EXERCISE_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_9", "운동 빈도와 운동 시간을 입력해야 합니다."),
+    EXERCISE_DETAIL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "USER_400_10", "운동 안함 선택 시 운동 빈도와 운동 시간을 입력할 수 없습니다."),
+    ONBOARDING_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_3", "온보딩 정보를 찾을 수 없습니다."),
 
     /**
      * Notification
