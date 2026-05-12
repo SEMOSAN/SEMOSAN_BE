@@ -25,6 +25,7 @@ public class UserService {
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final UserOnboardingRepository userOnboardingRepository;
     private final NicknamePolicy nicknamePolicy;
+    private final UserReader userReader;
 
     // 카카오 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
     @Transactional
@@ -57,16 +58,9 @@ public class UserService {
     }
 
     // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.
-    public User findActiveUserById(Long userId) {
-        return userRepository.findByIdAndDeletedFalse(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
-    }
-
-    // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.
     @Transactional(readOnly = true)
     public User findActiveUserById(Long userId) {
-        return userRepository.findByIdAndDeletedFalse(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
+        return userReader.findActiveUserById(userId);
     }
 
     // 테스트 유저 조회 후 없으면 신규 생성

@@ -12,7 +12,6 @@ import com.semosan.api.domain.user.entity.UserOnboarding;
 import com.semosan.api.domain.user.enums.onboarding.ExerciseType;
 import com.semosan.api.domain.user.policy.NicknamePolicy;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
-import com.semosan.api.domain.user.repository.UserRepository;
 import com.semosan.api.domain.user.repository.UserOnboardingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -27,14 +26,14 @@ import java.time.Period;
 public class UserOnboardingService {
 
     private final UserOnboardingRepository userOnboardingRepository;
-    private final UserRepository userRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final NicknamePolicy nicknamePolicy;
+    private final UserReader userReader;
 
     // 사용자 프로필과 온보딩 정보를 최초 1회 등록합니다.
     @Transactional
     public void registerUserOnboarding(Long userId, RegisterOnboardingRequest request) {
-        User user = findActiveUserById(userId);
+        User user = userReader.findActiveUserById(userId);
         validateOnboardingNotCompleted(user.getId());
         nicknamePolicy.validate(request.nickname());
         validateBirthDate(request.birthDate());
@@ -48,17 +47,11 @@ public class UserOnboardingService {
     // 로그인한 사용자의 프로필 정보를 조회합니다.
     @Transactional(readOnly = true)
     public GetUserProfileResponse getUserProfile(Long userId) {
-        User user = findActiveUserById(userId);
+        User user = userReader.findActiveUserById(userId);
         // 현재는 온보딩이 없는 사용자도 조회 성공해야 하므로 쿼리 2번 방식을 유지합니다.
         UserOnboarding userOnboarding = userOnboardingRepository.findByUser_Id(userId)
                 .orElse(null);
         return GetUserProfileResponse.of(user, userOnboarding);
-    }
-
-    // 삭제되지 않은 활성 사용자를 조회합니다.
-    private User findActiveUserById(Long userId) {
-        return userRepository.findByIdAndDeletedFalse(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
 
     // 사용자 온보딩 상세 정보를 저장합니다.

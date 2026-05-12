@@ -48,14 +48,7 @@ public class AuthService {
         Long userId = Long.parseLong(claims.getSubject());
 
         User user = userService.findActiveUserById(userId);
-<<<<<<< feat/#23-my-page
-
-        if (user.getRefreshToken() == null)
-            throw new GeneralException(ErrorStatus.REFRESH_TOKEN_NOT_FOUND);
-        jwtService.validateRefreshToken(refreshToken, user.getRefreshToken());
-=======
         jwtService.validateRefreshToken(refreshToken, userId);
->>>>>>> develop
 
         TokenIssuance tokens = jwtService.issueTokens(user);
         return new ReissueResponse(tokens.accessToken(), tokens.refreshToken());
@@ -67,13 +60,9 @@ public class AuthService {
     }
 
     @Transactional
-<<<<<<< feat/#23-my-page
-    public void withdraw(Long userId) {
-=======
     public void withdraw(Long userId, String accessToken) {
         jwtService.blacklistAccessToken(accessToken);
         jwtService.deleteRefreshToken(userId);
->>>>>>> develop
         User user = userService.findActiveUserById(userId);
         user.withdraw();
     }

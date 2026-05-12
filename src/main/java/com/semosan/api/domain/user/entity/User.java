@@ -136,8 +136,6 @@ public class User extends BaseEntity {
 
     public void withdraw() {
         this.deleted = true;
-<<<<<<< feat/#23-my-page
-        this.refreshToken = null;
     }
 
     // 온보딩 완료 처리
@@ -168,13 +166,6 @@ public class User extends BaseEntity {
     // 생년월일을 기준으로 만 나이를 계산합니다.
     private Integer calculateAge(LocalDate birthDate) {
         return Period.between(birthDate, LocalDate.now()).getYears();
-    }
-
-    // 리프레시 토큰 업데이트
-    public void updateRefreshToken(String refreshToken) {
-        this.refreshToken = refreshToken;
-=======
->>>>>>> develop
     }
 
 }

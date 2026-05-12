@@ -4,10 +4,8 @@ import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.user.dto.request.UpdateNotificationSettingRequest;
 import com.semosan.api.domain.user.dto.response.GetNotificationSettingResponse;
-import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserNotificationSetting;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
-import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +17,7 @@ import java.util.function.Consumer;
 public class UserNotificationSettingService {
 
     private final UserNotificationSettingRepository userNotificationSettingRepository;
-    private final UserRepository userRepository;
+    private final UserReader userReader;
 
     // 로그인한 사용자의 푸시알림 설정을 변경합니다.
     @Transactional
@@ -42,21 +40,15 @@ public class UserNotificationSettingService {
     // 로그인한 사용자의 알림 설정을 조회합니다.
     @Transactional(readOnly = true)
     public GetNotificationSettingResponse getNotificationSetting(Long userId) {
-        findActiveUserById(userId);
+        userReader.findActiveUserById(userId);
         return GetNotificationSettingResponse.from(findSetting(userId));
     }
 
     // 사용자 알림 설정을 조회한 뒤 전달받은 변경 동작을 적용합니다.
     private void updateSetting(Long userId, Consumer<UserNotificationSetting> updater) {
-        findActiveUserById(userId);
+        userReader.findActiveUserById(userId);
         UserNotificationSetting setting = findSetting(userId);
         updater.accept(setting);
-    }
-
-    // userId로 삭제되지 않은 유저를 조회하고, 없으면 예외를 발생시킵니다.
-    private User findActiveUserById(Long userId) {
-        return userRepository.findByIdAndDeletedFalse(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
 
     // 사용자 알림 설정을 조회하고, 없으면 예외를 발생시킵니다.
