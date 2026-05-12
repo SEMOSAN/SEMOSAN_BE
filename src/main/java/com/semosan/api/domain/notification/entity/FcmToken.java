@@ -1,8 +1,7 @@
 package com.semosan.api.domain.notification.entity;
 
 import com.semosan.api.common.base.BaseEntity;
-import com.semosan.api.domain.user.enums.DeviceType;
-import jakarta.persistence.AccessType;
+import com.semosan.api.domain.user.enums.user.DeviceType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

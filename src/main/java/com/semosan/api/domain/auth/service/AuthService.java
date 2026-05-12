@@ -11,7 +11,6 @@ import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -30,7 +28,6 @@ public class AuthService {
     @Value("${test.secret-key}")
     private String testSecretKey;
 
-    // 시크릿 키 검증 후 테스트 유저 조회/생성 및 JWT 발급
     @Transactional
     public LoginResponse login(LoginRequest request) {
         if (!MessageDigest.isEqual(
@@ -45,26 +42,28 @@ public class AuthService {
         return new LoginResponse(user.getId(), tokens.accessToken(), tokens.refreshToken());
     }
 
-    // 리프레시 토큰 검증 후 새 액세스/리프레시 토큰 발급 (Rotation)
     @Transactional
     public ReissueResponse reissue(String refreshToken) {
         Claims claims = jwtService.validateRefreshTokenSignature(refreshToken);
         Long userId = Long.parseLong(claims.getSubject());
 
-        User user = userService.findById(userId);
-
-        if (user.getRefreshToken() == null)
-            throw new GeneralException(ErrorStatus.REFRESH_TOKEN_NOT_FOUND);
-        jwtService.validateRefreshToken(refreshToken, user.getRefreshToken());
+        User user = userService.findActiveUserById(userId);
+        jwtService.validateRefreshToken(refreshToken, userId);
 
         TokenIssuance tokens = jwtService.issueTokens(user);
         return new ReissueResponse(tokens.accessToken(), tokens.refreshToken());
     }
 
-    // 유저 조회 후 soft delete 및 리프레시 토큰 무효화
+    public void logout(Long userId, String accessToken) {
+        jwtService.blacklistAccessToken(accessToken);
+        jwtService.deleteRefreshToken(userId);
+    }
+
     @Transactional
-    public void withdraw(Long userId) {
-        User user = userService.findById(userId);
+    public void withdraw(Long userId, String accessToken) {
+        jwtService.blacklistAccessToken(accessToken);
+        jwtService.deleteRefreshToken(userId);
+        User user = userService.findActiveUserById(userId);
         user.withdraw();
     }
 
