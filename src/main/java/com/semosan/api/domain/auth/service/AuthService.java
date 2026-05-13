@@ -41,7 +41,7 @@ public class AuthService {
         User user = userService.findOrCreateTestUser(request.testUserId(), request.deviceType());
         TokenIssuance tokens = jwtService.issueTokens(user);
 
-        return new LoginResponse(user.getId(), tokens.accessToken(), tokens.refreshToken());
+        return LoginResponse.from(user, tokens);
     }
 
     @Transactional
