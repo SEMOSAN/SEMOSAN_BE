@@ -7,8 +7,6 @@ import lombok.*;
 @Table(name = "post_images")
 @Getter
 @Entity
-@Builder(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PostImage extends BaseEntity {
 
@@ -29,12 +27,14 @@ public class PostImage extends BaseEntity {
     @Column(name = "is_main", nullable = false)
     private boolean main;
 
+    private PostImage(Post post, String imageUrl, Integer sortOrder, boolean main) {
+        this.post = post;
+        this.imageUrl = imageUrl;
+        this.sortOrder = sortOrder;
+        this.main = main;
+    }
+
     public static PostImage create(Post post, String imageUrl, int sortOrder, boolean main) {
-        return PostImage.builder()
-                .post(post)
-                .imageUrl(imageUrl)
-                .sortOrder(sortOrder)
-                .main(main)
-                .build();
+        return new PostImage(post, imageUrl, sortOrder, main);
     }
 }
