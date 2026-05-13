@@ -84,8 +84,7 @@ public class UserService {
     }
 
     private void ensureNotificationSetting(User user) {
-        userNotificationSettingRepository.findByUser_Id(user.getId())
-                .orElseGet(() -> userNotificationSettingRepository.save(UserNotificationSetting.createDefault(user)));
+        userNotificationSettingRepository.save(UserNotificationSetting.createDefault(user));
     }
 
     // 닉네임 사용 가능 여부를 조회합니다.
