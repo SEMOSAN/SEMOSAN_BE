@@ -17,7 +17,7 @@ public record FreePostDetailResponse(
         Long commentCount,
         LocalDateTime createdAt
 ) {
-    public static FreePostDetailResponse from(
+    public static FreePostDetailResponse of(
             FreePost post,
             List<PostImage> images,
             long likeCount,

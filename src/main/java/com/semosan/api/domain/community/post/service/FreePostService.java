@@ -52,7 +52,7 @@ public class FreePostService {
 
         List<PostImage> images = saveImages(post, imageUrls, mainImageIndex);
 
-        return FreePostDetailResponse.from(post, images, 0L, 0L);
+        return FreePostDetailResponse.of(post, images, 0L, 0L);
     }
 
     public Page<FreePostListResponse> getList(Pageable pageable) {
@@ -74,7 +74,7 @@ public class FreePostService {
         long likeCount = postLikeRepository.countByPost(post);
         long commentCount = commentRepository.countByPostAndDeletedFalse(post);
 
-        return FreePostDetailResponse.from(post, images, likeCount, commentCount);
+        return FreePostDetailResponse.of(post, images, likeCount, commentCount);
     }
 
     @Transactional
