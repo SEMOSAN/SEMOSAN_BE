@@ -29,14 +29,14 @@ public class FreePostController implements FreePostControllerDocs {
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody FreePostCreateRequest request
     ) {
-        FreePostDetailResponse response = freePostService.create(
+
+        return ApiResponse.success(SuccessStatus.FREE_POST_CREATE_SUCCESS, freePostService.create(
                 userId,
                 request.title(),
                 request.content(),
                 request.imageUrls(),
                 request.mainImageIndex()
-        );
-        return ApiResponse.success(SuccessStatus.FREE_POST_CREATE_SUCCESS, response);
+        ));
     }
 
     @GetMapping
