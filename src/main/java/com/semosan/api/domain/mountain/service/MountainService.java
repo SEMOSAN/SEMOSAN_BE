@@ -9,6 +9,7 @@ import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.enums.AmenityType;
 import com.semosan.api.domain.mountain.repository.*;
 import com.semosan.api.domain.review.service.ReviewService;
+import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,13 +30,16 @@ public class MountainService {
     private final AmenityRepository amenityRepository;
     private final RestaurantSectionRepository restaurantSectionRepository;
     private final ReviewService reviewService;
+    private final UserReader userReader;
 
-    public Page<MountainListResponse> getMountains(Pageable pageable) {
+    public Page<MountainListResponse> getMountains(Long userId, Pageable pageable) {
+        userReader.findCompletedOnboardingUserById(userId);
         return mountainRepository.findAll(pageable)
                 .map(MountainListResponse::from);
     }
 
-    public Page<MountainListResponse> searchMountains(String keyword, Pageable pageable) {
+    public Page<MountainListResponse> searchMountains(Long userId, String keyword, Pageable pageable) {
+        userReader.findCompletedOnboardingUserById(userId);
         if (keyword == null || keyword.isBlank()) {
             throw new GeneralException(ErrorStatus.BAD_REQUEST);
         }
@@ -43,7 +47,8 @@ public class MountainService {
                 .map(MountainListResponse::from);
     }
 
-    public MountainDetailResponse getMountainDetail(Long mountainId) {
+    public MountainDetailResponse getMountainDetail(Long userId, Long mountainId) {
+        userReader.findCompletedOnboardingUserById(userId);
         Mountain mountain = findMountainById(mountainId);
 
         return new MountainDetailResponse(

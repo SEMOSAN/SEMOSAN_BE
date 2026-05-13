@@ -84,7 +84,7 @@ public class UserService {
     public void updateUserProfile(Long userId, UpdateUserProfileRequest request) {
         validateProfileUpdateRequest(request);
         validateNicknameIfPresent(request.nickname());
-        User user = userReader.findActiveUserById(userId);
+        User user = userReader.findCompletedOnboardingUserById(userId);
         user.updateProfile(toUpdateUserProfileCommand(request));
         updateUserOnboardingProfile(userId, request);
     }

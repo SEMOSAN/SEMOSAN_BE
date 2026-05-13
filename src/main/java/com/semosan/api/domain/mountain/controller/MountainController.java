@@ -27,19 +27,21 @@ public class MountainController implements MountainControllerDocs {
     @GetMapping
     @Override
     public ResponseEntity<ApiResponse<PageResponse<MountainListResponse>>> getMountains(
+            @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 10, sort = "name") Pageable pageable
     ) {
-        PageResponse<MountainListResponse> response = PageResponse.from(mountainService.getMountains(pageable));
+        PageResponse<MountainListResponse> response = PageResponse.from(mountainService.getMountains(userId, pageable));
         return ApiResponse.success(SuccessStatus.MOUNTAIN_LIST_SUCCESS, response);
     }
 
     @GetMapping("/search")
     @Override
     public ResponseEntity<ApiResponse<PageResponse<MountainListResponse>>> searchMountains(
+            @AuthenticationPrincipal Long userId,
             @RequestParam String keyword,
             @PageableDefault(size = 10) Pageable pageable
     ) {
-        PageResponse<MountainListResponse> response = PageResponse.from(mountainService.searchMountains(keyword, pageable));
+        PageResponse<MountainListResponse> response = PageResponse.from(mountainService.searchMountains(userId, keyword, pageable));
         return ApiResponse.success(SuccessStatus.MOUNTAIN_SEARCH_SUCCESS, response);
     }
 
@@ -56,9 +58,10 @@ public class MountainController implements MountainControllerDocs {
     @GetMapping("/{mountainId}")
     @Override
     public ResponseEntity<ApiResponse<MountainDetailResponse>> getMountainDetail(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long mountainId
     ) {
-        MountainDetailResponse response = mountainService.getMountainDetail(mountainId);
+        MountainDetailResponse response = mountainService.getMountainDetail(userId, mountainId);
         return ApiResponse.success(SuccessStatus.MOUNTAIN_DETAIL_SUCCESS, response);
     }
 
