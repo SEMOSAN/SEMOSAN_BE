@@ -63,10 +63,10 @@ public class AuthService {
 
     @Transactional
     public void withdraw(Long userId, String accessToken) {
+        User user = userReader.findActiveUserById(userId);
         jwtService.blacklistAccessToken(accessToken);
         jwtService.deleteRefreshToken(userId);
-        User user = userReader.findActiveUserById(userId);
-        user.withdraw();
+        userService.withdrawUser(user);
     }
 
 }

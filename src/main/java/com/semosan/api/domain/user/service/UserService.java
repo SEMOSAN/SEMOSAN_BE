@@ -34,8 +34,10 @@ public class UserService {
     ) {
         return userRepository.findByOauthIdAndOauthProvider(kakaoId, OAuthProvider.KAKAO)
                 .map(user -> {
-                    if (user.isDeleted())
+                    if (user.isDeleted()) {
                         user.restore(email, name, profileUrl, deviceType);
+                        ensureNotificationSetting(user);
+                    }
                     return user;
                 })
                 .orElseGet(() -> saveNewUserWithNotificationSetting(
@@ -48,8 +50,10 @@ public class UserService {
     public User findOrRegisterAppleUser(String appleId, String email, String name, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(appleId, OAuthProvider.APPLE)
                 .map(user -> {
-                    if (user.isDeleted())
+                    if (user.isDeleted()) {
                         user.restore(email, name, null, deviceType);
+                        ensureNotificationSetting(user);
+                    }
                     return user;
                 })
                 .orElseGet(() -> saveNewUserWithNotificationSetting(
@@ -61,6 +65,13 @@ public class UserService {
     @Transactional
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.TEST)
+                .map(user -> {
+                    if (user.isDeleted()) {
+                        user.restore(null, null, null, deviceType);
+                        ensureNotificationSetting(user);
+                    }
+                    return user;
+                })
                 .orElseGet(() -> saveNewUserWithNotificationSetting(User.createTestUser(testUserId, deviceType)));
     }
 
@@ -70,6 +81,11 @@ public class UserService {
         // 온보딩 권한 설정 초기화 전에 항상 기본 알림 설정 row가 존재하도록 생성합니다.
         userNotificationSettingRepository.save(UserNotificationSetting.createDefault(savedUser));
         return savedUser;
+    }
+
+    private void ensureNotificationSetting(User user) {
+        userNotificationSettingRepository.findByUser_Id(user.getId())
+                .orElseGet(() -> userNotificationSettingRepository.save(UserNotificationSetting.createDefault(user)));
     }
 
     // 닉네임 사용 가능 여부를 조회합니다.
@@ -123,6 +139,18 @@ public class UserService {
         if (request.exerciseType() != null) {
             userOnboarding.updateExerciseType(request.exerciseType());
         }
+    }
+
+    // 로그인한 사용자를 탈퇴 처리하고 하위 데이터를 삭제합니다.
+    @Transactional
+    public void withdrawUser(User user) {
+        deleteUserChildRecords(user.getId());
+        user.withdraw();
+    }
+
+    private void deleteUserChildRecords(Long userId) {
+        userOnboardingRepository.deleteByUser_Id(userId);
+        userNotificationSettingRepository.deleteByUser_Id(userId);
     }
 
     // 프로필 수정 요청 값을 User 엔티티 갱신용 command로 변환합니다.
