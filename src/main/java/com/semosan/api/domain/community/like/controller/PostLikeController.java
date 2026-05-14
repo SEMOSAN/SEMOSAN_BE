@@ -21,11 +21,10 @@ public class PostLikeController {
             @AuthenticationPrincipal Long userId,
             @PathVariable Long postId
     ) {
-        boolean liked = postLikeService.toggle(postId, userId);
-        long count = postLikeService.count(postId);
+
         return ApiResponse.success(
                 SuccessStatus.POST_LIKE_TOGGLE_SUCCESS,
-                new PostLikeToggleResponse(liked, count)
+                postLikeService.toggleWithCount(postId, userId)
         );
     }
 

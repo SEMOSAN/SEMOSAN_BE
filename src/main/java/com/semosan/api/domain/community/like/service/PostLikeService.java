@@ -1,5 +1,6 @@
 package com.semosan.api.domain.community.like.service;
 
+import com.semosan.api.domain.community.like.dto.PostLikeToggleResponse;
 import com.semosan.api.domain.community.like.entity.PostLike;
 import com.semosan.api.domain.community.like.repository.PostLikeRepository;
 import com.semosan.api.domain.community.post.entity.Post;
@@ -24,8 +25,7 @@ public class PostLikeService {
     /**
      * @return true = 좋아요 누름 / false = 좋아요 취소
      */
-    @Transactional
-    public boolean toggle(Long postId, Long userId) {
+    private boolean toggle(Long postId, Long userId) {
         Post post = findPostOrThrow(postId);
         User user = findUserOrThrow(userId);
 
@@ -41,6 +41,13 @@ public class PostLikeService {
     public long count(Long postId) {
         Post post = findPostOrThrow(postId);
         return postLikeRepository.countByPost(post);
+    }
+
+    @Transactional
+    public PostLikeToggleResponse toggleWithCount(Long postId, Long userId) {
+        boolean liked = this.toggle(postId, userId);
+        long count = this.count(postId);
+        return new PostLikeToggleResponse(liked, count);
     }
 
     public boolean hasLiked(Long postId, Long userId) {
