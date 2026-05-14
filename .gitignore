@@ -44,6 +44,7 @@ application-local.yaml
 ### K8s secrets (contains real credentials)
 k8s/app/secret.yaml
 k8s/postgres/secret.yaml
+k8s/minio/secret.yaml
 
 # OMC
 .omc
