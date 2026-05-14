@@ -81,11 +81,7 @@ public class CommentService {
     }
 
     private Comment findActiveCommentOrThrow(Long commentId) {
-        Comment comment = commentRepository.findById(commentId)
+        return commentRepository.findByIdAndDeletedFalse(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
-        if (comment.isDeleted()) {
-            throw new IllegalArgumentException("삭제된 댓글입니다.");
-        }
-        return comment;
     }
 }
