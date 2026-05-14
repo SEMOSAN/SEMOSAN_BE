@@ -70,6 +70,8 @@ public enum ErrorStatus implements BaseStatus {
     /**
      * Image
      */
+    INVALID_IMAGE_BUCKET(HttpStatus.BAD_REQUEST, "IMG_400_1", "허용되지 않은 버킷입니다."),
+    INVALID_IMAGE_EXTENSION(HttpStatus.BAD_REQUEST, "IMG_400_2", "허용되지 않은 이미지 확장자입니다. (jpg, jpeg, png, webp)"),
     IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "IMG_502_1", "이미지 업로드 URL 생성에 실패했습니다."),
 
     /**

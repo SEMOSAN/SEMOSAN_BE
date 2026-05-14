@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class ImageService {
 
-    private static final Set<String> ALLOWED_BUCKETS = Set.of("reviews", "mountains", "restaurants");
+    public static final Set<String> ALLOWED_BUCKETS = Set.of("reviews", "mountains", "restaurants", "posts", "semofeed");
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(".jpg", ".jpeg", ".png", ".webp");
 
     private final MinioClient minioClient;
@@ -57,13 +57,13 @@ public class ImageService {
 
     private void validateBucket(String bucket) {
         if (bucket == null || !ALLOWED_BUCKETS.contains(bucket)) {
-            throw new GeneralException(ErrorStatus.BAD_REQUEST);
+            throw new GeneralException(ErrorStatus.INVALID_IMAGE_BUCKET);
         }
     }
 
     private void validateExtension(String extension) {
         if (extension.isEmpty() || !ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
-            throw new GeneralException(ErrorStatus.BAD_REQUEST);
+            throw new GeneralException(ErrorStatus.INVALID_IMAGE_EXTENSION);
         }
     }
 

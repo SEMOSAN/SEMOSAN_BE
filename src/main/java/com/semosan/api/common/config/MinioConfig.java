@@ -1,5 +1,6 @@
 package com.semosan.api.common.config;
 
+import com.semosan.api.domain.image.service.ImageService;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
@@ -9,13 +10,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
-
 @Slf4j
 @Configuration
 public class MinioConfig {
-
-    private static final List<String> REQUIRED_BUCKETS = List.of("reviews", "mountains", "restaurants");
 
     @Value("${minio.endpoint}")
     private String endpoint;
@@ -37,7 +34,7 @@ public class MinioConfig {
     @PostConstruct
     public void initBuckets() {
         MinioClient client = minioClient();
-        for (String bucket : REQUIRED_BUCKETS) {
+        for (String bucket : ImageService.ALLOWED_BUCKETS) {
             try {
                 if (!client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
                     client.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
