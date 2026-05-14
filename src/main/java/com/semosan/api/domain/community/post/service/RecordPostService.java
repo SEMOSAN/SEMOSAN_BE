@@ -1,5 +1,7 @@
 package com.semosan.api.domain.community.post.service;
 
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.post.entity.RecordPost;
 import com.semosan.api.domain.community.post.repository.RecordPostRepository;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
@@ -26,12 +28,12 @@ public class RecordPostService {
     @Transactional
     public RecordPost create(Long authorId, Long hikingRecordId, String content) {
         User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
         HikingRecord hikingRecord = hikingRecordRepository.findById(hikingRecordId)
-                .orElseThrow(() -> new IllegalArgumentException("등산 기록을 찾을 수 없습니다."));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.HIKING_RECORD_NOT_FOUND));
 
         if (!hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, author)) {
-            throw new IllegalStateException("본인이 참여한 등산 기록만 공유할 수 있습니다.");
+            throw new GeneralException(ErrorStatus.HIKING_RECORD_FORBIDDEN);
         }
 
         RecordPost post = RecordPost.create(author, content, hikingRecord);
@@ -44,7 +46,7 @@ public class RecordPostService {
 
     public Page<RecordPost> getMyList(Long authorId, Pageable pageable) {
         User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
         return recordPostRepository.findByAuthorAndDeletedFalse(author, pageable);
     }
 
@@ -59,16 +61,16 @@ public class RecordPostService {
     public void delete(Long postId, Long requesterId) {
         RecordPost post = findActivePostOrThrow(postId);
         if (!post.getAuthor().getId().equals(requesterId)) {
-            throw new IllegalStateException("본인의 게시글만 삭제할 수 있습니다.");
+            throw new GeneralException(ErrorStatus.POST_FORBIDDEN);
         }
         post.softDelete();
     }
 
     private RecordPost findActivePostOrThrow(Long postId) {
         RecordPost post = recordPostRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.POST_NOT_FOUND));
         if (post.isDeleted()) {
-            throw new IllegalArgumentException("삭제된 게시글입니다.");
+            throw new GeneralException(ErrorStatus.POST_DELETED);
         }
         return post;
     }

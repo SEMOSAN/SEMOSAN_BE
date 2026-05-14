@@ -1,5 +1,7 @@
 package com.semosan.api.domain.community.comment.service;
 
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.comment.entity.Comment;
 import com.semosan.api.domain.community.comment.repository.CommentRepository;
 import com.semosan.api.domain.community.post.entity.Post;
@@ -39,7 +41,7 @@ public class CommentService {
         Comment requestedParent = findActiveCommentOrThrow(parentId);
 
         if (!requestedParent.getPost().getId().equals(postId)) {
-            throw new IllegalArgumentException("부모 댓글이 같은 게시글의 댓글이 아닙니다.");
+            throw new GeneralException(ErrorStatus.COMMENT_PARENT_POST_MISMATCH);
         }
 
         // 대댓글에 답글을 달면 트리 깊이를 2로 유지하기 위해 1뎁스 댓글로 정규화
@@ -65,23 +67,23 @@ public class CommentService {
     public void delete(Long commentId, Long requesterId) {
         Comment comment = findActiveCommentOrThrow(commentId);
         if (!comment.getAuthor().getId().equals(requesterId)) {
-            throw new IllegalStateException("본인의 댓글만 삭제할 수 있습니다.");
+            throw new GeneralException(ErrorStatus.COMMENT_FORBIDDEN);
         }
         comment.softDelete();
     }
 
     private Post findPostOrThrow(Long postId) {
         return postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.POST_NOT_FOUND));
     }
 
     private User findUserOrThrow(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
 
     private Comment findActiveCommentOrThrow(Long commentId) {
         return commentRepository.findByIdAndDeletedFalse(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+                .orElseThrow(() -> new GeneralException(ErrorStatus.COMMENT_NOT_FOUND));
     }
 }
