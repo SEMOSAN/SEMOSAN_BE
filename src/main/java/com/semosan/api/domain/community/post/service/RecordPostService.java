@@ -3,6 +3,7 @@ package com.semosan.api.domain.community.post.service;
 import com.semosan.api.domain.community.post.entity.RecordPost;
 import com.semosan.api.domain.community.post.repository.RecordPostRepository;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
+import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.repository.UserRepository;
@@ -19,6 +20,7 @@ public class RecordPostService {
 
     private final RecordPostRepository recordPostRepository;
     private final HikingRecordRepository hikingRecordRepository;
+    private final HikingMemberRepository hikingMemberRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -27,6 +29,10 @@ public class RecordPostService {
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
         HikingRecord hikingRecord = hikingRecordRepository.findById(hikingRecordId)
                 .orElseThrow(() -> new IllegalArgumentException("등산 기록을 찾을 수 없습니다."));
+
+        if (!hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, author)) {
+            throw new IllegalStateException("본인이 참여한 등산 기록만 공유할 수 있습니다.");
+        }
 
         RecordPost post = RecordPost.create(author, content, hikingRecord);
         return recordPostRepository.save(post);
