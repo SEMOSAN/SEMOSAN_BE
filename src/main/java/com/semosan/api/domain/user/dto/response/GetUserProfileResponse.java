@@ -1,0 +1,39 @@
+package com.semosan.api.domain.user.dto.response;
+
+import com.semosan.api.domain.user.entity.User;
+import com.semosan.api.domain.user.entity.UserOnboarding;
+import com.semosan.api.domain.user.enums.onboarding.ExerciseType;
+import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
+import com.semosan.api.domain.user.enums.user.Gender;
+
+public record GetUserProfileResponse(
+        String profileUrl,
+        String nickname,
+        HikingLevel hikingLevel,
+        Gender gender,
+        Integer age,
+        Double height,
+        Double weight,
+        ExerciseType exerciseType
+) {
+    // User와 온보딩 정보로 프로필 조회 응답 DTO를 생성합니다.
+    public static GetUserProfileResponse of(User user, UserOnboarding userOnboarding) {
+        HikingLevel hikingLevel = null;
+        ExerciseType exerciseType = null;
+        if (userOnboarding != null) {
+            hikingLevel = userOnboarding.getHikingLevel();
+            exerciseType = userOnboarding.getExerciseType();
+        }
+
+        return new GetUserProfileResponse(
+                user.getProfileUrl(),
+                user.getNickname(),
+                hikingLevel,
+                user.getGender(),
+                user.getAge(),
+                user.getHeight(),
+                user.getWeight(),
+                exerciseType
+        );
+    }
+}

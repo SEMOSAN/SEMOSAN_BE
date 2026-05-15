@@ -30,7 +30,7 @@ public class HikingRecord extends BaseEntity {
     @Column(name = "duration", nullable = false)
     private Integer duration;
 
-    /** TODO: 등산 중 도달한 최고 고도 (m)가 맞는지 확인 필요 */
+    /** 등산 중 도달한 최고 고도 (m) */
     @Column(name = "max_altitude", nullable = false)
     private Double altitude;
 
@@ -44,6 +44,7 @@ public class HikingRecord extends BaseEntity {
     @Column(name = "photo_report_image_url", length = 500)
     private String photoReportImageUrl;
 
+    // 등산 기록을 생성합니다.
     public static HikingRecord create(
             Mountain mountain,
             Course course,

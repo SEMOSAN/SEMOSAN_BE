@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.semosan.api.common.config.SecurityConfig;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.response.ApiResponse;
+import com.semosan.api.common.status.ErrorStatus;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,6 +57,9 @@ public class JwtFilter extends OncePerRequestFilter {
             // SecurityConfig의 .anyRequest().authenticated()에서 인가 처리됨
             if (accessToken != null) {
                 jwtService.validateAccessToken(accessToken);
+                if (jwtService.isAccessTokenBlacklisted(accessToken)) {
+                    throw new GeneralException(ErrorStatus.JWT_BLACKLISTED);
+                }
                 Long userId = jwtService.getUserIdFromJwtToken(accessToken);
 
                 UsernamePasswordAuthenticationToken authentication =

@@ -39,6 +39,7 @@ out/
 ### .DS_Store
 .DS_Store
 ### Sensitive configuration
+.env
 application-local.yaml
 
 ### K8s secrets (contains real credentials)
