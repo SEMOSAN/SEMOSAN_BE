@@ -2,6 +2,11 @@ package com.semosan.api.domain.user.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
+import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
+import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
+import com.semosan.api.domain.notification.repository.NotificationRepository;
+import com.semosan.api.domain.review.repository.ReviewRepository;
 import com.semosan.api.domain.user.dto.command.UpdateUserProfileCommand;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.entity.User;
@@ -17,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -24,6 +31,11 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final UserOnboardingRepository userOnboardingRepository;
+    private final MountainLikeRepository mountainLikeRepository;
+    private final ReviewRepository reviewRepository;
+    private final HikingMemberRepository hikingMemberRepository;
+    private final HikingRecordRepository hikingRecordRepository;
+    private final NotificationRepository notificationRepository;
     private final NicknamePolicy nicknamePolicy;
     private final UserReader userReader;
 
@@ -148,6 +160,14 @@ public class UserService {
     }
 
     private void deleteUserChildRecords(Long userId) {
+        mountainLikeRepository.deleteByUser_Id(userId);
+        reviewRepository.deleteByUser_Id(userId);
+        List<Long> recordIdsToDelete = hikingRecordRepository.findRecordIdsOnlyParticipatedByUser(userId);
+        hikingMemberRepository.deleteByUser_Id(userId);
+        if (!recordIdsToDelete.isEmpty()) {
+            hikingRecordRepository.deleteAllByIdInBatch(recordIdsToDelete);
+        }
+        notificationRepository.deleteAllByUserId(userId);
         userOnboardingRepository.deleteByUser_Id(userId);
         userNotificationSettingRepository.deleteByUser_Id(userId);
     }
