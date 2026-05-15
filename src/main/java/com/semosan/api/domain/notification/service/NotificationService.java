@@ -43,7 +43,7 @@ public class NotificationService {
      */
     @Transactional
     public void send(Long receiverId, NotificationType type, Map<String, Object> params) {
-        if (!userRepository.existsById(receiverId)) {
+        if (!userRepository.existsByIdAndDeletedFalse(receiverId)) {
             throw new GeneralException(ErrorStatus.USER_NOT_FOUND);
         }
 
