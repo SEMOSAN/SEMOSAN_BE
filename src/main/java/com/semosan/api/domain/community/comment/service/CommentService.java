@@ -83,11 +83,7 @@ public class CommentService {
     }
 
     private Comment findActiveCommentOrThrow(Long commentId) {
-        Comment comment = commentRepository.findById(commentId)
+        return commentRepository.findByIdAndDeletedFalse(commentId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.COMMENT_NOT_FOUND));
-        if (comment.isDeleted()) {
-            throw new GeneralException(ErrorStatus.COMMENT_DELETED);
-        }
-        return comment;
     }
 }

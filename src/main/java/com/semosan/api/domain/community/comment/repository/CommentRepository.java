@@ -9,8 +9,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
+
+    Optional<Comment> findByIdAndDeletedFalse(Long id);
 
     Page<Comment> findByPostAndParentIsNullAndDeletedFalse(Post post, Pageable pageable);
 

@@ -82,6 +82,7 @@ public enum ErrorStatus implements BaseStatus {
      * Hiking (등산 기록)
      */
     HIKING_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "HIKE_404_1", "등산 기록을 찾을 수 없습니다."),
+    HIKING_RECORD_FORBIDDEN(HttpStatus.FORBIDDEN, "HIKE_403_1", "본인이 참여한 등산 기록만 공유할 수 있습니다."),
 
     /**
      * Post (게시글 공통)

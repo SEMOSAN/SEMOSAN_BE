@@ -5,6 +5,7 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.post.entity.RecordPost;
 import com.semosan.api.domain.community.post.repository.RecordPostRepository;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
+import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.repository.UserRepository;
@@ -21,6 +22,7 @@ public class RecordPostService {
 
     private final RecordPostRepository recordPostRepository;
     private final HikingRecordRepository hikingRecordRepository;
+    private final HikingMemberRepository hikingMemberRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -29,6 +31,10 @@ public class RecordPostService {
                 .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
         HikingRecord hikingRecord = hikingRecordRepository.findById(hikingRecordId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.HIKING_RECORD_NOT_FOUND));
+
+        if (!hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, author)) {
+            throw new GeneralException(ErrorStatus.HIKING_RECORD_FORBIDDEN);
+        }
 
         RecordPost post = RecordPost.create(author, content, hikingRecord);
         return recordPostRepository.save(post);
