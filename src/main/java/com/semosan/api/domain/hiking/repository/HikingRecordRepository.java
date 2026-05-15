@@ -48,7 +48,8 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
                         m.name AS mountainName,
                         c.id AS courseId,
                         c.name AS courseName,
-                        COALESCE(hr.photo_report_image_url, hr.clive_image_url, m.image_url) AS imageUrl,
+                        hr.photo_report_image_url AS photoReportImageUrl,
+                        hr.clive_image_url AS cliveImageUrl,
                         c.distance AS distance,
                         hr.duration AS duration,
                         hr.created_at AS hikedAt
@@ -94,7 +95,8 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
                         m.name AS mountainName,
                         c.id AS courseId,
                         c.name AS courseName,
-                        COALESCE(hr.photo_report_image_url, hr.clive_image_url, m.image_url) AS imageUrl,
+                        hr.photo_report_image_url AS photoReportImageUrl,
+                        hr.clive_image_url AS cliveImageUrl,
                         c.distance AS distance,
                         hr.duration AS duration,
                         hr.created_at AS hikedAt
