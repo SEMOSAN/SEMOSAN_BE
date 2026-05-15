@@ -3,6 +3,7 @@ package com.semosan.api.domain.community.post.controller;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
+import com.semosan.api.domain.community.post.controller.docs.RecordPostControllerDocs;
 import com.semosan.api.domain.community.post.dto.RecordPostCreateRequest;
 import com.semosan.api.domain.community.post.dto.RecordPostResponse;
 import com.semosan.api.domain.community.post.entity.RecordPost;
@@ -20,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/community/record-posts")
 @RequiredArgsConstructor
-public class RecordPostController {
+public class RecordPostController implements RecordPostControllerDocs {
 
     private final RecordPostService recordPostService;
 

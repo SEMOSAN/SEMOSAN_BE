@@ -2,6 +2,7 @@ package com.semosan.api.domain.community.like.controller;
 
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.SuccessStatus;
+import com.semosan.api.domain.community.like.controller.docs.PostLikeControllerDocs;
 import com.semosan.api.domain.community.like.dto.PostLikeToggleResponse;
 import com.semosan.api.domain.community.like.service.PostLikeService;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/community/posts/{postId}/likes")
 @RequiredArgsConstructor
-public class PostLikeController {
+public class PostLikeController implements PostLikeControllerDocs {
 
     private final PostLikeService postLikeService;
 
