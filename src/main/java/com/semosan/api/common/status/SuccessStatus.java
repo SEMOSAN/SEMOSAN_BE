@@ -58,7 +58,40 @@ public enum SuccessStatus implements BaseStatus {
      */
     FCM_TOKEN_REGISTER_SUCCESS(HttpStatus.OK, "FCM_200_1", "FCM 토큰이 등록되었습니다."),
     FCM_TOKEN_DELETE_SUCCESS(HttpStatus.OK, "FCM_200_2", "FCM 토큰이 삭제되었습니다."),
-    NOTIFICATION_SEND_SUCCESS(HttpStatus.OK, "NOTIF_200_1", "알림 발송 요청에 성공했습니다.");
+    NOTIFICATION_SEND_SUCCESS(HttpStatus.OK, "NOTIF_200_1", "알림 발송 요청에 성공했습니다."),
+
+    /**
+     * Record Post (기록공유 게시글)
+     */
+    RECORD_POST_CREATE_SUCCESS(HttpStatus.CREATED, "RPOST_201_1", "기록공유 게시글이 작성되었습니다."),
+    RECORD_POST_LIST_SUCCESS(HttpStatus.OK, "RPOST_200_1", "기록공유 게시글 목록 조회에 성공했습니다."),
+    RECORD_POST_MY_LIST_SUCCESS(HttpStatus.OK, "RPOST_200_2", "내 기록공유 게시글 목록 조회에 성공했습니다."),
+    RECORD_POST_DETAIL_SUCCESS(HttpStatus.OK, "RPOST_200_3", "기록공유 게시글 상세 조회에 성공했습니다."),
+    RECORD_POST_DELETE_SUCCESS(HttpStatus.OK, "RPOST_200_4", "기록공유 게시글이 삭제되었습니다."),
+
+    /**
+     * Comment (댓글/대댓글)
+     */
+    COMMENT_CREATE_SUCCESS(HttpStatus.CREATED, "CMT_201_1", "댓글이 작성되었습니다."),
+    COMMENT_REPLY_SUCCESS(HttpStatus.CREATED, "CMT_201_2", "대댓글이 작성되었습니다."),
+    COMMENT_LIST_SUCCESS(HttpStatus.OK, "CMT_200_1", "댓글 목록 조회에 성공했습니다."),
+    COMMENT_REPLY_LIST_SUCCESS(HttpStatus.OK, "CMT_200_2", "대댓글 목록 조회에 성공했습니다."),
+    COMMENT_DELETE_SUCCESS(HttpStatus.OK, "CMT_200_3", "댓글이 삭제되었습니다."),
+
+    /**
+     * Post Like (좋아요)
+     */
+    POST_LIKE_TOGGLE_SUCCESS(HttpStatus.OK, "LIKE_200_1", "좋아요 처리에 성공했습니다."),
+    POST_LIKE_COUNT_SUCCESS(HttpStatus.OK, "LIKE_200_2", "좋아요 수 조회에 성공했습니다."),
+
+    /**
+     * Free Post (자유게시판 게시글)
+     */
+    FREE_POST_CREATE_SUCCESS(HttpStatus.CREATED, "FPOST_201_1", "자유게시판 게시글이 작성되었습니다."),
+    FREE_POST_LIST_SUCCESS(HttpStatus.OK, "FPOST_200_1", "자유게시판 게시글 목록 조회에 성공했습니다."),
+    FREE_POST_MY_LIST_SUCCESS(HttpStatus.OK, "FPOST_200_2", "내 자유게시판 게시글 목록 조회에 성공했습니다."),
+    FREE_POST_DETAIL_SUCCESS(HttpStatus.OK, "FPOST_200_3", "자유게시판 게시글 상세 조회에 성공했습니다."),
+    FREE_POST_DELETE_SUCCESS(HttpStatus.OK, "FPOST_200_4", "자유게시판 게시글이 삭제되었습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

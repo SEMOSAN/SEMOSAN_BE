@@ -11,4 +11,8 @@ public interface HikingMemberRepository extends JpaRepository<HikingMember, Long
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM HikingMember hm WHERE hm.user.id = :userId")
     void deleteByUser_Id(@Param("userId") Long userId);
+
+    boolean existsByHikingRecordAndUser(HikingRecord hikingRecord, User user);
+    List<HikingMember> findByHikingRecord(HikingRecord hikingRecord);
+    Page<HikingMember> findByUser(User user, Pageable pageable);
 }
