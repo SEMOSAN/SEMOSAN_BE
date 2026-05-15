@@ -6,6 +6,7 @@ import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainRecommendationResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -74,6 +75,23 @@ public interface MountainControllerDocs {
             @RequestParam(required = false) Double neLat,
             @Parameter(description = "BBox 북동쪽 꼭짓점의 경도 (사각형 오른쪽 변, 예: 127.184)")
             @RequestParam(required = false) Double neLng
+    );
+
+    @Operation(
+            summary = "레벨 맞춤 산 추천 (홈 화면)",
+            description = "로그인 사용자의 등산 레벨(HikingLevel) → 산 난이도(Difficulty) 매핑으로 추천 산을 페이지 단위로 반환합니다. "
+                    + "온보딩이 완료되지 않은 사용자는 모든 난이도가 fallback으로 사용됩니다. "
+                    + "현재 정렬은 임의 랜덤이며, 정식 추천 정책 도입 시 교체됩니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "레벨 맞춤 산 추천 조회 성공"
+            )
+    })
+    ResponseEntity<ApiResponse<PageResponse<MountainRecommendationResponse>>> getRecommendedMountains(
+            @AuthenticationPrincipal Long userId,
+            @PageableDefault(size = 10) Pageable pageable
     );
 
     @Operation(

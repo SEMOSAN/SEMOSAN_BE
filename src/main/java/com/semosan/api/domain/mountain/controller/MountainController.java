@@ -8,6 +8,7 @@ import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainRecommendationResponse;
 import com.semosan.api.domain.mountain.service.MountainLikeService;
 import com.semosan.api.domain.mountain.service.MountainService;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +63,18 @@ public class MountainController implements MountainControllerDocs {
     ) {
         MountainMapListResponse response = mountainService.getMountainsForMap(userId, swLat, swLng, neLat, neLng);
         return ApiResponse.success(SuccessStatus.MOUNTAIN_MAP_SUCCESS, response);
+    }
+
+    @GetMapping("/recommendations")
+    @Override
+    public ResponseEntity<ApiResponse<PageResponse<MountainRecommendationResponse>>> getRecommendedMountains(
+            @AuthenticationPrincipal Long userId,
+            @PageableDefault(size = 10) Pageable pageable
+    ) {
+        PageResponse<MountainRecommendationResponse> response = PageResponse.from(
+                mountainService.getRecommendedMountains(userId, pageable)
+        );
+        return ApiResponse.success(SuccessStatus.MOUNTAIN_RECOMMENDATION_SUCCESS, response);
     }
 
     @GetMapping("/likes")

@@ -7,18 +7,25 @@ import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse.*;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainMapResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainRecommendationResponse;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.enums.AmenityType;
+import com.semosan.api.domain.mountain.enums.Difficulty;
 import com.semosan.api.domain.mountain.repository.*;
 import com.semosan.api.domain.review.service.ReviewService;
+import com.semosan.api.domain.user.entity.UserOnboarding;
+import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
+import com.semosan.api.domain.user.repository.UserOnboardingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +44,7 @@ public class MountainService {
     private final AmenityRepository amenityRepository;
     private final RestaurantSectionRepository restaurantSectionRepository;
     private final ReviewService reviewService;
+    private final UserOnboardingRepository userOnboardingRepository;
 
     public Page<MountainListResponse> getMountains(Pageable pageable) {
         return mountainRepository.findAll(pageable)
@@ -62,6 +70,40 @@ public class MountainService {
                 .map(MountainMapResponse::from)
                 .toList();
         return MountainMapListResponse.from(mountains);
+    }
+
+    /**
+     * 로그인 사용자의 등산 레벨에 맞는 산을 추천한다.
+     *  - 온보딩이 완료된 사용자: HikingLevel → Difficulty 집합 매핑(임의로 해둠) TODO: 필터링 로직 확정되어야함
+     *  - 온보딩 미완료(UserOnboarding 없음): 모든 난이도 fallback
+     *  - 정렬은 현재 랜덤. TODO: 정식 정렬 정책 확정 시 교체
+     *  - 다녀온 산 제외 여부: 현재는 포함. 기획에 따라 추후 조정
+     */
+    public Page<MountainRecommendationResponse> getRecommendedMountains(Long userId, Pageable pageable) {
+        Set<Difficulty> difficulties = userOnboardingRepository.findByUser_Id(userId)
+                .map(UserOnboarding::getHikingLevel)
+                .map(MountainService::mapHikingLevelToDifficulties)
+                .orElseGet(() -> EnumSet.allOf(Difficulty.class));
+
+        List<String> difficultyNames = difficulties.stream()
+                .map(Enum::name)
+                .toList();
+
+        return mountainRepository.findRecommendationsByDifficulties(difficultyNames, pageable)
+                .map(MountainRecommendationResponse::from);
+    }
+
+    /**
+     * HikingLevel → Difficulty 매핑 (임의 정의).
+     * TODO: 추천 정책이 확정되면 정식 로직으로 교체 예정이오
+     */
+    private static Set<Difficulty> mapHikingLevelToDifficulties(HikingLevel level) {
+        return switch (level) {
+            case BEGINNER -> EnumSet.of(Difficulty.EASY);
+            case HOBBY -> EnumSet.of(Difficulty.EASY, Difficulty.NORMAL);
+            case EXPERIENCED -> EnumSet.of(Difficulty.NORMAL);
+            case EXPERT -> EnumSet.of(Difficulty.NORMAL, Difficulty.HARD);
+        };
     }
 
     public Page<MountainListResponse> searchMountains(String keyword, Pageable pageable) {

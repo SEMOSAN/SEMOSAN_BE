@@ -8,12 +8,35 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface MountainRepository extends JpaRepository<Mountain, Long> {
 
     @Query("SELECT m FROM Mountain m WHERE m.name LIKE CONCAT('%', :keyword, '%') OR m.address LIKE CONCAT('%', :keyword, '%')")
     Page<Mountain> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    /**
+     * 주어진 난이도 집합에 속하는 산을 랜덤 순서로 페이징 조회한다.
+     * TODO: ORDER BY RANDOM() + OFFSET 조합은 페이지 간 중복/누락 가능성이 있음.
+     *       팀 추천 정책 확정 시 정식 정렬 로직(인기/거리/고도/시드 기반 등)으로 교체.
+     */
+    @Query(
+            value = """
+                    SELECT * FROM mountains
+                    WHERE difficulty IN (:difficulties)
+                    ORDER BY RANDOM()
+                    """,
+            countQuery = """
+                    SELECT COUNT(*) FROM mountains
+                    WHERE difficulty IN (:difficulties)
+                    """,
+            nativeQuery = true
+    )
+    Page<Mountain> findRecommendationsByDifficulties(
+            @Param("difficulties") Collection<String> difficulties,
+            Pageable pageable
+    );
 
     @Query(
             value = """
