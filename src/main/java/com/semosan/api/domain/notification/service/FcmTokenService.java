@@ -51,4 +51,12 @@ public class FcmTokenService {
     public void deleteExpired(String token) {
         fcmTokenRepository.deleteByToken(token);
     }
+
+    /**
+     * 회원 탈퇴 시 해당 유저의 모든 FCM 토큰을 정리합니다.
+     */
+    @Transactional
+    public void deleteAllByUserId(Long userId) {
+        fcmTokenRepository.deleteAllByUserId(userId);
+    }
 }

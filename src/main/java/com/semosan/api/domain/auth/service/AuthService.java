@@ -7,12 +7,14 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.auth.dto.request.LoginRequest;
 import com.semosan.api.domain.auth.dto.response.LoginResponse;
 import com.semosan.api.domain.auth.dto.response.ReissueResponse;
+import com.semosan.api.domain.auth.event.UserWithdrawCleanupRequestedEvent;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import com.semosan.api.domain.user.service.UserService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ public class AuthService {
     private final UserService userService;
     private final UserReader userReader;
     private final JwtService jwtService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${test.secret-key}")
     private String testSecretKey;
@@ -64,9 +67,8 @@ public class AuthService {
     @Transactional
     public void withdraw(Long userId, String accessToken) {
         User user = userReader.findActiveUserById(userId);
-        jwtService.blacklistAccessToken(accessToken);
-        jwtService.deleteRefreshToken(userId);
         userService.withdrawUser(user);
+        eventPublisher.publishEvent(new UserWithdrawCleanupRequestedEvent(userId, accessToken));
     }
 
 }
