@@ -93,7 +93,30 @@ public enum ErrorStatus implements BaseStatus {
      * Withdraw
      */
     KAKAO_UNLINK_FAILED(HttpStatus.BAD_GATEWAY, "KAKAO_502_3", "카카오 연동 해제에 실패했습니다."),
-    APPLE_REVOKE_FAILED(HttpStatus.BAD_GATEWAY, "APPLE_502_1", "애플 토큰 폐기에 실패했습니다.");
+    APPLE_REVOKE_FAILED(HttpStatus.BAD_GATEWAY, "APPLE_502_1", "애플 토큰 폐기에 실패했습니다."),
+
+    /**
+     * Hiking (등산 기록)
+     */
+    HIKING_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "HIKE_404_1", "등산 기록을 찾을 수 없습니다."),
+    HIKING_RECORD_FORBIDDEN(HttpStatus.FORBIDDEN, "HIKE_403_1", "본인이 참여한 등산 기록만 공유할 수 있습니다."),
+
+    /**
+     * Post (게시글 공통)
+     */
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_404_1", "게시글을 찾을 수 없습니다."),
+    POST_DELETED(HttpStatus.NOT_FOUND, "POST_404_2", "삭제된 게시글입니다."),
+    POST_FORBIDDEN(HttpStatus.FORBIDDEN, "POST_403_1", "본인의 게시글만 처리할 수 있습니다."),
+    POST_CONTENT_REQUIRED(HttpStatus.BAD_REQUEST, "POST_400_1", "본문은 비어있을 수 없습니다."),
+    POST_IMAGE_INDEX_INVALID(HttpStatus.BAD_REQUEST, "POST_400_2", "대표 이미지 인덱스가 잘못되었습니다."),
+
+    /**
+     * Comment (댓글/대댓글)
+     */
+    COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "CMT_404_1", "댓글을 찾을 수 없습니다."),
+    COMMENT_DELETED(HttpStatus.NOT_FOUND, "CMT_404_2", "삭제된 댓글입니다."),
+    COMMENT_FORBIDDEN(HttpStatus.FORBIDDEN, "CMT_403_1", "본인의 댓글만 처리할 수 있습니다."),
+    COMMENT_PARENT_POST_MISMATCH(HttpStatus.BAD_REQUEST, "CMT_400_1", "부모 댓글이 같은 게시글의 댓글이 아닙니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
