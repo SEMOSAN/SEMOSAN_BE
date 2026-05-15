@@ -7,6 +7,7 @@ import com.semosan.api.domain.mountain.controller.docs.MountainControllerDocs;
 import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
 import com.semosan.api.domain.mountain.service.MountainLikeService;
 import com.semosan.api.domain.mountain.service.MountainService;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,26 @@ public class MountainController implements MountainControllerDocs {
     ) {
         PageResponse<MountainListResponse> response = PageResponse.from(mountainService.searchMountains(keyword, pageable));
         return ApiResponse.success(SuccessStatus.MOUNTAIN_SEARCH_SUCCESS, response);
+    }
+
+    /**
+     * 지도에 표시할 산 목록을 BBox(Bounding Box, 사각형 영역) 기준으로 조회한다.
+     * BBox는 사각형의 두 꼭짓점 좌표로 정의된다.
+     *  - sw* (South-West): 남서쪽 꼭짓점 (사각형의 좌측 하단)
+     *  - ne* (North-East): 북동쪽 꼭짓점 (사각형의 우측 상단)
+     * 네 값이 모두 null이면 서비스 레이어에서 서울 기본 BBox가 적용된다.
+     */
+    @GetMapping("/map")
+    @Override
+    public ResponseEntity<ApiResponse<MountainMapListResponse>> getMountainsForMap(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam(required = false) Double swLat,
+            @RequestParam(required = false) Double swLng,
+            @RequestParam(required = false) Double neLat,
+            @RequestParam(required = false) Double neLng
+    ) {
+        MountainMapListResponse response = mountainService.getMountainsForMap(userId, swLat, swLng, neLat, neLng);
+        return ApiResponse.success(SuccessStatus.MOUNTAIN_MAP_SUCCESS, response);
     }
 
     @GetMapping("/likes")

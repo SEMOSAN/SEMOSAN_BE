@@ -5,6 +5,8 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse.*;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainMapResponse;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.enums.AmenityType;
 import com.semosan.api.domain.mountain.repository.*;
@@ -23,6 +25,12 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class MountainService {
 
+    // TODO: 실제 서비스 영역 확장 시 BBox 기본값 재조정 / 줌 레벨 기반 LOD 도입 검토
+    private static final double DEFAULT_SEOUL_SW_LAT = 37.413;
+    private static final double DEFAULT_SEOUL_SW_LNG = 126.764;
+    private static final double DEFAULT_SEOUL_NE_LAT = 37.715;
+    private static final double DEFAULT_SEOUL_NE_LNG = 127.184;
+
     private final MountainRepository mountainRepository;
     private final CourseRepository courseRepository;
     private final TransportationRepository transportationRepository;
@@ -33,6 +41,27 @@ public class MountainService {
     public Page<MountainListResponse> getMountains(Pageable pageable) {
         return mountainRepository.findAll(pageable)
                 .map(MountainListResponse::from);
+    }
+
+    public MountainMapListResponse getMountainsForMap(
+            Long userId,
+            Double swLat,
+            Double swLng,
+            Double neLat,
+            Double neLng
+    ) {
+        boolean hasFullBBox = swLat != null && swLng != null && neLat != null && neLng != null;
+        double resolvedSwLat = hasFullBBox ? swLat : DEFAULT_SEOUL_SW_LAT;
+        double resolvedSwLng = hasFullBBox ? swLng : DEFAULT_SEOUL_SW_LNG;
+        double resolvedNeLat = hasFullBBox ? neLat : DEFAULT_SEOUL_NE_LAT;
+        double resolvedNeLng = hasFullBBox ? neLng : DEFAULT_SEOUL_NE_LNG;
+
+        List<MountainMapResponse> mountains = mountainRepository
+                .findInBBoxWithUserHikingStats(userId, resolvedSwLat, resolvedSwLng, resolvedNeLat, resolvedNeLng)
+                .stream()
+                .map(MountainMapResponse::from)
+                .toList();
+        return MountainMapListResponse.from(mountains);
     }
 
     public Page<MountainListResponse> searchMountains(String keyword, Pageable pageable) {

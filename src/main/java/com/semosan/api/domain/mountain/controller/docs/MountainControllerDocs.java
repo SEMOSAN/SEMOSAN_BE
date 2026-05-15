@@ -5,6 +5,7 @@ import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -49,6 +50,30 @@ public interface MountainControllerDocs {
             @Parameter(description = "검색 키워드 (산 이름 또는 주소)", required = true)
             @RequestParam String keyword,
             @PageableDefault(size = 10) Pageable pageable
+    );
+
+    @Operation(
+            summary = "지도 영역 내 산 조회 (홈 화면)",
+            description = "지도 화면에 표시할 산 목록을 BBox(남서/북동 좌표) 기준으로 조회합니다. "
+                    + "로그인한 사용자의 등산 기록을 기반으로 visited, visitCount, imageUrl이 채워집니다. "
+                    + "BBox 4개 좌표가 모두 비어있으면 서울 기본 영역이 적용됩니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "지도 영역 내 산 조회 성공"
+            )
+    })
+    ResponseEntity<ApiResponse<MountainMapListResponse>> getMountainsForMap(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "BBox 남서쪽 꼭짓점의 위도 (사각형 아래쪽 변, 예: 37.413)")
+            @RequestParam(required = false) Double swLat,
+            @Parameter(description = "BBox 남서쪽 꼭짓점의 경도 (사각형 왼쪽 변, 예: 126.764)")
+            @RequestParam(required = false) Double swLng,
+            @Parameter(description = "BBox 북동쪽 꼭짓점의 위도 (사각형 위쪽 변, 예: 37.715)")
+            @RequestParam(required = false) Double neLat,
+            @Parameter(description = "BBox 북동쪽 꼭짓점의 경도 (사각형 오른쪽 변, 예: 127.184)")
+            @RequestParam(required = false) Double neLng
     );
 
     @Operation(
