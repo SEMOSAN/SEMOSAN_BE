@@ -13,6 +13,8 @@ public interface HikingMemberRepository extends JpaRepository<HikingMember, Long
 
     boolean existsByHikingRecordAndUser(HikingRecord hikingRecord, User user);
 
+    boolean existsByUser_Id(Long userId);
+
     List<HikingMember> findByHikingRecord(HikingRecord hikingRecord);
 
     Page<HikingMember> findByUser(User user, Pageable pageable);

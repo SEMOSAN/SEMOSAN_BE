@@ -12,6 +12,7 @@ import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.enums.AmenityType;
 import com.semosan.api.domain.mountain.enums.Difficulty;
 import com.semosan.api.domain.mountain.repository.*;
+import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
 import com.semosan.api.domain.review.service.ReviewService;
 import com.semosan.api.domain.user.entity.UserOnboarding;
 import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
@@ -45,6 +46,7 @@ public class MountainService {
     private final RestaurantSectionRepository restaurantSectionRepository;
     private final ReviewService reviewService;
     private final UserOnboardingRepository userOnboardingRepository;
+    private final HikingMemberRepository hikingMemberRepository;
 
     public Page<MountainListResponse> getMountains(Pageable pageable) {
         return mountainRepository.findAll(pageable)
@@ -69,7 +71,8 @@ public class MountainService {
                 .stream()
                 .map(MountainMapResponse::from)
                 .toList();
-        return MountainMapListResponse.from(mountains);
+        boolean hasHikingRecord = hikingMemberRepository.existsByUser_Id(userId);
+        return MountainMapListResponse.of(hasHikingRecord, mountains);
     }
 
     /**
