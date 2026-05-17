@@ -3,6 +3,7 @@ package com.semosan.api.domain.image.service;
 import com.semosan.api.common.config.MinioProperties;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.image.constant.ImageConstants;
 import com.semosan.api.domain.image.dto.response.PresignedUrlResponse;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
@@ -11,22 +12,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 public class ImageService {
-
-    public static final Set<String> ALLOWED_BUCKETS = Set.of("reviews", "mountains", "restaurants", "posts", "semofeed");
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(".jpg", ".jpeg", ".png", ".webp");
-    private static final Map<String, String> CONTENT_TYPE_MAP = Map.of(
-            ".jpg", "image/jpeg",
-            ".jpeg", "image/jpeg",
-            ".png", "image/png",
-            ".webp", "image/webp"
-    );
 
     private final MinioClient minioClient;
     private final MinioProperties minioProperties;
@@ -39,7 +30,7 @@ public class ImageService {
         String key = UUID.randomUUID() + extension;
 
         try {
-            String contentType = CONTENT_TYPE_MAP.get(extension.toLowerCase());
+            String contentType = ImageConstants.CONTENT_TYPE_MAP.get(extension.toLowerCase());
             String uploadUrl = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.PUT)
@@ -60,13 +51,13 @@ public class ImageService {
     }
 
     private void validateBucket(String bucket) {
-        if (bucket == null || !ALLOWED_BUCKETS.contains(bucket)) {
+        if (bucket == null || !ImageConstants.ALLOWED_BUCKETS.contains(bucket)) {
             throw new GeneralException(ErrorStatus.INVALID_IMAGE_BUCKET);
         }
     }
 
     private void validateExtension(String extension) {
-        if (extension.isEmpty() || !ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
+        if (extension.isEmpty() || !ImageConstants.ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
             throw new GeneralException(ErrorStatus.INVALID_IMAGE_EXTENSION);
         }
     }
