@@ -109,6 +109,8 @@ public enum ErrorStatus implements BaseStatus {
     TRACKING_SESSION_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "TRK_409_1", "이미 진행 중인 트래킹 세션이 있습니다."),
     TRACKING_SESSION_INVALID_STATE(HttpStatus.CONFLICT, "TRK_409_2", "현재 상태에서는 수행할 수 없는 작업입니다."),
     TRACKING_COURSE_MOUNTAIN_MISMATCH(HttpStatus.BAD_REQUEST, "TRK_400_1", "선택한 코스가 해당 산의 코스가 아닙니다."),
+    TRACKING_PHOTO_DUPLICATE(HttpStatus.CONFLICT, "TRK_409_3", "해당 마일스톤에 이미 업로드된 사진이 있습니다."),
+    TRACKING_PHOTO_SESSION_INACTIVE(HttpStatus.CONFLICT, "TRK_409_4", "활성 상태가 아닌 세션에는 사진을 업로드할 수 없습니다."),
     COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_3", "코스를 찾을 수 없습니다."),
 
     /**
