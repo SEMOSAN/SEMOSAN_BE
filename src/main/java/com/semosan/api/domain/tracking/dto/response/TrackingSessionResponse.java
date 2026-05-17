@@ -1,10 +1,12 @@
 package com.semosan.api.domain.tracking.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.semosan.api.domain.tracking.entity.TrackingSession;
 import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
 
 import java.time.LocalDateTime;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record TrackingSessionResponse(
         Long sessionId,
         Long userId,
@@ -17,10 +19,16 @@ public record TrackingSessionResponse(
         LocalDateTime startedAt,
         LocalDateTime endedAt,
         LocalDateTime pausedAt,
-        Integer pausedSecondsTotal
+        Integer pausedSecondsTotal,
+        /** complete 시에만 채워짐 — 변환된 HikingRecord 의 ID. 다른 경로에선 null 직렬화에서 제외. */
+        Long hikingRecordId
 ) {
 
     public static TrackingSessionResponse from(TrackingSession session) {
+        return from(session, null);
+    }
+
+    public static TrackingSessionResponse from(TrackingSession session, Long hikingRecordId) {
         return new TrackingSessionResponse(
                 session.getId(),
                 session.getUser().getId(),
@@ -33,7 +41,8 @@ public record TrackingSessionResponse(
                 session.getStartedAt(),
                 session.getEndedAt(),
                 session.getPausedAt(),
-                session.getPausedSecondsTotal()
+                session.getPausedSecondsTotal(),
+                hikingRecordId
         );
     }
 }

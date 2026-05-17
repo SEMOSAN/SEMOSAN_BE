@@ -38,6 +38,7 @@ public class TrackingSessionStatsService {
     private static final String F_DISTANCE_TOTAL = "distance_total";
     private static final String F_ASCENT_TOTAL = "ascent_total";
     private static final String F_DESCENT_TOTAL = "descent_total";
+    private static final String F_MAX_ALTITUDE = "max_altitude";
     private static final String F_POINT_COUNT = "point_count";
 
     private final StringRedisTemplate redisTemplate;
@@ -50,6 +51,7 @@ public class TrackingSessionStatsService {
         double distanceTotal = parseDouble(prev.get(F_DISTANCE_TOTAL));
         double ascentTotal = parseDouble(prev.get(F_ASCENT_TOTAL));
         double descentTotal = parseDouble(prev.get(F_DESCENT_TOTAL));
+        Double maxAltitude = parseNullableDouble(prev.get(F_MAX_ALTITUDE));
         long pointCount = parseLong(prev.get(F_POINT_COUNT));
 
         Double prevLat = parseNullableDouble(prev.get(F_LAST_LAT));
@@ -66,6 +68,9 @@ public class TrackingSessionStatsService {
                 descentTotal += -delta;
             }
         }
+        if (altitude != null && (maxAltitude == null || altitude > maxAltitude)) {
+            maxAltitude = altitude;
+        }
         pointCount += 1;
 
         Map<String, String> next = new HashMap<>();
@@ -78,6 +83,9 @@ public class TrackingSessionStatsService {
         next.put(F_DISTANCE_TOTAL, String.valueOf(distanceTotal));
         next.put(F_ASCENT_TOTAL, String.valueOf(ascentTotal));
         next.put(F_DESCENT_TOTAL, String.valueOf(descentTotal));
+        if (maxAltitude != null) {
+            next.put(F_MAX_ALTITUDE, String.valueOf(maxAltitude));
+        }
         next.put(F_POINT_COUNT, String.valueOf(pointCount));
 
         hash.putAll(key, next);
@@ -86,6 +94,35 @@ public class TrackingSessionStatsService {
 
     public static String statsKey(Long sessionId) {
         return KEY_PREFIX + sessionId + STATS_SUFFIX;
+    }
+
+    /**
+     * 세션 종료 시 통계 스냅샷 조회 — HikingRecord 생성에 사용된다.
+     * 점이 한 번도 들어오지 않았으면 모든 필드 0/null.
+     */
+    public Stats getStats(Long sessionId) {
+        Map<String, String> entries = redisTemplate.opsForHash().entries(statsKey(sessionId))
+                .entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        e -> String.valueOf(e.getKey()),
+                        e -> String.valueOf(e.getValue())
+                ));
+        return new Stats(
+                parseDouble(entries.get(F_DISTANCE_TOTAL)),
+                parseDouble(entries.get(F_ASCENT_TOTAL)),
+                parseDouble(entries.get(F_DESCENT_TOTAL)),
+                parseNullableDouble(entries.get(F_MAX_ALTITUDE)),
+                parseLong(entries.get(F_POINT_COUNT))
+        );
+    }
+
+    public record Stats(
+            double distanceMeters,
+            double ascentMeters,
+            double descentMeters,
+            Double maxAltitudeMeters,
+            long pointCount
+    ) {
     }
 
     /** Haversine 거리(m). */

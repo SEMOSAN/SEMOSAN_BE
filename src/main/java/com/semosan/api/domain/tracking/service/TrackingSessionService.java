@@ -2,6 +2,10 @@ package com.semosan.api.domain.tracking.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.hiking.entity.HikingMember;
+import com.semosan.api.domain.hiking.entity.HikingRecord;
+import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
+import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
@@ -33,6 +37,9 @@ public class TrackingSessionService {
     private final MountainRepository mountainRepository;
     private final CourseRepository courseRepository;
     private final UserReader userReader;
+    private final TrackingSessionStatsService statsService;
+    private final HikingRecordRepository hikingRecordRepository;
+    private final HikingMemberRepository hikingMemberRepository;
 
     @Transactional
     public TrackingSessionResponse create(Long userId, CreateTrackingSessionRequest request) {
@@ -75,14 +82,31 @@ public class TrackingSessionService {
     }
 
     /**
-     * 정상 종료. 본 메서드는 상태/시각만 마감하고, 실제 HikingRecord 변환은 #20 에서 추가될 예정.
-     * TODO(#20): 종료 시 Redis Stream 의 GPS 점들을 모아 통계 계산 + HikingRecord/HikingMember 생성.
+     * 정상 종료. 세션 상태를 COMPLETED 로 마감하고, Redis Hash 의 실시간 통계를 스냅샷 떠
+     * HikingRecord + HikingMember 로 영구 변환한다.
+     *  - 통계는 GPS Consumer 가 메시지 수신 즉시 갱신해두므로 종료 시점의 스냅샷이 최신값.
+     *  - 동행자 기능 미구현이므로 본인 1명만 HikingMember 로 등록.
+     *  - cliveImageUrl / photoReportImageUrl 은 #46 사진 흐름에서 채워질 예정 (현재 null).
      */
     @Transactional
     public TrackingSessionResponse complete(Long userId, Long sessionId) {
         TrackingSession session = findOwnedSession(userId, sessionId);
         session.complete();
-        return TrackingSessionResponse.from(session);
+
+        TrackingSessionStatsService.Stats stats = statsService.getStats(sessionId);
+        HikingRecord record = HikingRecord.fromTrackingSession(
+                session,
+                stats.distanceMeters(),
+                stats.maxAltitudeMeters(),
+                stats.ascentMeters(),
+                stats.descentMeters()
+        );
+        HikingRecord savedRecord = hikingRecordRepository.save(record);
+
+        HikingMember member = HikingMember.create(savedRecord, session.getUser());
+        hikingMemberRepository.save(member);
+
+        return TrackingSessionResponse.from(session, savedRecord.getId());
     }
 
     @Transactional
