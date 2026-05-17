@@ -49,6 +49,9 @@ dependencies {
 
 	// PostGIS (Hibernate Spatial + JTS)
 	implementation 'org.hibernate.orm:hibernate-spatial'
+
+	// WebSocket (트래킹 GPS 실시간 수집 — STOMP)
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 }
 
 jar { enabled = false }
