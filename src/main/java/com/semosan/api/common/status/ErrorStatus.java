@@ -102,6 +102,16 @@ public enum ErrorStatus implements BaseStatus {
     HIKING_RECORD_FORBIDDEN(HttpStatus.FORBIDDEN, "HIKE_403_1", "본인이 참여한 등산 기록만 공유할 수 있습니다."),
 
     /**
+     * Tracking (트래킹 세션)
+     */
+    TRACKING_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "TRK_404_1", "트래킹 세션을 찾을 수 없습니다."),
+    TRACKING_SESSION_FORBIDDEN(HttpStatus.FORBIDDEN, "TRK_403_1", "본인의 트래킹 세션만 조작할 수 있습니다."),
+    TRACKING_SESSION_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "TRK_409_1", "이미 진행 중인 트래킹 세션이 있습니다."),
+    TRACKING_SESSION_INVALID_STATE(HttpStatus.CONFLICT, "TRK_409_2", "현재 상태에서는 수행할 수 없는 작업입니다."),
+    TRACKING_COURSE_MOUNTAIN_MISMATCH(HttpStatus.BAD_REQUEST, "TRK_400_1", "선택한 코스가 해당 산의 코스가 아닙니다."),
+    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_3", "코스를 찾을 수 없습니다."),
+
+    /**
      * Post (게시글 공통)
      */
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_404_1", "게시글을 찾을 수 없습니다."),
