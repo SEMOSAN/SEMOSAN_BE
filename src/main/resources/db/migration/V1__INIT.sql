@@ -47,7 +47,6 @@ CREATE TABLE IF NOT EXISTS users
     nickname          varchar(30),
     birth_date        date,
     height            double precision,
-    refresh_token     varchar(512),
     constraint users_pk
         unique (oauth_id, oauth_provider)
 );
