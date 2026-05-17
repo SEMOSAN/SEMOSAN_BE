@@ -3,6 +3,8 @@ package com.semosan.api.domain.mountain.dto.response;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.enums.Difficulty;
 
+import java.util.List;
+
 public record MountainListResponse(
         Long mountainId,
         String name,
@@ -10,7 +12,7 @@ public record MountainListResponse(
         Double altitude,
         Difficulty difficulty,
         Integer duration,
-        String imageUrl,
+        List<String> imageUrls,
         Double latitude,
         Double longitude
 ) {
@@ -23,7 +25,7 @@ public record MountainListResponse(
                 mountain.getAltitude(),
                 mountain.getDifficulty(),
                 mountain.getDuration(),
-                mountain.getImageUrl(),
+                mountain.getImageUrls(),
                 mountain.getLatitude(),
                 mountain.getLongitude()
         );
