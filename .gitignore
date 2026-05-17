@@ -61,3 +61,7 @@ docs/**
 ## Local data / scripts (산림청 수집 데이터, 수집 스크립트)
 data/
 scripts/
+
+## 로컬 개발 전용
+docker-compose.local.yml
+work/
