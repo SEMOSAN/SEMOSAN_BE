@@ -22,6 +22,10 @@ spring:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 1
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
 
 jwt:
   secret: ${JWT_SECRET}
@@ -33,11 +37,6 @@ kakao:
   redirect-uri: ${KAKAO_REDIRECT_URI}
   client-secret: ${KAKAO_CLIENT_SECRET}
   admin-key: ${KAKAO_ADMIN_KEY}
-
-  data:
-    redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
 
 tracking:
   stream-key: ${TRACKING_STREAM_KEY}
