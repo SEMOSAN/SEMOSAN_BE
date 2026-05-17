@@ -10,7 +10,25 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long> {
+
+    @Query(
+            value = """
+                    SELECT hm.hiking_record_id
+                    FROM hiking_members hm
+                    WHERE hm.user_id = :userId
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM hiking_members other_hm
+                          WHERE other_hm.hiking_record_id = hm.hiking_record_id
+                            AND other_hm.user_id <> :userId
+                      )
+                    """,
+            nativeQuery = true
+    )
+    List<Long> findRecordIdsOnlyParticipatedByUser(@Param("userId") Long userId);
 
     @Query(
             value = """

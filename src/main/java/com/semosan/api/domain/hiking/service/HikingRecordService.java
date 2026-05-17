@@ -22,7 +22,7 @@ public class HikingRecordService {
     // 유저가 다녀온 산 목록을 산 단위로 묶어 조회합니다.
     @Transactional(readOnly = true)
     public Page<GetUserHikingMountainRecordResponse> getUserHikingMountainRecords(Long userId, Pageable pageable) {
-        userReader.findActiveUserById(userId);
+        userReader.findCompletedOnboardingUserById(userId);
         return hikingRecordRepository.findUserHikingMountainRecordsByUserId(userId, pageable)
                 .map(GetUserHikingMountainRecordResponse::from);
     }
@@ -30,7 +30,7 @@ public class HikingRecordService {
     // 유저의 등산 기록 목록을 기록 단위로 조회합니다.
     @Transactional(readOnly = true)
     public Page<GetUserHikingRecordResponse> getUserHikingRecords(Long userId, Pageable pageable) {
-        userReader.findActiveUserById(userId);
+        userReader.findCompletedOnboardingUserById(userId);
         return hikingRecordRepository.findUserHikingRecordsByUserId(userId, pageable)
                 .map(GetUserHikingRecordResponse::from);
     }
@@ -38,7 +38,7 @@ public class HikingRecordService {
     // 유저의 등산 기록 요약 정보를 조회합니다.
     @Transactional(readOnly = true)
     public GetUserHikingRecordSummaryResponse getUserHikingRecordSummary(Long userId) {
-        userReader.findActiveUserById(userId);
+        userReader.findCompletedOnboardingUserById(userId);
         UserHikingRecordSummaryProjection projection =
                 hikingRecordRepository.findUserHikingRecordSummaryByUserId(userId);
         if (projection == null) {

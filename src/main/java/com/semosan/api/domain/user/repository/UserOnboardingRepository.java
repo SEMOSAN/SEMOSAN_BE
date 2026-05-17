@@ -10,4 +10,6 @@ public interface UserOnboardingRepository extends JpaRepository<UserOnboarding, 
     boolean existsByUser_Id(Long userId);
 
     Optional<UserOnboarding> findByUser_Id(Long userId);
+
+    void deleteByUser_Id(Long userId);
 }
