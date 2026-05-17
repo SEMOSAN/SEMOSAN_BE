@@ -11,6 +11,6 @@
 예시:
 
 ```text
-V1__add_review_image_url.sql
-V2__create_hiking_record_table.sql
+V2__add_review_image_url.sql
+V3__create_hiking_record_table.sql
 ```
