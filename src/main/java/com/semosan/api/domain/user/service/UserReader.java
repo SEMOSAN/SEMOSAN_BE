@@ -23,9 +23,9 @@ public class UserReader {
 
     public User findCompletedOnboardingUserById(Long userId) {
         User user = findActiveUserById(userId);
-        if (user.getOnboardingStatus() != OnboardingStatus.COMPLETE) {
-            throw new GeneralException(ErrorStatus.ONBOARDING_NOT_COMPLETED);
-        }
+//        if (user.getOnboardingStatus() != OnboardingStatus.COMPLETE) {
+//            throw new GeneralException(ErrorStatus.ONBOARDING_NOT_COMPLETED);
+//        }
         return user;
     }
 }
