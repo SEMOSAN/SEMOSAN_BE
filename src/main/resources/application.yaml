@@ -42,6 +42,7 @@ tracking:
 
 test:
   secret-key: ${TEST_SECRET_KEY}
+
 firebase:
   service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH}
 
