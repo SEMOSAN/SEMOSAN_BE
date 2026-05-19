@@ -4,6 +4,10 @@ import com.semosan.api.common.base.BaseEntity;
 import com.semosan.api.domain.mountain.enums.Difficulty;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.util.List;
 
 @Table(name = "mountains")
 @Getter
@@ -33,8 +37,9 @@ public class Mountain extends BaseEntity {
     @Column(name = "duration")
     private Integer duration;
 
-    @Column(name = "image_url", length = 500)
-    private String imageUrl;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "image_urls", columnDefinition = "jsonb")
+    private List<String> imageUrls;
 
     @Column(name = "latitude")
     private Double latitude;

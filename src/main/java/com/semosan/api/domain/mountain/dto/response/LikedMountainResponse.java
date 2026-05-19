@@ -4,15 +4,16 @@ import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.entity.MountainLike;
 import com.semosan.api.domain.mountain.enums.Difficulty;
 
+import java.util.List;
+
 public record LikedMountainResponse(
         Long mountainId,
         String name,
         String address,
         Double altitude,
         Difficulty difficulty,
-        String imageUrl
+        List<String> imageUrls
 ) {
-    // 좋아요한 산 정보로 응답 DTO를 생성합니다.
     public static LikedMountainResponse from(MountainLike mountainLike) {
         Mountain mountain = mountainLike.getMountain();
         return new LikedMountainResponse(
@@ -21,7 +22,7 @@ public record LikedMountainResponse(
                 mountain.getAddress(),
                 mountain.getAltitude(),
                 mountain.getDifficulty(),
-                mountain.getImageUrl()
+                mountain.getImageUrls()
         );
     }
 }
