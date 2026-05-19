@@ -34,6 +34,7 @@ public interface MountainControllerDocs {
             )
     })
     ResponseEntity<ApiResponse<PageResponse<MountainListResponse>>> getMountains(
+            @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 10) Pageable pageable
     );
 
@@ -48,6 +49,7 @@ public interface MountainControllerDocs {
             )
     })
     ResponseEntity<ApiResponse<PageResponse<MountainListResponse>>> searchMountains(
+            @AuthenticationPrincipal Long userId,
             @Parameter(description = "검색 키워드 (산 이름 또는 주소)", required = true)
             @RequestParam String keyword,
             @PageableDefault(size = 10) Pageable pageable
@@ -140,6 +142,7 @@ public interface MountainControllerDocs {
             )
     })
     ResponseEntity<ApiResponse<MountainDetailResponse>> getMountainDetail(
+            @AuthenticationPrincipal Long userId,
             @Parameter(description = "산 ID", required = true)
             @PathVariable Long mountainId
     );

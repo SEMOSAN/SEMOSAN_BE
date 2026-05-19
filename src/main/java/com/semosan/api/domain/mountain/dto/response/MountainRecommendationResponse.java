@@ -16,10 +16,16 @@ public record MountainRecommendationResponse(
         return new MountainRecommendationResponse(
                 mountain.getId(),
                 mountain.getName(),
-                mountain.getImageUrl(),
+                firstImageUrl(mountain),
                 mountain.getDifficulty(),
                 mountain.getAltitude(),
                 mountain.getAddress()
         );
+    }
+
+    private static String firstImageUrl(Mountain mountain) {
+        return mountain.getImageUrls() == null || mountain.getImageUrls().isEmpty()
+                ? null
+                : mountain.getImageUrls().get(0);
     }
 }
