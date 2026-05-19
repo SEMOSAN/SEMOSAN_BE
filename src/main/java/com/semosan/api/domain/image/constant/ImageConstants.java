@@ -7,7 +7,7 @@ public final class ImageConstants {
 
     private ImageConstants() {}
 
-    public static final Set<String> ALLOWED_BUCKETS = Set.of("reviews", "mountains", "restaurants", "posts", "semofeed");
+    public static final Set<String> ALLOWED_BUCKETS = Set.of("reviews", "mountains", "restaurants", "posts", "semofeed","user");
     public static final Set<String> ALLOWED_EXTENSIONS = Set.of(".jpg", ".jpeg", ".png", ".webp");
     public static final Map<String, String> CONTENT_TYPE_MAP = Map.of(
             ".jpg", "image/jpeg",
