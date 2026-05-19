@@ -1,26 +1,16 @@
 package com.semosan.api.domain.tracking.service;
 
-import com.semosan.api.domain.tracking.entity.TrackingPoint;
-import com.semosan.api.domain.tracking.entity.TrackingSession;
-import com.semosan.api.domain.tracking.repository.TrackingPointRepository;
-import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.stream.StreamListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -28,7 +18,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Redis Stream(tracking:gps) 의 GPS 점 메시지를 소비한다.
  *  - 메시지 수신 즉시: 실시간 통계(Redis Hash) 갱신 → #46 라이브 액티비티/푸시에서 활용
- *  - 메모리 버퍼에 적재 → 10초 또는 100개 단위로 DB(tracking_points) 배치 insert
+ *  - 메모리 버퍼에 적재 → 10초 또는 100개 단위로 별도 서비스에 넘겨 DB 배치 insert
+ *
+ * 트랜잭션 경계:
+ *  - DB 적재는 {@link TrackingPointFlushService#flush} 를 외부 빈 호출로 위임한다.
+ *    같은 클래스 self-invocation 으로는 Spring AOP proxy 가 적용되지 않아 @Transactional 이 무효화된다.
  *
  * 주의:
  *  - 현재 단일 인스턴스 가정. 다중 인스턴스 시 consumer 이름 분리(host/pod name) + 동시성 안전 통계 처리 필요.
@@ -47,13 +41,10 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
     private static final String F_ALTITUDE = "altitude";
     private static final String F_RECORDED_AT = "recordedAt";
 
-    private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(), 4326);
+    private final Map<Long, Queue<TrackingPointFlushService.PendingPoint>> buffers = new ConcurrentHashMap<>();
 
-    private final Map<Long, Queue<PendingPoint>> buffers = new ConcurrentHashMap<>();
-
-    private final TrackingPointRepository trackingPointRepository;
-    private final TrackingSessionRepository trackingSessionRepository;
     private final TrackingSessionStatsService statsService;
+    private final TrackingPointFlushService flushService;
 
     @Override
     public void onMessage(MapRecord<String, String, String> message) {
@@ -67,8 +58,9 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
 
             statsService.recordPoint(sessionId, lat, lng, altitude, recordedAt);
 
-            Queue<PendingPoint> queue = buffers.computeIfAbsent(sessionId, k -> new ConcurrentLinkedQueue<>());
-            queue.offer(new PendingPoint(lat, lng, altitude, recordedAt));
+            Queue<TrackingPointFlushService.PendingPoint> queue =
+                    buffers.computeIfAbsent(sessionId, k -> new ConcurrentLinkedQueue<>());
+            queue.offer(new TrackingPointFlushService.PendingPoint(lat, lng, altitude, recordedAt));
 
             if (queue.size() >= FLUSH_THRESHOLD) {
                 flushSession(sessionId);
@@ -86,40 +78,29 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
         }
     }
 
-    @Transactional
-    protected void flushSession(Long sessionId) {
-        Queue<PendingPoint> queue = buffers.get(sessionId);
+    private void flushSession(Long sessionId) {
+        Queue<TrackingPointFlushService.PendingPoint> queue = buffers.get(sessionId);
         if (queue == null || queue.isEmpty()) {
             return;
         }
-        Optional<TrackingSession> sessionOpt = trackingSessionRepository.findById(sessionId);
-        if (sessionOpt.isEmpty()) {
-            queue.clear();
-            log.warn("Tracking session {} not found while flushing; discarding {} points", sessionId, queue.size());
-            return;
-        }
-        TrackingSession session = sessionOpt.get();
-
-        List<TrackingPoint> batch = new ArrayList<>();
-        PendingPoint p;
+        List<TrackingPointFlushService.PendingPoint> batch = new ArrayList<>();
+        TrackingPointFlushService.PendingPoint p;
         while ((p = queue.poll()) != null) {
-            Point location = GEOMETRY_FACTORY.createPoint(new Coordinate(p.lng, p.lat));
-            location.setSRID(4326);
-            batch.add(TrackingPoint.create(session, location, p.altitude, p.recordedAt));
+            batch.add(p);
             if (batch.size() >= FLUSH_THRESHOLD) {
                 break;
             }
         }
-        if (!batch.isEmpty()) {
-            trackingPointRepository.saveAll(batch);
-            log.debug("Flushed {} GPS points for session {}", batch.size(), sessionId);
+        if (batch.isEmpty()) {
+            return;
+        }
+        int saved = flushService.flush(sessionId, batch);
+        if (saved > 0) {
+            log.debug("Flushed {} GPS points for session {}", saved, sessionId);
         }
     }
 
     private static Double parseNullableDouble(String value) {
         return (value == null || value.isEmpty()) ? null : Double.parseDouble(value);
-    }
-
-    private record PendingPoint(double lat, double lng, Double altitude, LocalDateTime recordedAt) {
     }
 }
