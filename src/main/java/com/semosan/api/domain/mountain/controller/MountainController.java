@@ -65,14 +65,21 @@ public class MountainController implements MountainControllerDocs {
         return ApiResponse.success(SuccessStatus.MOUNTAIN_MAP_SUCCESS, response);
     }
 
+    /**
+     * 사용자의 현재 위치(lat, lng)에서 가까운 순으로 레벨 맞춤 산을 추천한다.
+     * lat, lng 는 필수임. 누락 시 400 BAD_REQUEST.
+     * Pageable.sort 는 무시됨 (서버 정책상 "거리 가까운 순" 고정).
+     */
     @GetMapping("/recommendations")
     @Override
     public ResponseEntity<ApiResponse<PageResponse<MountainRecommendationResponse>>> getRecommendedMountains(
             @AuthenticationPrincipal Long userId,
+            @RequestParam Double lat,
+            @RequestParam Double lng,
             @PageableDefault(size = 10) Pageable pageable
     ) {
         PageResponse<MountainRecommendationResponse> response = PageResponse.from(
-                mountainService.getRecommendedMountains(userId, pageable)
+                mountainService.getRecommendedMountains(userId, lat, lng, pageable)
         );
         return ApiResponse.success(SuccessStatus.MOUNTAIN_RECOMMENDATION_SUCCESS, response);
     }

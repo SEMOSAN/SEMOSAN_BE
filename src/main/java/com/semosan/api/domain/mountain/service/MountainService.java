@@ -76,13 +76,18 @@ public class MountainService {
     }
 
     /**
-     * 로그인 사용자의 등산 레벨에 맞는 산을 추천한다.
-     *  - 온보딩이 완료된 사용자: HikingLevel → Difficulty 집합 매핑(임의로 해둠) TODO: 필터링 로직 확정되어야함
+     * 로그인 사용자의 등산 레벨에 맞는 산을 "사용자 위치에서 가까운 순"으로 추천한다.
+     *  - 온보딩이 완료된 사용자: HikingLevel → Difficulty 집합 매핑 (임의로 해둠) TODO: 필터링 로직 확정되어야함
      *  - 온보딩 미완료(UserOnboarding 없음): 모든 난이도 fallback
-     *  - 정렬은 현재 랜덤. TODO: 정식 정렬 정책 확정 시 교체
+     *  - 정렬: squared distance ASC (사용자 lat/lng 기준 가까운 순). 자세한 정렬 원리는 Repository 주석 참고.
      *  - 다녀온 산 제외 여부: 현재는 포함. 기획에 따라 추후 조정
      */
-    public Page<MountainRecommendationResponse> getRecommendedMountains(Long userId, Pageable pageable) {
+    public Page<MountainRecommendationResponse> getRecommendedMountains(
+            Long userId,
+            Double lat,
+            Double lng,
+            Pageable pageable
+    ) {
         Set<Difficulty> difficulties = userOnboardingRepository.findByUser_Id(userId)
                 .map(UserOnboarding::getHikingLevel)
                 .map(MountainService::mapHikingLevelToDifficulties)
@@ -92,7 +97,7 @@ public class MountainService {
                 .map(Enum::name)
                 .toList();
 
-        return mountainRepository.findRecommendationsByDifficulties(difficultyNames, pageable)
+        return mountainRepository.findRecommendationsByDifficulties(difficultyNames, lat, lng, pageable)
                 .map(MountainRecommendationResponse::from);
     }
 

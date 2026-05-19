@@ -79,18 +79,28 @@ public interface MountainControllerDocs {
 
     @Operation(
             summary = "레벨 맞춤 산 추천 (홈 화면)",
-            description = "로그인 사용자의 등산 레벨(HikingLevel) → 산 난이도(Difficulty) 매핑으로 추천 산을 페이지 단위로 반환합니다. "
+            description = "로그인 사용자의 등산 레벨(HikingLevel) → 산 난이도(Difficulty) 매핑으로 후보를 추리고, "
+                    + "사용자 위치(lat, lng)에서 가까운 순으로 정렬해 페이지 단위로 반환합니다. "
                     + "온보딩이 완료되지 않은 사용자는 모든 난이도가 fallback으로 사용됩니다. "
-                    + "현재 정렬은 임의 랜덤이며, 정식 추천 정책 도입 시 교체됩니다."
+                    + "Pageable.sort 는 무시됩니다 (서버 정책상 '거리 가까운 순' 고정)."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "레벨 맞춤 산 추천 조회 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "lat 또는 lng 파라미터 누락",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
             )
     })
     ResponseEntity<ApiResponse<PageResponse<MountainRecommendationResponse>>> getRecommendedMountains(
             @AuthenticationPrincipal Long userId,
+            @Parameter(description = "사용자 현재 위치 위도 (필수)", required = true, example = "37.4533700")
+            @RequestParam Double lat,
+            @Parameter(description = "사용자 현재 위치 경도 (필수)", required = true, example = "126.9571678")
+            @RequestParam Double lng,
             @PageableDefault(size = 10) Pageable pageable
     );
 
