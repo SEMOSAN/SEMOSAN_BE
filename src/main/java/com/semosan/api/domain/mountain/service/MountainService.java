@@ -60,11 +60,17 @@ public class MountainService {
             Double neLat,
             Double neLng
     ) {
-        boolean hasFullBBox = swLat != null && swLng != null && neLat != null && neLng != null;
-        double resolvedSwLat = hasFullBBox ? swLat : DEFAULT_SEOUL_SW_LAT;
-        double resolvedSwLng = hasFullBBox ? swLng : DEFAULT_SEOUL_SW_LNG;
-        double resolvedNeLat = hasFullBBox ? neLat : DEFAULT_SEOUL_NE_LAT;
-        double resolvedNeLng = hasFullBBox ? neLng : DEFAULT_SEOUL_NE_LNG;
+        // BBox 는 4개 좌표가 한 세트. 부분 입력은 의도 모호하므로 거부함. 4개 모두 비어있을 때만 default 적용.
+        int provided = (swLat == null ? 0 : 1) + (swLng == null ? 0 : 1)
+                + (neLat == null ? 0 : 1) + (neLng == null ? 0 : 1);
+        if (provided != 0 && provided != 4) {
+            throw new GeneralException(ErrorStatus.MOUNTAIN_BBOX_PARTIAL);
+        }
+        boolean useDefault = (provided == 0);
+        double resolvedSwLat = useDefault ? DEFAULT_SEOUL_SW_LAT : swLat;
+        double resolvedSwLng = useDefault ? DEFAULT_SEOUL_SW_LNG : swLng;
+        double resolvedNeLat = useDefault ? DEFAULT_SEOUL_NE_LAT : neLat;
+        double resolvedNeLng = useDefault ? DEFAULT_SEOUL_NE_LNG : neLng;
 
         List<MountainMapResponse> mountains = mountainRepository
                 .findInBBoxWithUserHikingStats(userId, resolvedSwLat, resolvedSwLng, resolvedNeLat, resolvedNeLng)

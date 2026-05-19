@@ -51,6 +51,7 @@ public class MountainController implements MountainControllerDocs {
      *  - sw* (South-West): 남서쪽 꼭짓점 (사각형의 좌측 하단)
      *  - ne* (North-East): 북동쪽 꼭짓점 (사각형의 우측 상단)
      * 네 값이 모두 null이면 서비스 레이어에서 서울 기본 BBox가 적용된다.
+     * 일부만 채워진 경우(1~3개)는 의도가 모호하므로 400 BAD_REQUEST 로 거부한다.
      */
     @GetMapping("/map")
     @Override

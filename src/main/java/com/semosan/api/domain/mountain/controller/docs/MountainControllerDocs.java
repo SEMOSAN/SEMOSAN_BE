@@ -57,12 +57,17 @@ public interface MountainControllerDocs {
             summary = "지도 영역 내 산 조회 (홈 화면)",
             description = "지도 화면에 표시할 산 목록을 BBox(남서/북동 좌표) 기준으로 조회합니다. "
                     + "로그인한 사용자의 등산 기록을 기반으로 visited, visitCount, imageUrl이 채워집니다. "
-                    + "BBox 4개 좌표가 모두 비어있으면 서울 기본 영역이 적용됩니다."
+                    + "BBox 4개 좌표가 모두 비어있으면 서울 기본 영역이 적용됩니다. "
+                    + "1~3개만 채워진 부분 입력은 의도가 모호하므로 400 으로 거부합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "지도 영역 내 산 조회 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "BBox 4개 좌표 중 일부만 보낸 경우 (MTN_400_1)"
             )
     })
     ResponseEntity<ApiResponse<MountainMapListResponse>> getMountainsForMap(
