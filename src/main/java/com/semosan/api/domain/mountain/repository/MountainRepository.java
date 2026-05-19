@@ -35,7 +35,7 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
                     WHERE difficulty IN (:difficulties)
                       AND latitude IS NOT NULL
                       AND longitude IS NOT NULL
-                    ORDER BY (POWER(latitude - :lat, 2) + POWER(longitude - :lng, 2)) ASC, id ASC
+                    ORDER BY (POWER(latitude - :lat, 2) + POWER((longitude - :lng) * COS(RADIANS(:lat)), 2)) ASC, id ASC
                     """,
             countQuery = """
                     SELECT COUNT(*) FROM mountains
@@ -59,23 +59,21 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
                         m.name AS name,
                         m.latitude AS latitude,
                         m.longitude AS longitude,
+                        COUNT(hm.user_id) AS visitCount,
                         (
-                            SELECT COUNT(hr.id)
-                            FROM hiking_records hr
-                            JOIN hiking_members hm ON hm.hiking_record_id = hr.id
-                            WHERE hr.mountain_id = m.id AND hm.user_id = :userId
-                        ) AS visitCount,
-                        (
-                            SELECT COALESCE(hr.photo_report_image_url, hr.clive_image_url)
-                            FROM hiking_records hr
-                            JOIN hiking_members hm ON hm.hiking_record_id = hr.id
-                            WHERE hr.mountain_id = m.id AND hm.user_id = :userId
-                            ORDER BY hr.created_at DESC
+                            SELECT COALESCE(hr2.photo_report_image_url, hr2.clive_image_url)
+                            FROM hiking_records hr2
+                            JOIN hiking_members hm2 ON hm2.hiking_record_id = hr2.id
+                            WHERE hr2.mountain_id = m.id AND hm2.user_id = :userId
+                            ORDER BY hr2.created_at DESC
                             LIMIT 1
                         ) AS imageUrl
                     FROM mountains m
+                    LEFT JOIN hiking_records hr ON hr.mountain_id = m.id
+                    LEFT JOIN hiking_members hm ON hm.hiking_record_id = hr.id AND hm.user_id = :userId
                     WHERE m.latitude BETWEEN :swLat AND :neLat
                       AND m.longitude BETWEEN :swLng AND :neLng
+                    GROUP BY m.id
                     ORDER BY m.id
                     """,
             nativeQuery = true

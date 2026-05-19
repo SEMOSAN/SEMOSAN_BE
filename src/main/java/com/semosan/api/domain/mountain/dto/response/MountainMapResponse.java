@@ -8,7 +8,7 @@ public record MountainMapResponse(
         Double latitude,
         Double longitude,
         Boolean visited,
-        Integer visitCount,
+        Long visitCount,
         String imageUrl
 ) {
 
@@ -20,7 +20,7 @@ public record MountainMapResponse(
                 projection.getLatitude(),
                 projection.getLongitude(),
                 count > 0,
-                (int) count,
+                count,
                 projection.getImageUrl()
         );
     }
