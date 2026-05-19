@@ -46,7 +46,7 @@ public class HikingRecordService {
             Long mountainId,
             Pageable pageable
     ) {
-        userReader.findActiveUserById(userId);
+        userReader.findCompletedOnboardingUserById(userId);
         if (!mountainRepository.existsById(mountainId)) {
             throw new GeneralException(ErrorStatus.MOUNTAIN_NOT_FOUND);
         }
