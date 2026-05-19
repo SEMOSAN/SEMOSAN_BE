@@ -11,7 +11,6 @@ import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -30,14 +29,12 @@ public class ImageService {
         String key = UUID.randomUUID() + extension;
 
         try {
-            String contentType = ImageConstants.CONTENT_TYPE_MAP.get(extension.toLowerCase());
             String uploadUrl = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.PUT)
                             .bucket(bucket)
                             .object(key)
                             .expiry(10, TimeUnit.MINUTES)
-                            .extraHeaders(Map.of("Content-Type", contentType))
                             .build()
             );
 
