@@ -20,6 +20,9 @@ public interface HikingMemberRepository extends JpaRepository<HikingMember, Long
     void deleteByUser_Id(@Param("userId") Long userId);
 
     boolean existsByHikingRecordAndUser(HikingRecord hikingRecord, User user);
+
+    boolean existsByUser_Id(Long userId);
+
     List<HikingMember> findByHikingRecord(HikingRecord hikingRecord);
     Page<HikingMember> findByUser(User user, Pageable pageable);
 }
