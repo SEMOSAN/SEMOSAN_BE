@@ -26,7 +26,9 @@ public record MountainDetailResponse(
             Double altitude,
             Difficulty difficulty,
             Integer duration,
-            List<String> imageUrls
+            List<String> imageUrls,
+            Double latitude,
+            Double longitude
     ) {
         public static MountainInfo from(Mountain mountain) {
             return new MountainInfo(
@@ -36,7 +38,9 @@ public record MountainDetailResponse(
                     mountain.getAltitude(),
                     mountain.getDifficulty(),
                     mountain.getDuration(),
-                    mountain.getImageUrls()
+                    mountain.getImageUrls(),
+                    mountain.getLatitude(),
+                    mountain.getLongitude()
             );
         }
     }
