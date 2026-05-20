@@ -64,6 +64,7 @@ public enum ErrorStatus implements BaseStatus {
     EXERCISE_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_9", "운동 빈도와 운동 시간을 입력해야 합니다."),
     EXERCISE_DETAIL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "USER_400_10", "운동 안함 선택 시 운동 빈도와 운동 시간을 입력할 수 없습니다."),
     ONBOARDING_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_3", "온보딩 정보를 찾을 수 없습니다."),
+    ONBOARDING_NOT_COMPLETED(HttpStatus.FORBIDDEN, "USER_403_1", "온보딩을 완료해야 이용할 수 있습니다."),
 
     /**
      * Notification
@@ -83,10 +84,13 @@ public enum ErrorStatus implements BaseStatus {
     MOUNTAIN_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_1", "산을 찾을 수 없습니다."),
     MOUNTAIN_LIKE_ALREADY_EXISTS(HttpStatus.CONFLICT, "MTN_409_1", "이미 좋아요한 산입니다."),
     MOUNTAIN_LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_2", "좋아요한 산이 아닙니다."),
+    MOUNTAIN_BBOX_PARTIAL(HttpStatus.BAD_REQUEST, "MTN_400_1", "BBox 좌표는 4개(swLat, swLng, neLat, neLng) 모두 보내거나 모두 비워주세요."),
 
     /**
      * Image
      */
+    INVALID_IMAGE_BUCKET(HttpStatus.BAD_REQUEST, "IMG_400_1", "허용되지 않은 버킷입니다."),
+    INVALID_IMAGE_EXTENSION(HttpStatus.BAD_REQUEST, "IMG_400_2", "허용되지 않은 이미지 확장자입니다. (jpg, jpeg, png, webp)"),
     IMAGE_UPLOAD_FAILED(HttpStatus.BAD_GATEWAY, "IMG_502_1", "이미지 업로드 URL 생성에 실패했습니다."),
 
     /**
