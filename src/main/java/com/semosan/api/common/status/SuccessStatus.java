@@ -40,6 +40,8 @@ public enum SuccessStatus implements BaseStatus {
     MOUNTAIN_LIKE_SUCCESS(HttpStatus.OK, "MTN_200_4", "산 좋아요 등록에 성공했습니다."),
     MOUNTAIN_UNLIKE_SUCCESS(HttpStatus.OK, "MTN_200_5", "산 좋아요 취소에 성공했습니다."),
     LIKED_MOUNTAIN_LIST_SUCCESS(HttpStatus.OK, "MTN_200_6", "좋아요한 산 목록 조회에 성공했습니다."),
+    MOUNTAIN_MAP_SUCCESS(HttpStatus.OK, "MTN_200_7", "지도 영역 내 산 조회에 성공했습니다."),
+    MOUNTAIN_RECOMMENDATION_SUCCESS(HttpStatus.OK, "MTN_200_8", "레벨 맞춤 산 추천 조회에 성공했습니다."),
 
     /**
      * Hiking Record
@@ -47,6 +49,7 @@ public enum SuccessStatus implements BaseStatus {
     GET_HIKING_RECORD_MOUNTAIN_LIST_SUCCESS(HttpStatus.OK, "HIKING_200_1", "내가 다녀온 산 목록 조회에 성공했습니다."),
     GET_HIKING_RECORD_SUMMARY_SUCCESS(HttpStatus.OK, "HIKING_200_2", "나의 등산 기록 요약 조회에 성공했습니다."),
     GET_HIKING_RECORD_LIST_SUCCESS(HttpStatus.OK, "HIKING_200_3", "나의 등산 기록 목록 조회에 성공했습니다."),
+    GET_HIKING_RECORD_LIST_BY_MOUNTAIN_SUCCESS(HttpStatus.OK, "HIKING_200_4", "특정 산의 나의 등산 기록 목록 조회에 성공했습니다."),
 
     /**
      * Tracking — 진입 화면 (#45) & 세션 (#18)

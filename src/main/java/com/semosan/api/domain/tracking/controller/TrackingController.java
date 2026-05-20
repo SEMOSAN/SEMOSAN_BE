@@ -37,7 +37,7 @@ public class TrackingController implements TrackingControllerDocs {
             @RequestParam @Min(-90) @Max(90) Double lat,
             @RequestParam @Min(-180) @Max(180) Double lng
     ) {
-        NearbyMountainResponse response = trackingService.getNearbyMountain(lat, lng);
+        NearbyMountainResponse response = trackingService.getNearbyMountain(userId, lat, lng);
         return ApiResponse.success(SuccessStatus.TRACKING_NEAREST_MOUNTAIN_SUCCESS, response);
     }
 }

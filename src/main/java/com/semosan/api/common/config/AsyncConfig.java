@@ -24,4 +24,15 @@ public class AsyncConfig {
         // executor.initialize() 호출 안 함 → Spring이 afterPropertiesSet()에서 자동 호출
         return executor;
     }
+
+    @Bean(name = "authCleanupTaskExecutor")
+    public Executor authCleanupTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(200);
+        executor.setThreadNamePrefix("auth-cleanup-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        return executor;
+    }
 }
