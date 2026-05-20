@@ -50,6 +50,9 @@ dependencies {
 	// Redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
+	// PostGIS (Hibernate Spatial + JTS)
+	implementation 'org.hibernate.orm:hibernate-spatial'
+
 	// Flyway
 	implementation 'org.flywaydb:flyway-core'
 	implementation 'org.flywaydb:flyway-database-postgresql'
