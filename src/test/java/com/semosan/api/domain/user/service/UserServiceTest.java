@@ -9,7 +9,7 @@ import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import com.semosan.api.domain.user.enums.user.OnboardingStatus;
-import com.semosan.api.domain.user.policy.DefaultUserNameGenerator;
+import com.semosan.api.domain.user.policy.DefaultNicknameGenerator;
 import com.semosan.api.domain.user.policy.NicknamePolicy;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
 import com.semosan.api.domain.user.repository.UserOnboardingRepository;
@@ -60,7 +60,7 @@ class UserServiceTest {
     private NicknamePolicy nicknamePolicy;
 
     @Mock
-    private DefaultUserNameGenerator defaultUserNameGenerator;
+    private DefaultNicknameGenerator defaultNicknameGenerator;
 
     @Mock
     private UserReader userReader;
@@ -89,7 +89,7 @@ class UserServiceTest {
     void findOrRegisterKakaoUserCreatesNewUserWhenActiveUserDoesNotExist() {
         when(userRepository.findByOauthIdAndOauthProvider("kakao-id", OAuthProvider.KAKAO))
                 .thenReturn(Optional.empty());
-        when(defaultUserNameGenerator.generate()).thenReturn("용감한등산러1234");
+        when(defaultNicknameGenerator.generate()).thenReturn("용감한등산러1234");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         User result = userService.findOrRegisterKakaoUser(
@@ -105,7 +105,8 @@ class UserServiceTest {
         assertThat(result.getOauthId()).isEqualTo("kakao-id");
         assertThat(result.getOauthProvider()).isEqualTo(OAuthProvider.KAKAO);
         assertThat(result.isDeleted()).isFalse();
-        assertThat(result.getName()).isEqualTo("용감한등산러1234");
+        assertThat(result.getName()).isEqualTo("name");
+        assertThat(result.getNickname()).isEqualTo("용감한등산러1234");
     }
 
     @Test
@@ -117,7 +118,7 @@ class UserServiceTest {
 
         when(userRepository.findByOauthIdAndOauthProvider("kakao-id", OAuthProvider.KAKAO))
                 .thenReturn(Optional.of(deletedUser));
-        when(defaultUserNameGenerator.generate()).thenReturn("씩씩한산악인5391");
+        when(defaultNicknameGenerator.generate()).thenReturn("씩씩한산악인5391");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         User result = userService.findOrRegisterKakaoUser(
@@ -132,14 +133,15 @@ class UserServiceTest {
         verify(userNotificationSettingRepository).save(any());
         assertThat(result).isNotSameAs(deletedUser);
         assertThat(result.isDeleted()).isFalse();
-        assertThat(result.getName()).isEqualTo("씩씩한산악인5391");
+        assertThat(result.getName()).isEqualTo("name");
+        assertThat(result.getNickname()).isEqualTo("씩씩한산악인5391");
     }
 
     @Test
-    void findOrRegisterAppleUserCreatesNewUserWithGeneratedName() {
+    void findOrRegisterAppleUserCreatesNewUserWithGeneratedNickname() {
         when(userRepository.findByOauthIdAndOauthProvider("apple-id", OAuthProvider.APPLE))
                 .thenReturn(Optional.empty());
-        when(defaultUserNameGenerator.generate()).thenReturn("빠른하이커1204");
+        when(defaultNicknameGenerator.generate()).thenReturn("빠른하이커1204");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         User result = userService.findOrRegisterAppleUser(
@@ -153,7 +155,8 @@ class UserServiceTest {
         verify(userNotificationSettingRepository).save(any());
         assertThat(result.getOauthId()).isEqualTo("apple-id");
         assertThat(result.getOauthProvider()).isEqualTo(OAuthProvider.APPLE);
-        assertThat(result.getName()).isEqualTo("빠른하이커1204");
+        assertThat(result.getName()).isEqualTo("apple-name");
+        assertThat(result.getNickname()).isEqualTo("빠른하이커1204");
     }
 
     @Test
