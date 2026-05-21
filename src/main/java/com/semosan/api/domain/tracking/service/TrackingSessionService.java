@@ -2,6 +2,10 @@ package com.semosan.api.domain.tracking.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.hiking.entity.HikingMember;
+import com.semosan.api.domain.hiking.entity.HikingRecord;
+import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
+import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
@@ -15,12 +19,14 @@ import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -30,6 +36,9 @@ public class TrackingSessionService {
     private final MountainRepository mountainRepository;
     private final CourseRepository courseRepository;
     private final UserReader userReader;
+    private final TrackingSessionStatsService statsService;
+    private final HikingRecordRepository hikingRecordRepository;
+    private final HikingMemberRepository hikingMemberRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -73,15 +82,37 @@ public class TrackingSessionService {
     }
 
     /**
-     * 정상 종료. 본 메서드는 상태/시각만 마감하고, 실제 HikingRecord 변환은 #20 에서 추가될 예정.
-     * TODO(#20): 종료 시 Redis Stream 의 GPS 점들을 모아 통계 계산 + HikingRecord/HikingMember 생성.
+     * 정상 종료. 세션 상태를 COMPLETED 로 마감하고, Redis Hash 의 실시간 통계를 스냅샷 떠
+     * HikingRecord + HikingMember 로 영구 변환한다.
+     *  - 통계는 GPS Consumer 가 메시지 수신 즉시 갱신해두므로 종료 시점의 스냅샷이 최신값.
+     *  - 동행자 기능 미구현이므로 본인 1명만 HikingMember 로 등록.
+     *  - cliveImageUrl / photoReportImageUrl 은 #46 사진 흐름에서 채워질 예정 (현재 null).
      */
     @Transactional
     public TrackingSessionResponse complete(Long userId, Long sessionId) {
         TrackingSession session = findOwnedSession(userId, sessionId);
         session.complete();
+
+        TrackingSessionStatsService.Stats stats = statsService.getStats(sessionId);
+        if (stats.pointCount() == 0) {
+            // GPS 점이 한 건도 들어오지 않은 채 종료 — 사용자의 명시적 종료는 존중하되 통계가 비어있음을 알림.
+            log.warn("Completing tracking session {} with no GPS points; stats will be zero/null", sessionId);
+        }
+        HikingRecord record = HikingRecord.fromTrackingSession(
+                session,
+                stats.distanceMeters(),
+                stats.maxAltitudeMeters(),
+                stats.ascentMeters(),
+                stats.descentMeters()
+        );
+        HikingRecord savedRecord = hikingRecordRepository.save(record);
+
+        HikingMember member = HikingMember.create(savedRecord, session.getUser());
+        hikingMemberRepository.save(member);
+
         eventPublisher.publishEvent(new TrackingSessionTerminatedEvent(sessionId));
-        return TrackingSessionResponse.from(session);
+
+        return TrackingSessionResponse.from(session, savedRecord.getId());
     }
 
     @Transactional

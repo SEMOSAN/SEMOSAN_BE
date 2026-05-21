@@ -18,7 +18,7 @@ public record HikingRecordSummaryResponse(
                 record.getMountain().getName(),
                 record.getCourse().getName(),
                 record.getDuration(),
-                record.getAltitude(),
+                record.getMaxAltitude(),
                 record.getCalories(),
                 record.getCliveImageUrl(),
                 record.getPhotoReportImageUrl()
