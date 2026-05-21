@@ -41,3 +41,8 @@ tracking:
 
 test:
   secret-key: ${TEST_SECRET_KEY}
+
+discord:
+  alert:
+    enabled: ${DISCORD_ALERT_ENABLED}
+    webhook-url: ${DISCORD_WEBHOOK_URL}

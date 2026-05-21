@@ -25,6 +25,17 @@ public class AsyncConfig {
         return executor;
     }
 
+    @Bean(name = "discordAlertExecutor")
+    public Executor discordAlertExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(1);
+        executor.setMaxPoolSize(2);
+        executor.setQueueCapacity(50);
+        executor.setThreadNamePrefix("discord-alert-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+        return executor;
+    }
+
     @Bean(name = "authCleanupTaskExecutor")
     public Executor authCleanupTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
