@@ -94,9 +94,17 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
         if (batch.isEmpty()) {
             return;
         }
-        int saved = flushService.flush(sessionId, batch);
-        if (saved > 0) {
-            log.debug("Flushed {} GPS points for session {}", saved, sessionId);
+        try {
+            int saved = flushService.flush(sessionId, batch);
+            if (saved > 0) {
+                log.debug("Flushed {} GPS points for session {}", saved, sessionId);
+            }
+        } catch (RuntimeException e) {
+            // DB flush 실패 시 batch 를 큐로 되돌려 다음 주기에 재시도.
+            // ConcurrentLinkedQueue 는 tail-only offer 라 순서가 뒤섞일 수 있으나 recordedAt 정렬로 보정 가능.
+            log.error("Failed to flush {} GPS points for session {}; re-queued for retry",
+                    batch.size(), sessionId, e);
+            batch.forEach(queue::offer);
         }
     }
 
