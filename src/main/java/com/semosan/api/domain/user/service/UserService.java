@@ -39,51 +39,30 @@ public class UserService {
     private final NicknamePolicy nicknamePolicy;
     private final UserReader userReader;
 
-    // 카카오 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
+    // 활성 카카오 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
     public User findOrRegisterKakaoUser(
             String kakaoId, String email, String name, String profileUrl, DeviceType deviceType
     ) {
-        return userRepository.findByOauthIdAndOauthProvider(kakaoId, OAuthProvider.KAKAO)
-                .map(user -> {
-                    if (user.isDeleted()) {
-                        user.restore(email, name, profileUrl, deviceType);
-                        ensureNotificationSetting(user);
-                    }
-                    return user;
-                })
+        return userRepository.findByOauthIdAndOauthProviderAndDeletedFalse(kakaoId, OAuthProvider.KAKAO)
                 .orElseGet(() -> saveNewUserWithNotificationSetting(
                         User.createKakaoUser(kakaoId, email, name, profileUrl, deviceType)
                 ));
     }
 
-    // 애플 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
+    // 활성 애플 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
     public User findOrRegisterAppleUser(String appleId, String email, String name, DeviceType deviceType) {
-        return userRepository.findByOauthIdAndOauthProvider(appleId, OAuthProvider.APPLE)
-                .map(user -> {
-                    if (user.isDeleted()) {
-                        user.restore(email, name, null, deviceType);
-                        ensureNotificationSetting(user);
-                    }
-                    return user;
-                })
+        return userRepository.findByOauthIdAndOauthProviderAndDeletedFalse(appleId, OAuthProvider.APPLE)
                 .orElseGet(() -> saveNewUserWithNotificationSetting(
                         User.createAppleUser(appleId, email, name, deviceType)
                 ));
     }
 
-    // 테스트 유저 조회 후 없으면 신규 생성
+    // 활성 테스트 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
-        return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.TEST)
-                .map(user -> {
-                    if (user.isDeleted()) {
-                        user.restore(null, null, null, deviceType);
-                        ensureNotificationSetting(user);
-                    }
-                    return user;
-                })
+        return userRepository.findByOauthIdAndOauthProviderAndDeletedFalse(testUserId, OAuthProvider.TEST)
                 .orElseGet(() -> saveNewUserWithNotificationSetting(User.createTestUser(testUserId, deviceType)));
     }
 
