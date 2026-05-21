@@ -39,51 +39,33 @@ public class UserService {
     private final NicknamePolicy nicknamePolicy;
     private final UserReader userReader;
 
-    // 카카오 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
+    // 카카오 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
     public User findOrRegisterKakaoUser(
             String kakaoId, String email, String name, String profileUrl, DeviceType deviceType
     ) {
         return userRepository.findByOauthIdAndOauthProvider(kakaoId, OAuthProvider.KAKAO)
-                .map(user -> {
-                    if (user.isDeleted()) {
-                        user.restore(email, name, profileUrl, deviceType);
-                        ensureNotificationSetting(user);
-                    }
-                    return user;
-                })
+                .filter(user -> !user.isDeleted())
                 .orElseGet(() -> saveNewUserWithNotificationSetting(
                         User.createKakaoUser(kakaoId, email, name, profileUrl, deviceType)
                 ));
     }
 
-    // 애플 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
+    // 애플 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
     public User findOrRegisterAppleUser(String appleId, String email, String name, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(appleId, OAuthProvider.APPLE)
-                .map(user -> {
-                    if (user.isDeleted()) {
-                        user.restore(email, name, null, deviceType);
-                        ensureNotificationSetting(user);
-                    }
-                    return user;
-                })
+                .filter(user -> !user.isDeleted())
                 .orElseGet(() -> saveNewUserWithNotificationSetting(
                         User.createAppleUser(appleId, email, name, deviceType)
                 ));
     }
 
-    // 테스트 유저 조회 후 없으면 신규 생성
+    // 테스트 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.TEST)
-                .map(user -> {
-                    if (user.isDeleted()) {
-                        user.restore(null, null, null, deviceType);
-                        ensureNotificationSetting(user);
-                    }
-                    return user;
-                })
+                .filter(user -> !user.isDeleted())
                 .orElseGet(() -> saveNewUserWithNotificationSetting(User.createTestUser(testUserId, deviceType)));
     }
 
@@ -93,10 +75,6 @@ public class UserService {
         // 온보딩 권한 설정 초기화 전에 항상 기본 알림 설정 row가 존재하도록 생성합니다.
         userNotificationSettingRepository.save(UserNotificationSetting.createDefault(savedUser));
         return savedUser;
-    }
-
-    private void ensureNotificationSetting(User user) {
-        userNotificationSettingRepository.save(UserNotificationSetting.createDefault(user));
     }
 
     // 닉네임 사용 가능 여부를 조회합니다.
@@ -157,6 +135,7 @@ public class UserService {
     public void withdrawUser(User user) {
         deleteUserChildRecords(user.getId());
         user.withdraw();
+        userRepository.save(user);
     }
 
     private void deleteUserChildRecords(Long userId) {
