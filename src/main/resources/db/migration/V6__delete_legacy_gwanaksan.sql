@@ -7,16 +7,28 @@
 -- 멱등: 해당 좌표 row 가 없는 환경에선 noop (예: 로컬, 신규 환경).
 -- =====================================================================
 
--- amenities 외래키 참조 먼저 제거
-DELETE FROM amenities
-WHERE mountain_id = (
-    SELECT id FROM mountains
+DO $$
+DECLARE v_mountain_id bigint;
+BEGIN
+    SELECT id INTO v_mountain_id
+    FROM mountains
     WHERE name = '관악산'
       AND latitude = 37.4331
-      AND longitude = 126.9634
-);
+      AND longitude = 126.9634;
 
-DELETE FROM mountains
-WHERE name = '관악산'
-  AND latitude = 37.4331
-  AND longitude = 126.9634;
+    IF v_mountain_id IS NULL THEN
+        RETURN; -- 해당 row 없으면 noop
+    END IF;
+
+    DELETE FROM reviews        WHERE mountain_id = v_mountain_id;
+    DELETE FROM mountain_likes WHERE mountain_id = v_mountain_id;
+    DELETE FROM amenities      WHERE mountain_id = v_mountain_id;
+    DELETE FROM transportations WHERE mountain_id = v_mountain_id;
+    DELETE FROM restaurant_sections WHERE mountain_id = v_mountain_id;
+
+    -- courses 삭제 전 courses를 참조하는 hiking_records 먼저
+    DELETE FROM hiking_records WHERE course_id IN (SELECT id FROM courses WHERE mountain_id = v_mountain_id);
+    DELETE FROM courses        WHERE mountain_id = v_mountain_id;
+
+    DELETE FROM mountains      WHERE id = v_mountain_id;
+END $$;
