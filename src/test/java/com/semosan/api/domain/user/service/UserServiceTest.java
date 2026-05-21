@@ -103,6 +103,31 @@ class UserServiceTest {
     }
 
     @Test
+    void findOrRegisterKakaoUserCreatesNewUserWhenMatchedUserIsDeleted() {
+        User deletedUser = User.createKakaoUser("kakao-id", "old@example.com", "old-name", "old-profile", DeviceType.IOS);
+        ReflectionTestUtils.setField(deletedUser, "id", 1L);
+        deletedUser.withdraw();
+        ReflectionTestUtils.setField(deletedUser, "oauthId", "kakao-id");
+
+        when(userRepository.findByOauthIdAndOauthProvider("kakao-id", OAuthProvider.KAKAO))
+                .thenReturn(Optional.of(deletedUser));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.findOrRegisterKakaoUser(
+                "kakao-id",
+                "user@example.com",
+                "name",
+                "profile",
+                DeviceType.IOS
+        );
+
+        verify(userRepository).save(result);
+        verify(userNotificationSettingRepository).save(any());
+        assertThat(result).isNotSameAs(deletedUser);
+        assertThat(result.isDeleted()).isFalse();
+    }
+
+    @Test
     void withdrawUserDeletesUserChildRecordsAndSoftDeletesUser() {
         User user = User.createTestUser("withdraw-test-user", DeviceType.IOS);
         ReflectionTestUtils.setField(user, "id", 1L);

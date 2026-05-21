@@ -45,6 +45,7 @@ public class UserService {
             String kakaoId, String email, String name, String profileUrl, DeviceType deviceType
     ) {
         return userRepository.findByOauthIdAndOauthProvider(kakaoId, OAuthProvider.KAKAO)
+                .filter(user -> !user.isDeleted())
                 .orElseGet(() -> saveNewUserWithNotificationSetting(
                         User.createKakaoUser(kakaoId, email, name, profileUrl, deviceType)
                 ));
@@ -54,6 +55,7 @@ public class UserService {
     @Transactional
     public User findOrRegisterAppleUser(String appleId, String email, String name, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(appleId, OAuthProvider.APPLE)
+                .filter(user -> !user.isDeleted())
                 .orElseGet(() -> saveNewUserWithNotificationSetting(
                         User.createAppleUser(appleId, email, name, deviceType)
                 ));
@@ -63,6 +65,7 @@ public class UserService {
     @Transactional
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.TEST)
+                .filter(user -> !user.isDeleted())
                 .orElseGet(() -> saveNewUserWithNotificationSetting(User.createTestUser(testUserId, deviceType)));
     }
 
