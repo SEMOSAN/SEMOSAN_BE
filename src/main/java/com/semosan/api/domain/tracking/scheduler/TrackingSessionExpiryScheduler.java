@@ -2,9 +2,11 @@ package com.semosan.api.domain.tracking.scheduler;
 
 import com.semosan.api.domain.tracking.entity.TrackingSession;
 import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
+import com.semosan.api.domain.tracking.event.TrackingSessionTerminatedEvent;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class TrackingSessionExpiryScheduler {
     private static final Duration EXPIRY_THRESHOLD = Duration.ofHours(24);
 
     private final TrackingSessionRepository trackingSessionRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Scheduled(cron = "0 0 * * * *")  // 매 정시 0분 (1시간 간격)
     @Transactional
@@ -40,6 +43,7 @@ public class TrackingSessionExpiryScheduler {
         }
         for (TrackingSession session : stale) {
             session.abandon();
+            eventPublisher.publishEvent(new TrackingSessionTerminatedEvent(session.getId()));
         }
         log.info("Expired {} stale tracking sessions (cutoff={})", stale.size(), cutoff);
     }

@@ -1,11 +1,14 @@
 package com.semosan.api.domain.tracking.service;
 
+import com.semosan.api.domain.tracking.event.TrackingSessionTerminatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.stream.StreamListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -106,6 +109,32 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
                     batch.size(), sessionId, e);
             batch.forEach(queue::offer);
         }
+    }
+
+    /**
+     * 세션 종료 트랜잭션 commit 후 호출 — 잔여 버퍼를 final flush 시도하고 buffers 에서 제거한다.
+     * chunk 단위로 시도하고 실패한 chunk 는 폐기(재시도 X). 메모리 누수 방지가 우선.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onSessionTerminated(TrackingSessionTerminatedEvent event) {
+        Long sessionId = event.sessionId();
+        Queue<TrackingPointFlushService.PendingPoint> queue = buffers.remove(sessionId);
+        if (queue == null || queue.isEmpty()) {
+            return;
+        }
+        List<TrackingPointFlushService.PendingPoint> remaining = new ArrayList<>(queue);
+        for (int i = 0; i < remaining.size(); i += FLUSH_THRESHOLD) {
+            List<TrackingPointFlushService.PendingPoint> chunk =
+                    remaining.subList(i, Math.min(i + FLUSH_THRESHOLD, remaining.size()));
+            try {
+                flushService.flush(sessionId, chunk);
+            } catch (RuntimeException e) {
+                log.error("Failed final flush chunk for terminated session {}; discarding {} points",
+                        sessionId, chunk.size(), e);
+            }
+        }
+        log.debug("Cleaned up tracking buffer for terminated session {} ({} points)",
+                sessionId, remaining.size());
     }
 
     private static Double parseNullableDouble(String value) {
