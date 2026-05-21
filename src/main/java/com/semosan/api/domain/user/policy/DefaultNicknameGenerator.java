@@ -9,10 +9,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 public class DefaultNicknameGenerator {
@@ -22,10 +23,8 @@ public class DefaultNicknameGenerator {
     private static final int NUMBER_BOUND = 10_000;
     private static final int MAX_ATTEMPTS = 100;
 
-    private final SecureRandom random = new SecureRandom();
     private final NicknamePolicy nicknamePolicy;
-    private final List<String> adjectives;
-    private final List<String> nouns;
+    private final List<String> nicknamePrefixes;
 
     public DefaultNicknameGenerator(
             NicknamePolicy nicknamePolicy,
@@ -33,14 +32,15 @@ public class DefaultNicknameGenerator {
     ) {
         this.nicknamePolicy = nicknamePolicy;
         Properties properties = loadProperties(nicknamePoolsResource);
-        this.adjectives = splitValues(properties.getProperty(ADJECTIVES_KEY));
-        this.nouns = splitValues(properties.getProperty(NOUNS_KEY));
+        List<String> adjectives = splitValues(properties.getProperty(ADJECTIVES_KEY));
+        List<String> nouns = splitValues(properties.getProperty(NOUNS_KEY));
+        this.nicknamePrefixes = buildValidNicknamePrefixes(adjectives, nouns);
     }
 
     public String generate() {
         for (int i = 0; i < MAX_ATTEMPTS; i++) {
             String nickname = randomNickname();
-            if (nicknamePolicy.check(nickname) == NicknameCheckResult.AVAILABLE) {
+            if (!nicknamePolicy.isDuplicated(nickname)) {
                 return nickname;
             }
         }
@@ -48,10 +48,26 @@ public class DefaultNicknameGenerator {
     }
 
     private String randomNickname() {
-        String adjective = adjectives.get(random.nextInt(adjectives.size()));
-        String noun = nouns.get(random.nextInt(nouns.size()));
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        String prefix = nicknamePrefixes.get(random.nextInt(nicknamePrefixes.size()));
         int number = random.nextInt(NUMBER_BOUND);
-        return "%s%s%04d".formatted(adjective, noun, number);
+        return "%s%04d".formatted(prefix, number);
+    }
+
+    private List<String> buildValidNicknamePrefixes(List<String> adjectives, List<String> nouns) {
+        List<String> prefixes = new ArrayList<>();
+        for (String adjective : adjectives) {
+            for (String noun : nouns) {
+                String nicknameCandidate = "%s%s0000".formatted(adjective, noun);
+                if (nicknamePolicy.checkStaticRules(nicknameCandidate) == NicknameCheckResult.AVAILABLE) {
+                    prefixes.add(adjective + noun);
+                }
+            }
+        }
+        if (prefixes.isEmpty()) {
+            throw new IllegalStateException("사용 가능한 기본 닉네임 조합이 없습니다.");
+        }
+        return List.copyOf(prefixes);
     }
 
     private Properties loadProperties(Resource resource) {
