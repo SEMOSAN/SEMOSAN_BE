@@ -49,6 +49,15 @@ public class SecurityConfig {
             "/api/auth/token/reissue"
     };
 
+    /**
+     * WebSocket(STOMP) 엔드포인트.
+     * 핸드셰이크는 HTTP JWT 필터로 인증하지 않고 통과시키고,
+     * STOMP CONNECT 프레임에서 StompAuthChannelInterceptor 가 JWT 를 검증한다.
+     */
+    public static final String[] WEBSOCKET_URIS = {
+            "/ws/tracking/**"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -63,6 +72,7 @@ public class SecurityConfig {
                         .requestMatchers(SWAGGER_URIS).permitAll()
                         .requestMatchers(OAUTH_URIS).permitAll()
                         .requestMatchers(AUTH_URIS).permitAll()
+                        .requestMatchers(WEBSOCKET_URIS).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -78,7 +88,17 @@ public class SecurityConfig {
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
+        // WebSocket(STOMP) 핸드셰이크는 다양한 origin(모바일/로컬 테스트 페이지 등)에서 들어옴.
+        // /ws/** 만 별도 정책으로 풀어준다.
+        // TODO: production 에서는 모바일 앱 origin 만 명시적으로 허용하도록 좁힐 것.
+        CorsConfiguration wsConfig = new CorsConfiguration();
+        wsConfig.setAllowedOriginPatterns(List.of("*"));
+        wsConfig.setAllowedMethods(List.of("GET"));
+        wsConfig.setAllowedHeaders(List.of("*"));
+        wsConfig.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/ws/**", wsConfig);
         source.registerCorsConfiguration("/**", config);
         return source;
     }

@@ -10,10 +10,12 @@ import com.semosan.api.domain.tracking.dto.request.CreateTrackingSessionRequest;
 import com.semosan.api.domain.tracking.dto.response.TrackingSessionResponse;
 import com.semosan.api.domain.tracking.entity.TrackingSession;
 import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
+import com.semosan.api.domain.tracking.event.TrackingSessionTerminatedEvent;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ public class TrackingSessionService {
     private final MountainRepository mountainRepository;
     private final CourseRepository courseRepository;
     private final UserReader userReader;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public TrackingSessionResponse create(Long userId, CreateTrackingSessionRequest request) {
@@ -77,6 +80,7 @@ public class TrackingSessionService {
     public TrackingSessionResponse complete(Long userId, Long sessionId) {
         TrackingSession session = findOwnedSession(userId, sessionId);
         session.complete();
+        eventPublisher.publishEvent(new TrackingSessionTerminatedEvent(sessionId));
         return TrackingSessionResponse.from(session);
     }
 
@@ -84,6 +88,7 @@ public class TrackingSessionService {
     public TrackingSessionResponse abandon(Long userId, Long sessionId) {
         TrackingSession session = findOwnedSession(userId, sessionId);
         session.abandon();
+        eventPublisher.publishEvent(new TrackingSessionTerminatedEvent(sessionId));
         return TrackingSessionResponse.from(session);
     }
 
