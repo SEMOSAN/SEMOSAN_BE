@@ -6,8 +6,8 @@ import jakarta.validation.constraints.NotNull;
 
 public record OAuthKakaoLoginRequest(
 
-        @NotBlank(message = "인가 코드는 필수입니다.")
-        String code,
+        @NotBlank(message = "카카오 액세스 토큰은 필수입니다.")
+        String accessToken,
 
         @NotNull(message = "디바이스 타입은 필수입니다.")
         DeviceType deviceType
