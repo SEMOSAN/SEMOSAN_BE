@@ -14,4 +14,4 @@ resources:
   - minio/service.yaml
 images:
   - name: ghcr.io/semosan/semosan_be
-    newTag: fb0eb2823ad7e4ee955bd3941443be46e88a22cf
+    newTag: 839742812054d5de0ba8c02ecff975a9984b3db7
