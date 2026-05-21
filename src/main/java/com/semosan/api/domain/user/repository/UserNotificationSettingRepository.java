@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface UserNotificationSettingRepository extends JpaRepository<UserNotificationSetting, Long> {
 
     Optional<UserNotificationSetting> findByUser_Id(Long userId);
+
+    void deleteByUser_Id(Long userId);
 }

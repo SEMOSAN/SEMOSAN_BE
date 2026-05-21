@@ -14,24 +14,21 @@ import com.semosan.api.domain.tracking.dto.request.CreateTrackingSessionRequest;
 import com.semosan.api.domain.tracking.dto.response.TrackingSessionResponse;
 import com.semosan.api.domain.tracking.entity.TrackingSession;
 import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
+import com.semosan.api.domain.tracking.event.TrackingSessionTerminatedEvent;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.EnumSet;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TrackingSessionService {
-
-    private static final Set<TrackingSessionStatus> ACTIVE_STATES =
-            EnumSet.of(TrackingSessionStatus.IN_PROGRESS, TrackingSessionStatus.PAUSED);
 
     private final TrackingSessionRepository trackingSessionRepository;
     private final MountainRepository mountainRepository;
@@ -40,10 +37,11 @@ public class TrackingSessionService {
     private final TrackingSessionStatsService statsService;
     private final HikingRecordRepository hikingRecordRepository;
     private final HikingMemberRepository hikingMemberRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public TrackingSessionResponse create(Long userId, CreateTrackingSessionRequest request) {
-        if (trackingSessionRepository.existsByUser_IdAndStatusIn(userId, ACTIVE_STATES)) {
+        if (trackingSessionRepository.existsByUser_IdAndStatusIn(userId, TrackingSessionStatus.ACTIVE_STATES)) {
             throw new GeneralException(ErrorStatus.TRACKING_SESSION_ALREADY_IN_PROGRESS);
         }
         User user = userReader.findActiveUserById(userId);
@@ -59,7 +57,7 @@ public class TrackingSessionService {
 
     public Optional<TrackingSessionResponse> getActive(Long userId) {
         return trackingSessionRepository
-                .findFirstByUser_IdAndStatusInOrderByStartedAtDesc(userId, ACTIVE_STATES)
+                .findFirstByUser_IdAndStatusInOrderByStartedAtDesc(userId, TrackingSessionStatus.ACTIVE_STATES)
                 .map(TrackingSessionResponse::from);
     }
 
@@ -106,6 +104,8 @@ public class TrackingSessionService {
         HikingMember member = HikingMember.create(savedRecord, session.getUser());
         hikingMemberRepository.save(member);
 
+        eventPublisher.publishEvent(new TrackingSessionTerminatedEvent(sessionId));
+
         return TrackingSessionResponse.from(session, savedRecord.getId());
     }
 
@@ -113,6 +113,7 @@ public class TrackingSessionService {
     public TrackingSessionResponse abandon(Long userId, Long sessionId) {
         TrackingSession session = findOwnedSession(userId, sessionId);
         session.abandon();
+        eventPublisher.publishEvent(new TrackingSessionTerminatedEvent(sessionId));
         return TrackingSessionResponse.from(session);
     }
 
@@ -131,7 +132,7 @@ public class TrackingSessionService {
             return null;
         }
         if (request.courseId() == null) {
-            throw new GeneralException(ErrorStatus.COURSE_NOT_FOUND);
+            throw new GeneralException(ErrorStatus.TRACKING_COURSE_ID_REQUIRED);
         }
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.COURSE_NOT_FOUND));

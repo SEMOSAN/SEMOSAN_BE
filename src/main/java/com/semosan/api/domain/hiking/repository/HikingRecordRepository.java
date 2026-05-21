@@ -10,7 +10,25 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long> {
+
+    @Query(
+            value = """
+                    SELECT hm.hiking_record_id
+                    FROM hiking_members hm
+                    WHERE hm.user_id = :userId
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM hiking_members other_hm
+                          WHERE other_hm.hiking_record_id = hm.hiking_record_id
+                            AND other_hm.user_id <> :userId
+                      )
+                    """,
+            nativeQuery = true
+    )
+    List<Long> findRecordIdsOnlyParticipatedByUser(@Param("userId") Long userId);
 
     @Query(
             value = """
@@ -48,7 +66,8 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
                         m.name AS mountainName,
                         c.id AS courseId,
                         c.name AS courseName,
-                        COALESCE(hr.photo_report_image_url, hr.clive_image_url, m.image_url) AS imageUrl,
+                        hr.photo_report_image_url AS photoReportImageUrl,
+                        hr.clive_image_url AS cliveImageUrl,
                         c.distance AS distance,
                         hr.duration AS duration,
                         hr.created_at AS hikedAt
@@ -85,4 +104,38 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
             nativeQuery = true
     )
     UserHikingRecordSummaryProjection findUserHikingRecordSummaryByUserId(@Param("userId") Long userId);
+
+    @Query(
+            value = """
+                    SELECT
+                        hr.id AS hikingRecordId,
+                        m.id AS mountainId,
+                        m.name AS mountainName,
+                        c.id AS courseId,
+                        c.name AS courseName,
+                        hr.photo_report_image_url AS photoReportImageUrl,
+                        hr.clive_image_url AS cliveImageUrl,
+                        c.distance AS distance,
+                        hr.duration AS duration,
+                        hr.created_at AS hikedAt
+                    FROM hiking_records hr
+                    JOIN hiking_members hm ON hm.hiking_record_id = hr.id
+                    JOIN mountains m ON m.id = hr.mountain_id
+                    JOIN courses c ON c.id = hr.course_id
+                    WHERE hm.user_id = :userId AND hr.mountain_id = :mountainId
+                    ORDER BY hr.created_at DESC, hr.id DESC
+                    """,
+            countQuery = """
+                    SELECT COUNT(DISTINCT hr.id)
+                    FROM hiking_records hr
+                    JOIN hiking_members hm ON hm.hiking_record_id = hr.id
+                    WHERE hm.user_id = :userId AND hr.mountain_id = :mountainId
+                    """,
+            nativeQuery = true
+    )
+    Page<UserHikingRecordProjection> findUserHikingRecordsByUserIdAndMountainId(
+            @Param("userId") Long userId,
+            @Param("mountainId") Long mountainId,
+            Pageable pageable
+    );
 }

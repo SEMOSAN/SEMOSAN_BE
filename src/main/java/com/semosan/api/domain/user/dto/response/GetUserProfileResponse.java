@@ -6,6 +6,8 @@ import com.semosan.api.domain.user.enums.onboarding.ExerciseType;
 import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
 import com.semosan.api.domain.user.enums.user.Gender;
 
+import java.time.LocalDate;
+
 public record GetUserProfileResponse(
         String profileUrl,
         String nickname,
@@ -14,7 +16,8 @@ public record GetUserProfileResponse(
         Integer age,
         Double height,
         Double weight,
-        ExerciseType exerciseType
+        ExerciseType exerciseType,
+        LocalDate birthDate
 ) {
     // User와 온보딩 정보로 프로필 조회 응답 DTO를 생성합니다.
     public static GetUserProfileResponse of(User user, UserOnboarding userOnboarding) {
@@ -33,7 +36,8 @@ public record GetUserProfileResponse(
                 user.getAge(),
                 user.getHeight(),
                 user.getWeight(),
-                exerciseType
+                exerciseType,
+                user.getBirthDate()
         );
     }
 }

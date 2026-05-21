@@ -3,6 +3,7 @@ package com.semosan.api.common.exception;
 import com.semosan.api.common.base.BaseStatus;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.common.response.ApiResponse;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 @Slf4j
@@ -37,6 +39,36 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
     ) {
         log.warn("[*] IllegalArgumentException : {}", e.getMessage());
         return ApiResponse.error(ErrorStatus.BAD_REQUEST);
+    }
+
+    // @Validated 컨트롤러의 @RequestParam/@PathVariable 단순 타입 검증 실패 (Spring 6 MethodValidationInterceptor 경로)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(
+            ConstraintViolationException e
+    ) {
+        String message = e.getConstraintViolations().stream()
+                .findFirst()
+                .map(v -> v.getPropertyPath().toString() + ": " + v.getMessage())
+                .orElse(ErrorStatus.BAD_REQUEST.getMessage());
+        log.warn("[*] ConstraintViolationException : {}", message);
+        return ApiResponse.error(ErrorStatus.BAD_REQUEST, message);
+    }
+
+    // Spring 6.1+ HandlerMethodValidationException (컨트롤러 메서드 파라미터 검증 실패 표준 경로)
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(
+            HandlerMethodValidationException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request
+    ) {
+        String message = ex.getAllErrors().stream()
+                .findFirst()
+                .map(error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : ErrorStatus.BAD_REQUEST.getMessage())
+                .orElse(ErrorStatus.BAD_REQUEST.getMessage());
+        log.warn("[*] HandlerMethodValidationException : {}", message);
+        ApiResponse<Void> body = createApiResponse(ErrorStatus.BAD_REQUEST, message);
+        return handleExceptionInternal(ex, body, headers, status, request);
     }
 
     // null 참조로 발생한 서버 오류를 500 에러로 응답
