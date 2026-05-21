@@ -55,16 +55,20 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
     }
 
     // Spring 6.1+ HandlerMethodValidationException (컨트롤러 메서드 파라미터 검증 실패 표준 경로)
-    @ExceptionHandler(HandlerMethodValidationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleHandlerMethodValidation(
-            HandlerMethodValidationException e
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(
+            HandlerMethodValidationException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request
     ) {
-        String message = e.getAllErrors().stream()
+        String message = ex.getAllErrors().stream()
                 .findFirst()
                 .map(error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : ErrorStatus.BAD_REQUEST.getMessage())
                 .orElse(ErrorStatus.BAD_REQUEST.getMessage());
         log.warn("[*] HandlerMethodValidationException : {}", message);
-        return ApiResponse.error(ErrorStatus.BAD_REQUEST, message);
+        ApiResponse<Void> body = createApiResponse(ErrorStatus.BAD_REQUEST, message);
+        return handleExceptionInternal(ex, body, headers, status, request);
     }
 
     // null 참조로 발생한 서버 오류를 500 에러로 응답
