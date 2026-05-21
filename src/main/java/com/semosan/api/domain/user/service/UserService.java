@@ -14,6 +14,7 @@ import com.semosan.api.domain.user.entity.UserNotificationSetting;
 import com.semosan.api.domain.user.entity.UserOnboarding;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
+import com.semosan.api.domain.user.policy.DefaultUserNameGenerator;
 import com.semosan.api.domain.user.policy.NicknamePolicy;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
 import com.semosan.api.domain.user.repository.UserOnboardingRepository;
@@ -36,6 +37,7 @@ public class UserService {
     private final HikingMemberRepository hikingMemberRepository;
     private final HikingRecordRepository hikingRecordRepository;
     private final NotificationRepository notificationRepository;
+    private final DefaultUserNameGenerator defaultUserNameGenerator;
     private final NicknamePolicy nicknamePolicy;
     private final UserReader userReader;
 
@@ -71,6 +73,7 @@ public class UserService {
 
     // 신규 유저 저장 후 기본 알림 설정을 생성합니다.
     private User saveNewUserWithNotificationSetting(User user) {
+        user.updateName(defaultUserNameGenerator.generate());
         User savedUser = userRepository.save(user);
         // 온보딩 권한 설정 초기화 전에 항상 기본 알림 설정 row가 존재하도록 생성합니다.
         userNotificationSettingRepository.save(UserNotificationSetting.createDefault(savedUser));

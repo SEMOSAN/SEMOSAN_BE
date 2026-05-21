@@ -140,6 +140,10 @@ public class User extends BaseEntity {
         this.deleted = true;
     }
 
+    public void updateName(String name) {
+        this.name = name;
+    }
+
     // 온보딩 완료 처리
     public void completeOnboarding(CompleteOnboardingCommand command) {
         this.nickname = command.nickname();
