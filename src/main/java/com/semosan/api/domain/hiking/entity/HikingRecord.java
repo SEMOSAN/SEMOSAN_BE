@@ -45,7 +45,7 @@ public class HikingRecord extends BaseEntity {
 
     /** 등산 중 도달한 최고 고도 (m). */
     @Column(name = "max_altitude", nullable = false)
-    private Double altitude;
+    private Double maxAltitude;
 
     /**
      * 소모 칼로리 (kcal).
@@ -99,7 +99,7 @@ public class HikingRecord extends BaseEntity {
                 .course(session.getCourse())
                 .trackingSession(session)
                 .duration(duration)
-                .altitude(maxAltitude == null ? 0.0 : maxAltitude)
+                .maxAltitude(maxAltitude == null ? 0.0 : maxAltitude)
                 .calories(0)  // TODO: 칼로리 산정 공식 도입 시 교체
                 .distance(distance)
                 .ascent(ascent)

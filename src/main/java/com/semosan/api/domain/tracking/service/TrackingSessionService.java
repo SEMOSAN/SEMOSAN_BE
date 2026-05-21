@@ -19,12 +19,14 @@ import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -92,6 +94,10 @@ public class TrackingSessionService {
         session.complete();
 
         TrackingSessionStatsService.Stats stats = statsService.getStats(sessionId);
+        if (stats.pointCount() == 0) {
+            // GPS 점이 한 건도 들어오지 않은 채 종료 — 사용자의 명시적 종료는 존중하되 통계가 비어있음을 알림.
+            log.warn("Completing tracking session {} with no GPS points; stats will be zero/null", sessionId);
+        }
         HikingRecord record = HikingRecord.fromTrackingSession(
                 session,
                 stats.distanceMeters(),
