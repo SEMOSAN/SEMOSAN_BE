@@ -11,9 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * 24h 동안 어떤 업데이트도 없는 활성(IN_PROGRESS/PAUSED) 세션을 자동으로 ABANDONED 처리한다.
@@ -27,8 +25,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class TrackingSessionExpiryScheduler {
 
-    private static final Set<TrackingSessionStatus> ACTIVE_STATES =
-            EnumSet.of(TrackingSessionStatus.IN_PROGRESS, TrackingSessionStatus.PAUSED);
     private static final Duration EXPIRY_THRESHOLD = Duration.ofHours(24);
 
     private final TrackingSessionRepository trackingSessionRepository;
@@ -37,7 +33,8 @@ public class TrackingSessionExpiryScheduler {
     @Transactional
     public void expireStaleSessions() {
         LocalDateTime cutoff = LocalDateTime.now().minus(EXPIRY_THRESHOLD);
-        List<TrackingSession> stale = trackingSessionRepository.findStaleActiveSessions(ACTIVE_STATES, cutoff);
+        List<TrackingSession> stale = trackingSessionRepository.findStaleActiveSessions(
+                TrackingSessionStatus.ACTIVE_STATES, cutoff);
         if (stale.isEmpty()) {
             return;
         }

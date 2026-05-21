@@ -6,6 +6,7 @@ import com.semosan.api.domain.user.enums.nickname.NicknameCheckResult;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -32,7 +33,19 @@ public class NicknamePolicy {
     private final UserRepository userRepository;
 
     // 닉네임 사용 가능 여부를 검증 결과로 반환합니다.
+    @Transactional(readOnly = true)
     public NicknameCheckResult check(String nickname) {
+        NicknameCheckResult staticResult = checkStaticRules(nickname);
+        if (staticResult != NicknameCheckResult.AVAILABLE) {
+            return staticResult;
+        }
+        if (isDuplicated(nickname)) {
+            return NicknameCheckResult.DUPLICATED;
+        }
+        return NicknameCheckResult.AVAILABLE;
+    }
+
+    public NicknameCheckResult checkStaticRules(String nickname) {
         String normalizedNickname = nickname.toLowerCase();
         if (!NICKNAME_PATTERN.matcher(nickname).matches()
                 || JAMO_ONLY_PATTERN.matcher(nickname).matches()
@@ -48,10 +61,12 @@ public class NicknamePolicy {
                 || BLOCKED_WORDS.stream().anyMatch(normalizedNickname::contains)) {
             return NicknameCheckResult.BLOCKED_WORD;
         }
-        if (userRepository.existsByNicknameAndDeletedFalse(nickname)) {
-            return NicknameCheckResult.DUPLICATED;
-        }
         return NicknameCheckResult.AVAILABLE;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isDuplicated(String nickname) {
+        return userRepository.existsByNicknameAndDeletedFalse(nickname);
     }
 
     // 닉네임을 검증하고 사용할 수 없으면 예외를 발생시킵니다.

@@ -17,17 +17,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.EnumSet;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TrackingSessionService {
-
-    private static final Set<TrackingSessionStatus> ACTIVE_STATES =
-            EnumSet.of(TrackingSessionStatus.IN_PROGRESS, TrackingSessionStatus.PAUSED);
 
     private final TrackingSessionRepository trackingSessionRepository;
     private final MountainRepository mountainRepository;
@@ -36,7 +31,7 @@ public class TrackingSessionService {
 
     @Transactional
     public TrackingSessionResponse create(Long userId, CreateTrackingSessionRequest request) {
-        if (trackingSessionRepository.existsByUser_IdAndStatusIn(userId, ACTIVE_STATES)) {
+        if (trackingSessionRepository.existsByUser_IdAndStatusIn(userId, TrackingSessionStatus.ACTIVE_STATES)) {
             throw new GeneralException(ErrorStatus.TRACKING_SESSION_ALREADY_IN_PROGRESS);
         }
         User user = userReader.findActiveUserById(userId);
@@ -52,7 +47,7 @@ public class TrackingSessionService {
 
     public Optional<TrackingSessionResponse> getActive(Long userId) {
         return trackingSessionRepository
-                .findFirstByUser_IdAndStatusInOrderByStartedAtDesc(userId, ACTIVE_STATES)
+                .findFirstByUser_IdAndStatusInOrderByStartedAtDesc(userId, TrackingSessionStatus.ACTIVE_STATES)
                 .map(TrackingSessionResponse::from);
     }
 
@@ -107,7 +102,7 @@ public class TrackingSessionService {
             return null;
         }
         if (request.courseId() == null) {
-            throw new GeneralException(ErrorStatus.COURSE_NOT_FOUND);
+            throw new GeneralException(ErrorStatus.TRACKING_COURSE_ID_REQUIRED);
         }
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new GeneralException(ErrorStatus.COURSE_NOT_FOUND));
