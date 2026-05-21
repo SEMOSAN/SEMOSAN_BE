@@ -79,17 +79,6 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, body, headers, status, request);
     }
 
-    // null 참조로 발생한 서버 오류를 500 에러로 응답
-    @ExceptionHandler(NullPointerException.class)
-    public ResponseEntity<ApiResponse<Void>> handleNullPointerException(
-            NullPointerException e,
-            HttpServletRequest request
-    ) {
-        log.error("[*] NullPointerException :", e);
-        serverErrorAlertService.notify(ErrorStatus.INTERNAL_SERVER_ERROR.getHttpStatus().value(), e, request);
-        return ApiResponse.error(ErrorStatus.INTERNAL_SERVER_ERROR);
-    }
-
     // 처리되지 않은 모든 예외를 잡아 500 서버 오류로 응답
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(
