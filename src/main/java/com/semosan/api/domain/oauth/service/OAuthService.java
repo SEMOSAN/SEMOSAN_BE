@@ -42,7 +42,7 @@ public class OAuthService {
         User user = userService.findOrRegisterKakaoUser(kakaoId, email, name, profileUrl, request.deviceType());
 
         TokenIssuance tokens = jwtService.issueTokens(user);
-        return new OAuthLoginResponse(user.getId(), tokens.accessToken(), tokens.refreshToken());
+        return OAuthLoginResponse.from(user, tokens);
     }
 
     @Transactional
@@ -55,7 +55,7 @@ public class OAuthService {
         User user = userService.findOrRegisterAppleUser(appleId, email, request.name(), request.deviceType());
 
         TokenIssuance tokens = jwtService.issueTokens(user);
-        return new OAuthLoginResponse(user.getId(), tokens.accessToken(), tokens.refreshToken());
+        return OAuthLoginResponse.from(user, tokens);
     }
 
 }

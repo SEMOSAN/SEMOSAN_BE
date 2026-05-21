@@ -125,16 +125,18 @@ public class User extends BaseEntity {
                 .build();
     }
 
-    public void restore(String email, String name, String profileUrl, DeviceType deviceType) {
-        if (email != null) this.email = email;
-        if (name != null) this.name = name;
-        if (profileUrl != null) this.profileUrl = profileUrl;
-        this.deviceType = deviceType;
-        this.onboardingStatus = OnboardingStatus.INCOMPLETE;
-        this.deleted = false;
-    }
-
     public void withdraw() {
+        this.email = null;
+        this.name = null;
+        this.nickname = null;
+        this.profileUrl = null;
+        this.gender = null;
+        this.age = null;
+        this.birthDate = null;
+        this.height = null;
+        this.weight = null;
+        this.onboardingStatus = OnboardingStatus.INCOMPLETE;
+        this.oauthId = "WITHDRAWN:" + this.id + ":" + this.oauthProvider.name();
         this.deleted = true;
     }
 

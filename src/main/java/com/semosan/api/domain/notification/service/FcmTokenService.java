@@ -5,6 +5,7 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.notification.entity.FcmToken;
 import com.semosan.api.domain.notification.repository.FcmTokenRepository;
 import com.semosan.api.domain.user.enums.user.DeviceType;
+import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FcmTokenService {
 
     private final FcmTokenRepository fcmTokenRepository;
+    private final UserReader userReader;
 
     /**
      * 토큰 등록
@@ -23,6 +25,7 @@ public class FcmTokenService {
      */
     @Transactional
     public void register(Long userId, String token, DeviceType deviceType) {
+        userReader.findActiveUserById(userId);
         fcmTokenRepository.findByToken(token).ifPresentOrElse(
                 existing -> existing.reassignTo(userId, deviceType),
                 () -> fcmTokenRepository.save(FcmToken.create(userId, token, deviceType))
@@ -35,6 +38,7 @@ public class FcmTokenService {
      */
     @Transactional
     public void delete(Long userId, String token) {
+        userReader.findActiveUserById(userId);
         fcmTokenRepository.findByToken(token).ifPresent(fcmToken -> {
             if (!fcmToken.getUserId().equals(userId)) {
                 throw new GeneralException(ErrorStatus.FORBIDDEN);
@@ -50,5 +54,13 @@ public class FcmTokenService {
     @Transactional
     public void deleteExpired(String token) {
         fcmTokenRepository.deleteByToken(token);
+    }
+
+    /**
+     * 회원 탈퇴 시 해당 유저의 모든 FCM 토큰을 정리합니다.
+     */
+    @Transactional
+    public void deleteAllByUserId(Long userId) {
+        fcmTokenRepository.deleteAllByUserId(userId);
     }
 }

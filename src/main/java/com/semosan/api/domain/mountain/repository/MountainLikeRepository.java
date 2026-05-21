@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -15,6 +16,10 @@ public interface MountainLikeRepository extends JpaRepository<MountainLike, Long
     boolean existsByUser_IdAndMountain_Id(Long userId, Long mountainId);
 
     Optional<MountainLike> findByUser_IdAndMountain_Id(Long userId, Long mountainId);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM MountainLike ml WHERE ml.user.id = :userId")
+    void deleteByUser_Id(@Param("userId") Long userId);
 
     @EntityGraph(attributePaths = "mountain")
     @Query(

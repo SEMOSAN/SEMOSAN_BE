@@ -14,7 +14,9 @@ public interface UserHikingRecordProjection {
 
     String getCourseName();
 
-    String getImageUrl();
+    String getPhotoReportImageUrl();
+
+    String getCliveImageUrl();
 
     Double getDistance();
 
