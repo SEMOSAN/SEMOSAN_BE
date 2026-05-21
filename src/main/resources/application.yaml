@@ -49,6 +49,8 @@ firebase:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
   default-flat-param-object: true
 
 minio:
