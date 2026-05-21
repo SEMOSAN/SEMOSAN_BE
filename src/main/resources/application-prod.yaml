@@ -44,5 +44,5 @@ test:
 
 discord:
   alert:
-    enabled: ${DISCORD_ALERT_ENABLED:false}
-    webhook-url: ${DISCORD_WEBHOOK_URL:}
+    enabled: ${DISCORD_ALERT_ENABLED}
+    webhook-url: ${DISCORD_WEBHOOK_URL}
