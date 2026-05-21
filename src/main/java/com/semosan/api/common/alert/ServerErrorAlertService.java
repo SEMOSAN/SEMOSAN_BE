@@ -2,7 +2,6 @@ package com.semosan.api.common.alert;
 
 import com.semosan.api.common.alert.dto.DiscordEmbed;
 import com.semosan.api.common.alert.dto.DiscordMessage;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Async;
@@ -31,11 +30,11 @@ public class ServerErrorAlertService {
     private final Environment environment;
 
     @Async("discordAlertExecutor")
-    public void notify(int status, Exception exception, HttpServletRequest request) {
-        discordAlertClient.send(buildMessage(status, exception, request));
+    public void notify(int status, Exception exception, RequestContext requestContext) {
+        discordAlertClient.send(buildMessage(status, exception, requestContext));
     }
 
-    private DiscordMessage buildMessage(int status, Exception exception, HttpServletRequest request) {
+    private DiscordMessage buildMessage(int status, Exception exception, RequestContext requestContext) {
         String description = """
                 ### 에러 발생 시간
                 %s
@@ -56,9 +55,9 @@ public class ServerErrorAlertService {
                 """.formatted(
                 ZonedDateTime.now(KOREA_ZONE).format(TIME_FORMATTER),
                 activeProfiles(),
-                endpoint(request),
+                endpoint(requestContext),
                 status,
-                client(request),
+                client(requestContext),
                 sanitize(exception.getMessage()),
                 stackTrace(exception)
         );
@@ -77,27 +76,19 @@ public class ServerErrorAlertService {
         return String.join(",", Arrays.asList(profiles));
     }
 
-    private String endpoint(HttpServletRequest request) {
-        return "[%s] %s".formatted(request.getMethod(), request.getRequestURL());
+    private String endpoint(RequestContext requestContext) {
+        return "[%s] %s".formatted(requestContext.method(), requestContext.url());
     }
 
-    private String client(HttpServletRequest request) {
-        String userIdentifier = request.getUserPrincipal() == null
+    private String client(RequestContext requestContext) {
+        String userIdentifier = !StringUtils.hasText(requestContext.userId())
                 ? ""
-                : " / [UserId]: " + sanitize(request.getUserPrincipal().getName());
+                : " / [UserId]: " + sanitize(requestContext.userId());
         return "[IP]: %s%s / [User-Agent]: %s".formatted(
-                clientIp(request),
+                requestContext.ip(),
                 userIdentifier,
-                sanitize(request.getHeader("User-Agent"))
+                sanitize(requestContext.userAgent())
         );
-    }
-
-    private String clientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (StringUtils.hasText(forwardedFor)) {
-            return forwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 
     private String stackTrace(Exception exception) {

@@ -1,6 +1,7 @@
 package com.semosan.api.common.exception;
 
 import com.semosan.api.common.base.BaseStatus;
+import com.semosan.api.common.alert.RequestContext;
 import com.semosan.api.common.alert.ServerErrorAlertService;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.ErrorStatus;
@@ -33,7 +34,7 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
     ) {
         if (e.getErrorStatus().getHttpStatus().is5xxServerError()) {
             log.error("[*] GeneralException :", e);
-            serverErrorAlertService.notify(e.getErrorStatus().getHttpStatus().value(), e, request);
+            serverErrorAlertService.notify(e.getErrorStatus().getHttpStatus().value(), e, RequestContext.from(request));
         } else {
             log.warn("[*] GeneralException : {}", e.getMessage());
         }
@@ -86,7 +87,7 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
             HttpServletRequest request
     ) {
         log.error("[*] Internal Server Error :", e);
-        serverErrorAlertService.notify(ErrorStatus.INTERNAL_SERVER_ERROR.getHttpStatus().value(), e, request);
+        serverErrorAlertService.notify(ErrorStatus.INTERNAL_SERVER_ERROR.getHttpStatus().value(), e, RequestContext.from(request));
         return ApiResponse.error(ErrorStatus.INTERNAL_SERVER_ERROR);
     }
 
