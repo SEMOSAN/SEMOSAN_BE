@@ -48,6 +48,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
 
     private final TrackingSessionStatsService statsService;
     private final TrackingPointFlushService flushService;
+    private final TrackingSessionActivityService activityService;
 
     @Override
     public void onMessage(MapRecord<String, String, String> message) {
@@ -60,6 +61,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
             LocalDateTime recordedAt = LocalDateTime.parse(body.get(F_RECORDED_AT));
 
             statsService.recordPoint(sessionId, lat, lng, altitude, recordedAt);
+            activityService.markActive(sessionId);
 
             Queue<TrackingPointFlushService.PendingPoint> queue =
                     buffers.computeIfAbsent(sessionId, k -> new ConcurrentLinkedQueue<>());
