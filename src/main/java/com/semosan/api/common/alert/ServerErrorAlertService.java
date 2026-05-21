@@ -30,7 +30,7 @@ public class ServerErrorAlertService {
     private final DiscordAlertClient discordAlertClient;
     private final Environment environment;
 
-    @Async("notificationTaskExecutor")
+    @Async("discordAlertExecutor")
     public void notify(int status, Exception exception, HttpServletRequest request) {
         discordAlertClient.send(buildMessage(status, exception, request));
     }
@@ -103,17 +103,20 @@ public class ServerErrorAlertService {
     private String stackTrace(Exception exception) {
         StringWriter writer = new StringWriter();
         exception.printStackTrace(new PrintWriter(writer));
-        return truncate(sanitize(writer.toString()), MAX_STACK_TRACE_LENGTH);
+        return truncate(maskSensitiveValues(writer.toString()), MAX_STACK_TRACE_LENGTH);
     }
 
     private String sanitize(String value) {
         if (!StringUtils.hasText(value)) {
             return "-";
         }
-        return value
-                .replaceAll("(?i)(authorization|cookie|token|secret|password)=\\S+", "$1=***")
+        return maskSensitiveValues(value)
                 .replace("\n", " ")
                 .replace("\r", " ");
+    }
+
+    private String maskSensitiveValues(String value) {
+        return value.replaceAll("(?i)(authorization|cookie|token|secret|password)=\\S+", "$1=***");
     }
 
     private String truncate(String value, int maxLength) {
