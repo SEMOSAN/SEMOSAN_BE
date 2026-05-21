@@ -52,6 +52,7 @@ springdoc:
     tags-sorter: alpha
     operations-sorter: alpha
   default-flat-param-object: true
+  use-enum-ref: true
 
 minio:
   endpoint: ${MINIO_ENDPOINT}

@@ -7,18 +7,18 @@ import com.semosan.api.domain.mountain.enums.Difficulty;
 import java.util.List;
 
 public record NearbyMountainResponse(
-        MountainInfo mountain,
+        NearbyMountainInfo mountain,
         List<CourseInfo> courses
 ) {
 
     public static NearbyMountainResponse of(Mountain mountain, List<Course> courses) {
         return new NearbyMountainResponse(
-                MountainInfo.from(mountain),
+                NearbyMountainInfo.from(mountain),
                 courses.stream().map(CourseInfo::from).toList()
         );
     }
 
-    public record MountainInfo(
+    public record NearbyMountainInfo(
             Long mountainId,
             String name,
             String address,
@@ -27,8 +27,8 @@ public record NearbyMountainResponse(
             Double longitude,
             List<String> imageUrls
     ) {
-        public static MountainInfo from(Mountain mountain) {
-            return new MountainInfo(
+        public static NearbyMountainInfo from(Mountain mountain) {
+            return new NearbyMountainInfo(
                     mountain.getId(),
                     mountain.getName(),
                     mountain.getAddress(),
