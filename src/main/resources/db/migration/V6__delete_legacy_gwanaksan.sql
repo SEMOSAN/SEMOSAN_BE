@@ -7,6 +7,15 @@
 -- 멱등: 해당 좌표 row 가 없는 환경에선 noop (예: 로컬, 신규 환경).
 -- =====================================================================
 
+-- amenities 외래키 참조 먼저 제거
+DELETE FROM amenities
+WHERE mountain_id = (
+    SELECT id FROM mountains
+    WHERE name = '관악산'
+      AND latitude = 37.4331
+      AND longitude = 126.9634
+);
+
 DELETE FROM mountains
 WHERE name = '관악산'
   AND latitude = 37.4331
