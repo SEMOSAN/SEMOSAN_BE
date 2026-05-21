@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -35,8 +37,8 @@ public interface TrackingControllerDocs {
             @Parameter(hidden = true)
             @AuthenticationPrincipal Long userId,
             @Parameter(description = "현재 위치 위도", required = true)
-            @RequestParam Double lat,
+            @RequestParam @Min(-90) @Max(90) Double lat,
             @Parameter(description = "현재 위치 경도", required = true)
-            @RequestParam Double lng
+            @RequestParam @Min(-180) @Max(180) Double lng
     );
 }
