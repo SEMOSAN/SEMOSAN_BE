@@ -56,3 +56,8 @@ minio:
   access-key: ${MINIO_ACCESS_KEY}
   secret-key: ${MINIO_SECRET_KEY}
   public-url: ${MINIO_PUBLIC_URL}
+
+discord:
+  alert:
+    enabled: ${DISCORD_ALERT_ENABLED:false}
+    webhook-url: ${DISCORD_WEBHOOK_URL:}
