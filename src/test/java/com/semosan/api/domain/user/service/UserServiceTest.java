@@ -67,7 +67,7 @@ class UserServiceTest {
     @Test
     void findOrRegisterKakaoUserReturnsActiveUserWhenExists() {
         User user = User.createKakaoUser("kakao-id", "user@example.com", "name", "profile", DeviceType.IOS);
-        when(userRepository.findByOauthIdAndOauthProviderAndDeletedFalse("kakao-id", OAuthProvider.KAKAO))
+        when(userRepository.findByOauthIdAndOauthProvider("kakao-id", OAuthProvider.KAKAO))
                 .thenReturn(Optional.of(user));
 
         User result = userService.findOrRegisterKakaoUser(
@@ -83,7 +83,7 @@ class UserServiceTest {
 
     @Test
     void findOrRegisterKakaoUserCreatesNewUserWhenActiveUserDoesNotExist() {
-        when(userRepository.findByOauthIdAndOauthProviderAndDeletedFalse("kakao-id", OAuthProvider.KAKAO))
+        when(userRepository.findByOauthIdAndOauthProvider("kakao-id", OAuthProvider.KAKAO))
                 .thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -124,6 +124,7 @@ class UserServiceTest {
         assertThat(user.getEmail()).isNull();
         assertThat(user.getName()).isNull();
         assertThat(user.getNickname()).isNull();
+        assertThat(user.getOauthId()).isEqualTo("WITHDRAWN:1:TEST");
         assertThat(user.getOnboardingStatus()).isEqualTo(OnboardingStatus.INCOMPLETE);
     }
 }
