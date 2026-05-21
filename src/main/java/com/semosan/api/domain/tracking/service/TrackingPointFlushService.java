@@ -13,6 +13,7 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +33,10 @@ public class TrackingPointFlushService {
 
     private static final GeometryFactory GEOMETRY_FACTORY =
             new GeometryFactory(new PrecisionModel(), 4326);
+
+    /** 클라 시계 오차 허용 — 이 폭 이상으로 미래/과거이면 점 폐기. */
+    private static final Duration FUTURE_TOLERANCE = Duration.ofMinutes(5);
+    private static final Duration PAST_TOLERANCE = Duration.ofHours(24);
 
     private final TrackingPointRepository trackingPointRepository;
     private final TrackingSessionRepository trackingSessionRepository;
@@ -54,15 +59,39 @@ public class TrackingPointFlushService {
         }
         TrackingSession session = sessionOpt.get();
 
+        LocalDateTime now = LocalDateTime.now();
         List<TrackingPoint> batch = pendings.stream()
+                .filter(p -> isValidRecordedAt(sessionId, p.recordedAt(), now))
                 .map(p -> {
                     Point location = GEOMETRY_FACTORY.createPoint(new Coordinate(p.lng(), p.lat()));
                     location.setSRID(4326);
                     return TrackingPoint.create(session, location, p.altitude(), p.recordedAt());
                 })
                 .toList();
+        if (batch.isEmpty()) {
+            return 0;
+        }
         trackingPointRepository.saveAll(batch);
         return batch.size();
+    }
+
+    /** recordedAt 이 null 이거나 허용 범위(과거 24h ~ 미래 5분)를 벗어나면 false. */
+    private boolean isValidRecordedAt(Long sessionId, LocalDateTime recordedAt, LocalDateTime now) {
+        if (recordedAt == null) {
+            log.warn("Discarding tracking point: recordedAt is null (session={})", sessionId);
+            return false;
+        }
+        if (recordedAt.isAfter(now.plus(FUTURE_TOLERANCE))) {
+            log.warn("Discarding tracking point: recordedAt too far in future (session={}, recordedAt={})",
+                    sessionId, recordedAt);
+            return false;
+        }
+        if (recordedAt.isBefore(now.minus(PAST_TOLERANCE))) {
+            log.warn("Discarding tracking point: recordedAt too old (session={}, recordedAt={})",
+                    sessionId, recordedAt);
+            return false;
+        }
+        return true;
     }
 
     /** Consumer 메모리 버퍼에 누적되는 점 단위 — 외부에서 참조 가능하도록 노출. */

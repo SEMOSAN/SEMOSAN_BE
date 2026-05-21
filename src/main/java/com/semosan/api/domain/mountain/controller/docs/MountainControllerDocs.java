@@ -5,6 +5,8 @@ import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainRecommendationResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -32,6 +34,7 @@ public interface MountainControllerDocs {
             )
     })
     ResponseEntity<ApiResponse<PageResponse<MountainListResponse>>> getMountains(
+            @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 10) Pageable pageable
     );
 
@@ -46,8 +49,65 @@ public interface MountainControllerDocs {
             )
     })
     ResponseEntity<ApiResponse<PageResponse<MountainListResponse>>> searchMountains(
+            @AuthenticationPrincipal Long userId,
             @Parameter(description = "검색 키워드 (산 이름 또는 주소)", required = true)
             @RequestParam String keyword,
+            @PageableDefault(size = 10) Pageable pageable
+    );
+
+    @Operation(
+            summary = "지도 영역 내 산 조회 (홈 화면)",
+            description = "지도 화면에 표시할 산 목록을 BBox(남서/북동 좌표) 기준으로 조회합니다. "
+                    + "로그인한 사용자의 등산 기록을 기반으로 visited, visitCount, imageUrl이 채워집니다. "
+                    + "BBox 4개 좌표가 모두 비어있으면 서울 기본 영역이 적용됩니다. "
+                    + "1~3개만 채워진 부분 입력은 의도가 모호하므로 400 으로 거부합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "지도 영역 내 산 조회 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "BBox 4개 좌표 중 일부만 보낸 경우 (MTN_400_1)"
+            )
+    })
+    ResponseEntity<ApiResponse<MountainMapListResponse>> getMountainsForMap(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "BBox 남서쪽 꼭짓점의 위도 (사각형 아래쪽 변, 예: 37.413)")
+            @RequestParam(required = false) Double swLat,
+            @Parameter(description = "BBox 남서쪽 꼭짓점의 경도 (사각형 왼쪽 변, 예: 126.764)")
+            @RequestParam(required = false) Double swLng,
+            @Parameter(description = "BBox 북동쪽 꼭짓점의 위도 (사각형 위쪽 변, 예: 37.715)")
+            @RequestParam(required = false) Double neLat,
+            @Parameter(description = "BBox 북동쪽 꼭짓점의 경도 (사각형 오른쪽 변, 예: 127.184)")
+            @RequestParam(required = false) Double neLng
+    );
+
+    @Operation(
+            summary = "레벨 맞춤 산 추천 (홈 화면)",
+            description = "로그인 사용자의 등산 레벨(HikingLevel) → 산 난이도(Difficulty) 매핑으로 후보를 추리고, "
+                    + "사용자 위치(lat, lng)에서 가까운 순으로 정렬해 페이지 단위로 반환합니다. "
+                    + "온보딩이 완료되지 않은 사용자는 모든 난이도가 fallback으로 사용됩니다. "
+                    + "Pageable.sort 는 무시됩니다 (서버 정책상 '거리 가까운 순' 고정)."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "레벨 맞춤 산 추천 조회 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "lat 또는 lng 파라미터 누락",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<PageResponse<MountainRecommendationResponse>>> getRecommendedMountains(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "사용자 현재 위치 위도 (필수)", required = true, example = "37.4533700")
+            @RequestParam Double lat,
+            @Parameter(description = "사용자 현재 위치 경도 (필수)", required = true, example = "126.9571678")
+            @RequestParam Double lng,
             @PageableDefault(size = 10) Pageable pageable
     );
 
@@ -82,6 +142,7 @@ public interface MountainControllerDocs {
             )
     })
     ResponseEntity<ApiResponse<MountainDetailResponse>> getMountainDetail(
+            @AuthenticationPrincipal Long userId,
             @Parameter(description = "산 ID", required = true)
             @PathVariable Long mountainId
     );

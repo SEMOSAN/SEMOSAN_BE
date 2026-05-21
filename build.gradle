@@ -36,6 +36,9 @@ dependencies {
 	// Swagger
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
 
+	// MinIO
+	implementation 'io.minio:minio:8.5.17'
+
 	// JWT 라이브러리 (jjwt)
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.3'
 	implementation 'io.jsonwebtoken:jjwt-impl:0.12.3'
@@ -52,6 +55,11 @@ dependencies {
 
 	// WebSocket (트래킹 GPS 실시간 수집 — STOMP)
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+	// Flyway
+	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.flywaydb:flyway-database-postgresql'
+
 }
 
 jar { enabled = false }

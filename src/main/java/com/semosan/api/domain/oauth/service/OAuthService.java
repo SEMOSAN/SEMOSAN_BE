@@ -4,7 +4,6 @@ import com.semosan.api.common.jwt.JwtService;
 import com.semosan.api.common.jwt.TokenIssuance;
 import com.semosan.api.domain.oauth.client.OAuthAppleClient;
 import com.semosan.api.domain.oauth.client.OAuthKakaoClient;
-import com.semosan.api.domain.oauth.dto.KakaoTokenResponse;
 import com.semosan.api.domain.oauth.dto.KakaoUserInfoResponse;
 import com.semosan.api.domain.oauth.dto.request.OAuthAppleLoginRequest;
 import com.semosan.api.domain.oauth.dto.request.OAuthKakaoLoginRequest;
@@ -29,8 +28,7 @@ public class OAuthService {
 
     @Transactional
     public OAuthLoginResponse kakaoLogin(OAuthKakaoLoginRequest request) {
-        KakaoTokenResponse kakaoToken = oAuthKakaoClient.getKakaoToken(request.code());
-        KakaoUserInfoResponse userInfo = oAuthKakaoClient.getKakaoUserInfo(kakaoToken.accessToken());
+        KakaoUserInfoResponse userInfo = oAuthKakaoClient.getKakaoUserInfo(request.accessToken());
 
         // DTO 파싱은 oauth 레이어에서 처리 후 순수 값만 UserService로 전달
         KakaoUserInfoResponse.KakaoAccount account = userInfo.kakaoAccount();
@@ -42,7 +40,7 @@ public class OAuthService {
         User user = userService.findOrRegisterKakaoUser(kakaoId, email, name, profileUrl, request.deviceType());
 
         TokenIssuance tokens = jwtService.issueTokens(user);
-        return new OAuthLoginResponse(user.getId(), tokens.accessToken(), tokens.refreshToken());
+        return OAuthLoginResponse.from(user, tokens);
     }
 
     @Transactional
@@ -55,7 +53,7 @@ public class OAuthService {
         User user = userService.findOrRegisterAppleUser(appleId, email, request.name(), request.deviceType());
 
         TokenIssuance tokens = jwtService.issueTokens(user);
-        return new OAuthLoginResponse(user.getId(), tokens.accessToken(), tokens.refreshToken());
+        return OAuthLoginResponse.from(user, tokens);
     }
 
 }

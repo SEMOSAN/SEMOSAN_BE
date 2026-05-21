@@ -14,6 +14,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -44,6 +45,20 @@ public class HikingRecordController implements HikingRecordControllerDocs {
     ) {
         PageResponse<GetUserHikingMountainRecordResponse> response = PageResponse.from(hikingRecordService.getUserHikingMountainRecords(userId, pageable));
         return ApiResponse.success(SuccessStatus.GET_HIKING_RECORD_MOUNTAIN_LIST_SUCCESS, response);
+    }
+
+    // 특정 산에 대한 나의 등산 기록 목록(코스 단위)을 조회합니다.
+    @GetMapping("/me/mountains/{mountainId}")
+    @Override
+    public ResponseEntity<ApiResponse<PageResponse<GetUserHikingRecordResponse>>> getUserHikingRecordsByMountainId(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long mountainId,
+            @PageableDefault(size = 10) Pageable pageable
+    ) {
+        PageResponse<GetUserHikingRecordResponse> response = PageResponse.from(
+                hikingRecordService.getUserHikingRecordsByMountainId(userId, mountainId, pageable)
+        );
+        return ApiResponse.success(SuccessStatus.GET_HIKING_RECORD_LIST_BY_MOUNTAIN_SUCCESS, response);
     }
 
     // 나의 등산 기록 요약 정보를 조회합니다.

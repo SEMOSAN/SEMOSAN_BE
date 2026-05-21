@@ -2,6 +2,11 @@ package com.semosan.api.domain.user.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
+import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
+import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
+import com.semosan.api.domain.notification.repository.NotificationRepository;
+import com.semosan.api.domain.review.repository.ReviewRepository;
 import com.semosan.api.domain.user.dto.command.UpdateUserProfileCommand;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.entity.User;
@@ -9,6 +14,7 @@ import com.semosan.api.domain.user.entity.UserNotificationSetting;
 import com.semosan.api.domain.user.entity.UserOnboarding;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
+import com.semosan.api.domain.user.policy.DefaultNicknameGenerator;
 import com.semosan.api.domain.user.policy.NicknamePolicy;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
 import com.semosan.api.domain.user.repository.UserOnboardingRepository;
@@ -17,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -24,48 +32,48 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final UserOnboardingRepository userOnboardingRepository;
+    private final MountainLikeRepository mountainLikeRepository;
+    private final ReviewRepository reviewRepository;
+    private final HikingMemberRepository hikingMemberRepository;
+    private final HikingRecordRepository hikingRecordRepository;
+    private final NotificationRepository notificationRepository;
+    private final DefaultNicknameGenerator defaultNicknameGenerator;
     private final NicknamePolicy nicknamePolicy;
     private final UserReader userReader;
 
-    // 카카오 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
+    // 카카오 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
     public User findOrRegisterKakaoUser(
             String kakaoId, String email, String name, String profileUrl, DeviceType deviceType
     ) {
         return userRepository.findByOauthIdAndOauthProvider(kakaoId, OAuthProvider.KAKAO)
-                .map(user -> {
-                    if (user.isDeleted())
-                        user.restore(email, name, profileUrl, deviceType);
-                    return user;
-                })
+                .filter(user -> !user.isDeleted())
                 .orElseGet(() -> saveNewUserWithNotificationSetting(
                         User.createKakaoUser(kakaoId, email, name, profileUrl, deviceType)
                 ));
     }
 
-    // 애플 유저 조회 후 없으면 신규 생성, 탈퇴 유저면 복구
+    // 애플 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
     public User findOrRegisterAppleUser(String appleId, String email, String name, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(appleId, OAuthProvider.APPLE)
-                .map(user -> {
-                    if (user.isDeleted())
-                        user.restore(email, name, null, deviceType);
-                    return user;
-                })
+                .filter(user -> !user.isDeleted())
                 .orElseGet(() -> saveNewUserWithNotificationSetting(
                         User.createAppleUser(appleId, email, name, deviceType)
                 ));
     }
 
-    // 테스트 유저 조회 후 없으면 신규 생성
+    // 테스트 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
         return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.TEST)
+                .filter(user -> !user.isDeleted())
                 .orElseGet(() -> saveNewUserWithNotificationSetting(User.createTestUser(testUserId, deviceType)));
     }
 
     // 신규 유저 저장 후 기본 알림 설정을 생성합니다.
     private User saveNewUserWithNotificationSetting(User user) {
+        user.updateNickname(defaultNicknameGenerator.generate());
         User savedUser = userRepository.save(user);
         // 온보딩 권한 설정 초기화 전에 항상 기본 알림 설정 row가 존재하도록 생성합니다.
         userNotificationSettingRepository.save(UserNotificationSetting.createDefault(savedUser));
@@ -84,7 +92,7 @@ public class UserService {
     public void updateUserProfile(Long userId, UpdateUserProfileRequest request) {
         validateProfileUpdateRequest(request);
         validateNicknameIfPresent(request.nickname());
-        User user = userReader.findActiveUserById(userId);
+        User user = userReader.findCompletedOnboardingUserById(userId);
         user.updateProfile(toUpdateUserProfileCommand(request));
         updateUserOnboardingProfile(userId, request);
     }
@@ -123,6 +131,27 @@ public class UserService {
         if (request.exerciseType() != null) {
             userOnboarding.updateExerciseType(request.exerciseType());
         }
+    }
+
+    // 로그인한 사용자를 탈퇴 처리하고 하위 데이터를 삭제합니다.
+    @Transactional
+    public void withdrawUser(User user) {
+        deleteUserChildRecords(user.getId());
+        user.withdraw();
+        userRepository.save(user);
+    }
+
+    private void deleteUserChildRecords(Long userId) {
+        mountainLikeRepository.deleteByUser_Id(userId);
+        reviewRepository.deleteByUser_Id(userId);
+        List<Long> recordIdsToDelete = hikingRecordRepository.findRecordIdsOnlyParticipatedByUser(userId);
+        hikingMemberRepository.deleteByUser_Id(userId);
+        if (!recordIdsToDelete.isEmpty()) {
+            hikingRecordRepository.deleteAllByIdInBatch(recordIdsToDelete);
+        }
+        notificationRepository.deleteAllByUserId(userId);
+        userOnboardingRepository.deleteByUser_Id(userId);
+        userNotificationSettingRepository.deleteByUser_Id(userId);
     }
 
     // 프로필 수정 요청 값을 User 엔티티 갱신용 command로 변환합니다.
