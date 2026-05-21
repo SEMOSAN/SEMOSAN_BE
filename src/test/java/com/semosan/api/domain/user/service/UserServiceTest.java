@@ -77,10 +77,12 @@ class UserServiceTest {
         verify(notificationRepository).deleteAllByUserId(1L);
         verify(userOnboardingRepository).deleteByUser_Id(1L);
         verify(userNotificationSettingRepository).deleteByUser_Id(1L);
+        verify(userRepository).save(user);
 
         assertThat(user.isDeleted()).isTrue();
         assertThat(user.getEmail()).isNull();
         assertThat(user.getName()).isNull();
+        assertThat(user.getNickname()).isNull();
         assertThat(user.getOnboardingStatus()).isEqualTo(OnboardingStatus.INCOMPLETE);
     }
 }

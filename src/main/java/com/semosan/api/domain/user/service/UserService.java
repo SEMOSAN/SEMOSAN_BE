@@ -157,6 +157,7 @@ public class UserService {
     public void withdrawUser(User user) {
         deleteUserChildRecords(user.getId());
         user.withdraw();
+        userRepository.save(user);
     }
 
     private void deleteUserChildRecords(Long userId) {
