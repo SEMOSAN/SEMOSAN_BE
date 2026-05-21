@@ -1,5 +1,7 @@
 package com.semosan.api.common.alert;
 
+import com.semosan.api.common.alert.dto.DiscordEmbed;
+import com.semosan.api.common.alert.dto.DiscordMessage;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.env.Environment;
@@ -7,16 +9,23 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.time.OffsetDateTime;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class ServerErrorAlertService {
 
-    private static final int MAX_MESSAGE_LENGTH = 300;
-    private static final int MAX_USER_AGENT_LENGTH = 180;
-    private static final int MAX_CONTENT_LENGTH = 1900;
+    private static final ZoneId KOREA_ZONE = ZoneId.of("Asia/Seoul");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH시 mm분 ss초");
+    private static final int ERROR_COLOR = 0xED4245;
+    private static final int MAX_STACK_TRACE_LENGTH = 1000;
+    private static final int MAX_EMBED_DESCRIPTION_LENGTH = 4000;
 
     private final DiscordAlertClient discordAlertClient;
     private final Environment environment;
@@ -26,36 +35,38 @@ public class ServerErrorAlertService {
         discordAlertClient.send(buildMessage(status, exception, request));
     }
 
-    private String buildMessage(int status, Exception exception, HttpServletRequest request) {
-        String content = """
-                [SEMOSAN API %d ERROR]
-
-                Profile: %s
-                Method: %s
-                URI: %s
-                Status: %d
-                Exception: %s
-                Message: %s
-                Client IP: %s
-                User-Agent: %s
-                Time: %s
+    private DiscordMessage buildMessage(int status, Exception exception, HttpServletRequest request) {
+        String description = """
+                ### 에러 발생 시간
+                %s
+                ### 실행 프로필
+                %s
+                ### 요청 엔드포인트
+                %s
+                ### 응답 상태
+                %d
+                ### 요청 클라이언트
+                %s
+                ### 에러 메시지
+                %s
+                ### 에러 스택 트레이스
+                ```text
+                %s
+                ```
                 """.formatted(
-                status,
+                ZonedDateTime.now(KOREA_ZONE).format(TIME_FORMATTER),
                 activeProfiles(),
-                request.getMethod(),
-                request.getRequestURI(),
+                endpoint(request),
                 status,
-                exception.getClass().getSimpleName(),
-                sanitize(exception.getMessage(), MAX_MESSAGE_LENGTH),
-                clientIp(request),
-                sanitize(request.getHeader("User-Agent"), MAX_USER_AGENT_LENGTH),
-                OffsetDateTime.now()
+                client(request),
+                sanitize(exception.getMessage()),
+                stackTrace(exception)
         );
 
-        if (content.length() <= MAX_CONTENT_LENGTH) {
-            return content;
-        }
-        return content.substring(0, MAX_CONTENT_LENGTH) + "\n...";
+        return new DiscordMessage(
+                "# 🚨 서버 에러 발생 🚨",
+                List.of(new DiscordEmbed("에러 정보", truncate(description, MAX_EMBED_DESCRIPTION_LENGTH), ERROR_COLOR))
+        );
     }
 
     private String activeProfiles() {
@@ -66,6 +77,21 @@ public class ServerErrorAlertService {
         return String.join(",", Arrays.asList(profiles));
     }
 
+    private String endpoint(HttpServletRequest request) {
+        return "[%s] %s".formatted(request.getMethod(), request.getRequestURL());
+    }
+
+    private String client(HttpServletRequest request) {
+        String userIdentifier = request.getUserPrincipal() == null
+                ? ""
+                : " / [UserId]: " + sanitize(request.getUserPrincipal().getName());
+        return "[IP]: %s%s / [User-Agent]: %s".formatted(
+                clientIp(request),
+                userIdentifier,
+                sanitize(request.getHeader("User-Agent"))
+        );
+    }
+
     private String clientIp(HttpServletRequest request) {
         String forwardedFor = request.getHeader("X-Forwarded-For");
         if (StringUtils.hasText(forwardedFor)) {
@@ -74,17 +100,26 @@ public class ServerErrorAlertService {
         return request.getRemoteAddr();
     }
 
-    private String sanitize(String value, int maxLength) {
+    private String stackTrace(Exception exception) {
+        StringWriter writer = new StringWriter();
+        exception.printStackTrace(new PrintWriter(writer));
+        return truncate(sanitize(writer.toString()), MAX_STACK_TRACE_LENGTH);
+    }
+
+    private String sanitize(String value) {
         if (!StringUtils.hasText(value)) {
             return "-";
         }
-        String sanitized = value
+        return value
                 .replaceAll("(?i)(authorization|cookie|token|secret|password)=\\S+", "$1=***")
                 .replace("\n", " ")
                 .replace("\r", " ");
-        if (sanitized.length() <= maxLength) {
-            return sanitized;
+    }
+
+    private String truncate(String value, int maxLength) {
+        if (value.length() <= maxLength) {
+            return value;
         }
-        return sanitized.substring(0, maxLength) + "...";
+        return value.substring(0, maxLength) + "...";
     }
 }
