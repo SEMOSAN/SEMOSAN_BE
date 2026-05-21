@@ -18,7 +18,7 @@ public interface OAuthControllerDocs {
 
     @Operation(
             summary = "카카오 소셜 로그인",
-            description = "프론트엔드에서 전달받은 카카오 인가 코드(code)로 로그인 또는 회원가입을 처리하고 서비스 JWT를 발급합니다."
+            description = "프론트엔드에서 전달받은 카카오 액세스 토큰(accessToken)으로 로그인 또는 회원가입을 처리하고 서비스 JWT를 발급합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -28,7 +28,7 @@ public interface OAuthControllerDocs {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "잘못된 요청 (인가 코드 또는 디바이스 타입 누락)",
+                    description = "잘못된 요청 (카카오 액세스 토큰 또는 디바이스 타입 누락)",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
