@@ -10,6 +10,7 @@ import java.time.LocalDate;
 
 public record GetUserProfileResponse(
         String profileUrl,
+        String name,
         String nickname,
         HikingLevel hikingLevel,
         Gender gender,
@@ -30,6 +31,7 @@ public record GetUserProfileResponse(
 
         return new GetUserProfileResponse(
                 user.getProfileUrl(),
+                user.getName(),
                 user.getNickname(),
                 hikingLevel,
                 user.getGender(),
