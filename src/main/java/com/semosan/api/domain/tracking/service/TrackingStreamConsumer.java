@@ -39,6 +39,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
     private static final int FLUSH_THRESHOLD = 100;
 
     private static final String F_SESSION_ID = "sessionId";
+    private static final String F_USER_ID = "userId";
     private static final String F_LAT = "lat";
     private static final String F_LNG = "lng";
     private static final String F_ALTITUDE = "altitude";
@@ -48,6 +49,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
 
     private final TrackingSessionStatsService statsService;
     private final TrackingPointFlushService flushService;
+    private final TrackingPhotoTriggerService photoTriggerService;
     private final TrackingSessionActivityService activityService;
 
     @Override
@@ -55,13 +57,15 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
         Map<String, String> body = message.getValue();
         try {
             Long sessionId = Long.parseLong(body.get(F_SESSION_ID));
+            Long userId = Long.parseLong(body.get(F_USER_ID));
             double lat = Double.parseDouble(body.get(F_LAT));
             double lng = Double.parseDouble(body.get(F_LNG));
             Double altitude = parseNullableDouble(body.get(F_ALTITUDE));
             LocalDateTime recordedAt = LocalDateTime.parse(body.get(F_RECORDED_AT));
 
-            statsService.recordPoint(sessionId, lat, lng, altitude, recordedAt);
+            double distanceTotal = statsService.recordPoint(sessionId, lat, lng, altitude, recordedAt);
             activityService.markActive(sessionId);
+            photoTriggerService.evaluate(sessionId, userId, distanceTotal);
 
             Queue<TrackingPointFlushService.PendingPoint> queue =
                     buffers.computeIfAbsent(sessionId, k -> new ConcurrentLinkedQueue<>());

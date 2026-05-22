@@ -43,7 +43,8 @@ public class TrackingSessionStatsService {
 
     private final StringRedisTemplate redisTemplate;
 
-    public void recordPoint(Long sessionId, double lat, double lng, Double altitude, LocalDateTime recordedAt) {
+    /** 점을 누적 갱신하고, 갱신 후 총 거리(m)를 반환한다 — 호출자에서 마일스톤 트리거에 활용. */
+    public double recordPoint(Long sessionId, double lat, double lng, Double altitude, LocalDateTime recordedAt) {
         String key = statsKey(sessionId);
         HashOperations<String, String, String> hash = redisTemplate.opsForHash();
         Map<String, String> prev = hash.entries(key);
@@ -90,6 +91,7 @@ public class TrackingSessionStatsService {
 
         hash.putAll(key, next);
         redisTemplate.expire(key, TTL);
+        return distanceTotal;
     }
 
     public static String statsKey(Long sessionId) {
