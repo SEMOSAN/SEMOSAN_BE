@@ -10,6 +10,7 @@ public record FreePostListResponse(
         String title,
         String contentPreview,
         String thumbnailUrl,
+        Integer extraImageCount,
         Long likeCount,
         Long commentCount,
         LocalDateTime createdAt
@@ -19,6 +20,7 @@ public record FreePostListResponse(
     public static FreePostListResponse from(
             FreePost post,
             String thumbnailUrl,
+            Integer extraImageCount,
             long likeCount,
             long commentCount
     ) {
@@ -28,6 +30,7 @@ public record FreePostListResponse(
                 post.getTitle(),
                 preview(post.getContent()),
                 thumbnailUrl,
+                extraImageCount != null && extraImageCount > 1 ? extraImageCount - 1 : null,
                 likeCount,
                 commentCount,
                 post.getCreatedAt()

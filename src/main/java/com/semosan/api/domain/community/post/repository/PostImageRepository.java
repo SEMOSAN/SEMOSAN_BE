@@ -14,4 +14,7 @@ public interface PostImageRepository extends JpaRepository<PostImage, Long> {
 
     @Query("SELECT pi FROM PostImage pi WHERE pi.post.id IN :postIds AND pi.main = true")
     List<PostImage> findMainImagesByPostIds(@Param("postIds") List<Long> postIds);
+
+    @Query("SELECT pi.post.id, COUNT(pi) FROM PostImage pi WHERE pi.post.id IN :postIds GROUP BY pi.post.id")
+    List<Object[]> countByPostIdsGrouped(@Param("postIds") List<Long> postIds);
 }

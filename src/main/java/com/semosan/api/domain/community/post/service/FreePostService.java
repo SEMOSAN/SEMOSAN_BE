@@ -119,10 +119,13 @@ public class FreePostService {
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
         Map<Long, String> mainImageMap = postImageRepository.findMainImagesByPostIds(postIds).stream()
                 .collect(Collectors.toMap(img -> img.getPost().getId(), PostImage::getImageUrl));
+        Map<Long, Long> imageCountMap = postImageRepository.countByPostIdsGrouped(postIds).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
 
         return posts.map(post -> FreePostListResponse.from(
                 post,
                 mainImageMap.get(post.getId()),
+                imageCountMap.getOrDefault(post.getId(), 0L).intValue(),
                 likeCountMap.getOrDefault(post.getId(), 0L),
                 commentCountMap.getOrDefault(post.getId(), 0L)
         ));
