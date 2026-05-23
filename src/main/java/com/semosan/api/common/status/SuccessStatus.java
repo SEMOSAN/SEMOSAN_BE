@@ -67,6 +67,15 @@ public enum SuccessStatus implements BaseStatus {
     TRACKING_PHOTO_LIST_SUCCESS(HttpStatus.OK, "TRK_200_8", "트래킹 사진 목록 조회에 성공했습니다."),
 
     /**
+     * SemoFeed
+     */
+    SEMOFEED_CREATE_SUCCESS(HttpStatus.CREATED, "SF_201_1", "세모피드가 저장되었습니다."),
+    SEMOFEED_LIST_SUCCESS(HttpStatus.OK, "SF_200_1", "세모피드 목록 조회에 성공했습니다."),
+    SEMOFEED_MY_LIST_SUCCESS(HttpStatus.OK, "SF_200_2", "내 세모피드 목록 조회에 성공했습니다."),
+    SEMOFEED_TOGGLE_PUBLIC_SUCCESS(HttpStatus.OK, "SF_200_3", "세모피드 공개 상태가 변경되었습니다."),
+    SEMOFEED_DELETE_SUCCESS(HttpStatus.OK, "SF_200_4", "세모피드가 삭제되었습니다."),
+
+    /**
      * Image
      */
     PRESIGNED_URL_SUCCESS(HttpStatus.OK, "IMG_200_1", "Presigned URL 발급에 성공했습니다."),

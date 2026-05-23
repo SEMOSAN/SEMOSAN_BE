@@ -116,6 +116,7 @@ public enum ErrorStatus implements BaseStatus {
     TRACKING_COURSE_ID_REQUIRED(HttpStatus.BAD_REQUEST, "TRK_400_2", "자유 기록이 아니면 코스 ID는 필수입니다."),
     TRACKING_PHOTO_DUPLICATE(HttpStatus.CONFLICT, "TRK_409_3", "해당 마일스톤에 이미 업로드된 사진이 있습니다."),
     TRACKING_PHOTO_SESSION_INACTIVE(HttpStatus.CONFLICT, "TRK_409_4", "활성 상태가 아닌 세션에는 사진을 업로드할 수 없습니다."),
+    TRACKING_PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "TRK_404_2", "트래킹 사진을 찾을 수 없습니다."),
     COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_3", "코스를 찾을 수 없습니다."),
 
     /**
@@ -133,7 +134,13 @@ public enum ErrorStatus implements BaseStatus {
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "CMT_404_1", "댓글을 찾을 수 없습니다."),
     COMMENT_DELETED(HttpStatus.NOT_FOUND, "CMT_404_2", "삭제된 댓글입니다."),
     COMMENT_FORBIDDEN(HttpStatus.FORBIDDEN, "CMT_403_1", "본인의 댓글만 처리할 수 있습니다."),
-    COMMENT_PARENT_POST_MISMATCH(HttpStatus.BAD_REQUEST, "CMT_400_1", "부모 댓글이 같은 게시글의 댓글이 아닙니다.");
+    COMMENT_PARENT_POST_MISMATCH(HttpStatus.BAD_REQUEST, "CMT_400_1", "부모 댓글이 같은 게시글의 댓글이 아닙니다."),
+
+    /**
+     * SemoFeed (세모피드)
+     */
+    SEMOFEED_NOT_FOUND(HttpStatus.NOT_FOUND, "SF_404_1", "세모피드를 찾을 수 없습니다."),
+    SEMOFEED_FORBIDDEN(HttpStatus.FORBIDDEN, "SF_403_1", "본인의 세모피드만 처리할 수 있습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
