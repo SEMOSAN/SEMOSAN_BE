@@ -61,8 +61,11 @@ public class FreePostService {
     }
 
     public Page<FreePostListResponse> search(String keyword, Pageable pageable) {
+        if (keyword == null || keyword.isBlank()) {
+            return Page.empty(pageable);
+        }
         Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-        return enrichWithCounts(freePostRepository.searchByKeyword(keyword, unsorted));
+        return enrichWithCounts(freePostRepository.searchByKeyword(keyword.strip(), unsorted));
     }
 
     public Page<FreePostListResponse> getMyList(Long authorId, Pageable pageable) {
