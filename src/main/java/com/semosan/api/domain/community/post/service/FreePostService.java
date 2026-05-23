@@ -14,6 +14,7 @@ import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +58,14 @@ public class FreePostService {
 
     public Page<FreePostListResponse> getList(Pageable pageable) {
         return enrichWithCounts(freePostRepository.findAllByDeletedFalse(pageable));
+    }
+
+    public Page<FreePostListResponse> search(String keyword, Pageable pageable) {
+        if (keyword == null || keyword.isBlank()) {
+            return Page.empty(pageable);
+        }
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        return enrichWithCounts(freePostRepository.searchByKeyword(keyword.strip(), unsorted));
     }
 
     public Page<FreePostListResponse> getMyList(Long authorId, Pageable pageable) {
@@ -113,10 +122,13 @@ public class FreePostService {
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
         Map<Long, String> mainImageMap = postImageRepository.findMainImagesByPostIds(postIds).stream()
                 .collect(Collectors.toMap(img -> img.getPost().getId(), PostImage::getImageUrl));
+        Map<Long, Long> imageCountMap = postImageRepository.countByPostIdsGrouped(postIds).stream()
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
 
         return posts.map(post -> FreePostListResponse.from(
                 post,
                 mainImageMap.get(post.getId()),
+                imageCountMap.getOrDefault(post.getId(), 0L).intValue(),
                 likeCountMap.getOrDefault(post.getId(), 0L),
                 commentCountMap.getOrDefault(post.getId(), 0L)
         ));
