@@ -46,9 +46,3 @@ discord:
   alert:
     enabled: ${DISCORD_ALERT_ENABLED}
     webhook-url: ${DISCORD_WEBHOOK_URL}
-
-logging:
-  level:
-    org.springframework.web.socket.messaging: DEBUG
-    org.springframework.messaging.simp.stomp: TRACE
-    com.semosan.api.domain.tracking.websocket: DEBUG
