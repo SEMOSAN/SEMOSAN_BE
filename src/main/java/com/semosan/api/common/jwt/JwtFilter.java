@@ -32,9 +32,16 @@ public class JwtFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
 
-    // SecurityConfig의 permitAll 경로와 동일하게 맞춰줍니다
+    // SecurityConfig의 permitAll 경로와 동일하게 맞춰줍니다.
+    // WebSocket 핸드셰이크(/ws/tracking)는 HTTP JWT 필터 우회 — STOMP CONNECT 프레임의
+    // StompAuthChannelInterceptor 가 별도로 인증한다.
     private static final List<PathPatternRequestMatcher> EXCLUDED_PATHS =
-            Stream.of(SecurityConfig.SWAGGER_URIS, SecurityConfig.OAUTH_URIS, SecurityConfig.AUTH_URIS)
+            Stream.of(
+                            SecurityConfig.SWAGGER_URIS,
+                            SecurityConfig.OAUTH_URIS,
+                            SecurityConfig.AUTH_URIS,
+                            SecurityConfig.WEBSOCKET_URIS
+                    )
                     .flatMap(Arrays::stream)
                     .map(PathPatternRequestMatcher.withDefaults()::matcher)
                     .toList();
