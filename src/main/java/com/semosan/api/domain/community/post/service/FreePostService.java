@@ -14,6 +14,7 @@ import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +58,11 @@ public class FreePostService {
 
     public Page<FreePostListResponse> getList(Pageable pageable) {
         return enrichWithCounts(freePostRepository.findAllByDeletedFalse(pageable));
+    }
+
+    public Page<FreePostListResponse> search(String keyword, Pageable pageable) {
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        return enrichWithCounts(freePostRepository.searchByKeyword(keyword, unsorted));
     }
 
     public Page<FreePostListResponse> getMyList(Long authorId, Pageable pageable) {

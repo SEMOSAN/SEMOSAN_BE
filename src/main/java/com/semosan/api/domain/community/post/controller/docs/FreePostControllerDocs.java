@@ -35,6 +35,15 @@ public interface FreePostControllerDocs {
     })
     ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> getList(Pageable pageable);
 
+    @Operation(summary = "자유게시판 검색", description = "제목/내용 기반 키워드 검색. 최신순 페이징.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "검색 성공")
+    })
+    ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> search(
+            String keyword,
+            Pageable pageable
+    );
+
     @Operation(summary = "내 자유게시판 목록", description = "내가 쓴 자유게시판 게시글 목록.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
