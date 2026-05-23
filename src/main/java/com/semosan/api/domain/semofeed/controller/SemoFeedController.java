@@ -7,6 +7,7 @@ import com.semosan.api.domain.semofeed.controller.docs.SemoFeedControllerDocs;
 import com.semosan.api.domain.semofeed.dto.SemoFeedResponse;
 import com.semosan.api.domain.semofeed.service.SemoFeedService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +38,9 @@ public class SemoFeedController implements SemoFeedControllerDocs {
     public ResponseEntity<ApiResponse<PageResponse<SemoFeedResponse>>> listPublic(
             @PageableDefault(size = 100) Pageable pageable
     ) {
+        if (pageable.getPageSize() > 100) {
+            pageable = PageRequest.of(pageable.getPageNumber(), 100, pageable.getSort());
+        }
         return ApiResponse.success(
                 SuccessStatus.SEMOFEED_LIST_SUCCESS,
                 PageResponse.from(semoFeedService.listPublic(pageable))
