@@ -58,6 +58,11 @@ public interface TrackingControllerDocs {
                     responseCode = "404",
                     description = "코스를 찾을 수 없음",
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "422",
+                    description = "코스 경로 좌표가 등록되지 않음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
             )
     })
     ResponseEntity<ApiResponse<LiveActivityCourseResponse>> getLiveActivityCourse(

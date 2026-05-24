@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Package Structure
 
-```
+```text
 com.semosan.api
 ├── common/          # 공통 인프라 (응답, 예외, JWT, 설정, FCM, 알림 공통)
 └── domain/          # 도메인별 비즈니스 로직
@@ -108,7 +108,7 @@ prod에서 필요한 주요 변수: `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `RED
 ## Branch & Commit Convention
 
 브랜치명:
-```
+```text
 feat/#이슈번호-기능명
 fix/#이슈번호-버그명
 ```

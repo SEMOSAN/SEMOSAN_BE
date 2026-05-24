@@ -20,6 +20,7 @@ import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TrackingSessionService {
+
+    private static final String ACTIVE_SESSION_UNIQUE_INDEX = "uq_tracking_sessions_user_active";
 
     private final TrackingSessionRepository trackingSessionRepository;
     private final MountainRepository mountainRepository;
@@ -153,7 +156,26 @@ public class TrackingSessionService {
         try {
             return trackingSessionRepository.save(session);
         } catch (DataIntegrityViolationException e) {
-            throw new GeneralException(ErrorStatus.TRACKING_SESSION_ALREADY_IN_PROGRESS);
+            if (isActiveSessionUniqueViolation(e)) {
+                throw new GeneralException(ErrorStatus.TRACKING_SESSION_ALREADY_IN_PROGRESS);
+            }
+            throw e;
         }
+    }
+
+    private boolean isActiveSessionUniqueViolation(Throwable exception) {
+        Throwable current = exception;
+        while (current != null) {
+            if (current instanceof ConstraintViolationException constraintViolation
+                    && ACTIVE_SESSION_UNIQUE_INDEX.equals(constraintViolation.getConstraintName())) {
+                return true;
+            }
+            String message = current.getMessage();
+            if (message != null && message.contains(ACTIVE_SESSION_UNIQUE_INDEX)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }
