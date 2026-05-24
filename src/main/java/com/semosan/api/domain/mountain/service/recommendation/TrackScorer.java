@@ -5,6 +5,7 @@ import com.semosan.api.domain.mountain.enums.FitnessLevel;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @Component
@@ -93,7 +94,9 @@ public class TrackScorer {
             ElevationRange elevationRange = ElevationRange.from(course);
             List<Course.CourseWaypoint> waypoints = course.getWaypoints() == null
                     ? List.of()
-                    : course.getWaypoints();
+                    : course.getWaypoints().stream()
+                    .filter(Objects::nonNull)
+                    .toList();
 
             return new TrackMetrics(
                     course.getDistance() / METERS_PER_KILOMETER,
@@ -108,12 +111,14 @@ public class TrackScorer {
 
         private static long countCategory(List<Course.CourseWaypoint> waypoints, String category) {
             return waypoints.stream()
+                    .filter(Objects::nonNull)
                     .filter(waypoint -> category.equals(waypoint.category()))
                     .count();
         }
 
         private static long countCategories(List<Course.CourseWaypoint> waypoints, Set<String> categories) {
             return waypoints.stream()
+                    .filter(Objects::nonNull)
                     .filter(waypoint -> categories.contains(waypoint.category()))
                     .count();
         }
@@ -128,12 +133,15 @@ public class TrackScorer {
         private static ElevationRange from(Course course) {
             List<Double> altitudes = course.getAltitudes();
             if (altitudes != null && !altitudes.isEmpty()) {
-                return fromNumbers(altitudes);
+                return fromNumbers(altitudes.stream()
+                        .filter(Objects::nonNull)
+                        .toList());
             }
 
             List<Double> waypointElevations = course.getWaypoints() == null
                     ? List.of()
                     : course.getWaypoints().stream()
+                    .filter(Objects::nonNull)
                     .map(Course.CourseWaypoint::ele)
                     .filter(ele -> ele != null && ele > 0)
                     .toList();
@@ -146,10 +154,12 @@ public class TrackScorer {
 
         private static ElevationRange fromNumbers(List<Double> values) {
             double min = values.stream()
+                    .filter(Objects::nonNull)
                     .mapToDouble(Double::doubleValue)
                     .min()
                     .orElse(0);
             double max = values.stream()
+                    .filter(Objects::nonNull)
                     .mapToDouble(Double::doubleValue)
                     .max()
                     .orElse(0);

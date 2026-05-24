@@ -12,6 +12,7 @@ BEGIN
         SELECT 1
         FROM pg_constraint
         WHERE conname = 'courses_waypoints_array_check'
+          AND conrelid = 'courses'::regclass
     ) THEN
         ALTER TABLE courses
             ADD CONSTRAINT courses_waypoints_array_check
