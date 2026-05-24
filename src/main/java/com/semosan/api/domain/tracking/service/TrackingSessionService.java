@@ -21,6 +21,7 @@ import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,7 +54,7 @@ public class TrackingSessionService {
         Course course = resolveCourse(request, mountain);
 
         TrackingSession session = TrackingSession.create(user, mountain, course, request.isFreeRecording());
-        TrackingSession saved = trackingSessionRepository.save(session);
+        TrackingSession saved = saveSession(session);
         return TrackingSessionResponse.from(saved);
     }
 
@@ -146,5 +147,13 @@ public class TrackingSessionService {
             throw new GeneralException(ErrorStatus.TRACKING_COURSE_MOUNTAIN_MISMATCH);
         }
         return course;
+    }
+
+    private TrackingSession saveSession(TrackingSession session) {
+        try {
+            return trackingSessionRepository.save(session);
+        } catch (DataIntegrityViolationException e) {
+            throw new GeneralException(ErrorStatus.TRACKING_SESSION_ALREADY_IN_PROGRESS);
+        }
     }
 }
