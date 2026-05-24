@@ -23,7 +23,6 @@ import com.semosan.api.domain.user.enums.onboarding.ExerciseType;
 import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.Gender;
-import com.semosan.api.domain.user.repository.UserOnboardingRepository;
 import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,9 +61,6 @@ class MountainServiceTest {
     private ReviewService reviewService;
 
     @Mock
-    private UserOnboardingRepository userOnboardingRepository;
-
-    @Mock
     private HikingMemberRepository hikingMemberRepository;
 
     @Mock
@@ -92,8 +88,7 @@ class MountainServiceTest {
         Course thirdCourse = course(third);
         Course fourthCourse = course(fourth);
 
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
-        when(userOnboardingRepository.findByUser_Id(1L)).thenReturn(Optional.of(onboarding));
+        when(userReader.findCompletedOnboardingByUserId(1L)).thenReturn(onboarding);
         when(courseRepository.findAllWithMountainForRecommendation())
                 .thenReturn(List.of(fourthCourse, secondCourse, firstCourse, thirdCourse));
         when(fitnessLevelCalculator.calculate(user, onboarding))

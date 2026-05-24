@@ -18,9 +18,7 @@ import com.semosan.api.domain.review.service.ReviewService;
 import com.semosan.api.domain.mountain.service.recommendation.FitnessLevelCalculator;
 import com.semosan.api.domain.mountain.service.recommendation.TrackScorer;
 import com.semosan.api.domain.mountain.service.recommendation.TrackScorer.TrackEvaluation;
-import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserOnboarding;
-import com.semosan.api.domain.user.repository.UserOnboardingRepository;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -50,7 +48,6 @@ public class MountainService {
     private final AmenityRepository amenityRepository;
     private final RestaurantSectionRepository restaurantSectionRepository;
     private final ReviewService reviewService;
-    private final UserOnboardingRepository userOnboardingRepository;
     private final HikingMemberRepository hikingMemberRepository;
     private final UserReader userReader;
     private final FitnessLevelCalculator fitnessLevelCalculator;
@@ -95,10 +92,8 @@ public class MountainService {
             Double lat,
             Double lng
     ) {
-        User user = userReader.findCompletedOnboardingUserById(userId);
-        UserOnboarding onboarding = userOnboardingRepository.findByUser_Id(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.ONBOARDING_NOT_FOUND));
-        FitnessLevel fitnessLevel = fitnessLevelCalculator.calculate(user, onboarding);
+        UserOnboarding onboarding = userReader.findCompletedOnboardingByUserId(userId);
+        FitnessLevel fitnessLevel = fitnessLevelCalculator.calculate(onboarding.getUser(), onboarding);
 
         Map<Long, RecommendationCandidate> candidateByMountainId = new LinkedHashMap<>();
         for (Course course : courseRepository.findAllWithMountainForRecommendation()) {
