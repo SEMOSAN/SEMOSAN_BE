@@ -9,8 +9,8 @@ public record FreePostListResponse(
         AuthorResponse author,
         String title,
         String contentPreview,
-        String representativeImageUrl,
-        Integer viewCount,
+        String thumbnailUrl,
+        Integer extraImageCount,
         Long likeCount,
         Long commentCount,
         LocalDateTime createdAt
@@ -19,7 +19,8 @@ public record FreePostListResponse(
 
     public static FreePostListResponse from(
             FreePost post,
-            String representativeImageUrl,
+            String thumbnailUrl,
+            Integer extraImageCount,
             long likeCount,
             long commentCount
     ) {
@@ -28,8 +29,8 @@ public record FreePostListResponse(
                 AuthorResponse.from(post.getAuthor()),
                 post.getTitle(),
                 preview(post.getContent()),
-                representativeImageUrl,
-                post.getViewCount(),
+                thumbnailUrl,
+                extraImageCount != null && extraImageCount > 1 ? extraImageCount - 1 : null,
                 likeCount,
                 commentCount,
                 post.getCreatedAt()

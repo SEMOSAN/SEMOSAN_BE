@@ -42,6 +42,7 @@ public enum SuccessStatus implements BaseStatus {
     LIKED_MOUNTAIN_LIST_SUCCESS(HttpStatus.OK, "MTN_200_6", "좋아요한 산 목록 조회에 성공했습니다."),
     MOUNTAIN_MAP_SUCCESS(HttpStatus.OK, "MTN_200_7", "지도 영역 내 산 조회에 성공했습니다."),
     MOUNTAIN_RECOMMENDATION_SUCCESS(HttpStatus.OK, "MTN_200_8", "레벨 맞춤 산 추천 조회에 성공했습니다."),
+    COURSE_DETAIL_SUCCESS(HttpStatus.OK, "MTN_200_9", "코스 상세 정보 조회에 성공했습니다."),
 
     /**
      * Hiking Record
@@ -55,7 +56,6 @@ public enum SuccessStatus implements BaseStatus {
      * Tracking — 진입 화면 (#45) & 세션 (#18)
      */
     TRACKING_NEAREST_MOUNTAIN_SUCCESS(HttpStatus.OK, "TRK_200_1", "현재 위치 기준 가까운 산과 코스 조회에 성공했습니다."),
-    TRACKING_SESSION_CREATE_SUCCESS(HttpStatus.CREATED, "TRK_201_1", "트래킹 세션이 시작되었습니다."),
     TRACKING_SESSION_GET_ACTIVE_SUCCESS(HttpStatus.OK, "TRK_200_2", "현재 진행 중인 트래킹 세션 조회에 성공했습니다."),
     TRACKING_SESSION_GET_SUCCESS(HttpStatus.OK, "TRK_200_3", "트래킹 세션 상세 조회에 성공했습니다."),
     TRACKING_SESSION_PAUSE_SUCCESS(HttpStatus.OK, "TRK_200_4", "트래킹 세션을 일시정지했습니다."),
@@ -63,6 +63,18 @@ public enum SuccessStatus implements BaseStatus {
     TRACKING_SESSION_COMPLETE_SUCCESS(HttpStatus.OK, "TRK_200_6", "트래킹 세션을 종료했습니다."),
     TRACKING_SESSION_ABANDON_SUCCESS(HttpStatus.OK, "TRK_200_7", "트래킹 세션을 포기 처리했습니다."),
     TRACKING_LIVE_ACTIVITY_COURSE_SUCCESS(HttpStatus.OK, "TRK_200_8", "라이브 액티비티용 코스 정보 조회에 성공했습니다."),
+    TRACKING_PHOTO_LIST_SUCCESS(HttpStatus.OK, "TRK_200_9", "트래킹 사진 목록 조회에 성공했습니다."),
+    TRACKING_SESSION_CREATE_SUCCESS(HttpStatus.CREATED, "TRK_201_1", "트래킹 세션이 시작되었습니다."),
+    TRACKING_PHOTO_UPLOAD_SUCCESS(HttpStatus.CREATED, "TRK_201_2", "트래킹 사진이 저장되었습니다."),
+
+    /**
+     * SemoFeed
+     */
+    SEMOFEED_LIST_SUCCESS(HttpStatus.OK, "SF_200_1", "세모피드 목록 조회에 성공했습니다."),
+    SEMOFEED_MY_LIST_SUCCESS(HttpStatus.OK, "SF_200_2", "내 세모피드 목록 조회에 성공했습니다."),
+    SEMOFEED_TOGGLE_PUBLIC_SUCCESS(HttpStatus.OK, "SF_200_3", "세모피드 공개 상태가 변경되었습니다."),
+    SEMOFEED_DELETE_SUCCESS(HttpStatus.OK, "SF_200_4", "세모피드가 삭제되었습니다."),
+    SEMOFEED_CREATE_SUCCESS(HttpStatus.CREATED, "SF_201_1", "세모피드가 저장되었습니다."),
 
     /**
      * Image
@@ -88,11 +100,11 @@ public enum SuccessStatus implements BaseStatus {
     /**
      * Comment (댓글/대댓글)
      */
-    COMMENT_CREATE_SUCCESS(HttpStatus.CREATED, "CMT_201_1", "댓글이 작성되었습니다."),
-    COMMENT_REPLY_SUCCESS(HttpStatus.CREATED, "CMT_201_2", "대댓글이 작성되었습니다."),
     COMMENT_LIST_SUCCESS(HttpStatus.OK, "CMT_200_1", "댓글 목록 조회에 성공했습니다."),
     COMMENT_REPLY_LIST_SUCCESS(HttpStatus.OK, "CMT_200_2", "대댓글 목록 조회에 성공했습니다."),
     COMMENT_DELETE_SUCCESS(HttpStatus.OK, "CMT_200_3", "댓글이 삭제되었습니다."),
+    COMMENT_CREATE_SUCCESS(HttpStatus.CREATED, "CMT_201_1", "댓글이 작성되었습니다."),
+    COMMENT_REPLY_SUCCESS(HttpStatus.CREATED, "CMT_201_2", "대댓글이 작성되었습니다."),
 
     /**
      * Post Like (좋아요)
@@ -103,11 +115,12 @@ public enum SuccessStatus implements BaseStatus {
     /**
      * Free Post (자유게시판 게시글)
      */
-    FREE_POST_CREATE_SUCCESS(HttpStatus.CREATED, "FPOST_201_1", "자유게시판 게시글이 작성되었습니다."),
     FREE_POST_LIST_SUCCESS(HttpStatus.OK, "FPOST_200_1", "자유게시판 게시글 목록 조회에 성공했습니다."),
     FREE_POST_MY_LIST_SUCCESS(HttpStatus.OK, "FPOST_200_2", "내 자유게시판 게시글 목록 조회에 성공했습니다."),
     FREE_POST_DETAIL_SUCCESS(HttpStatus.OK, "FPOST_200_3", "자유게시판 게시글 상세 조회에 성공했습니다."),
-    FREE_POST_DELETE_SUCCESS(HttpStatus.OK, "FPOST_200_4", "자유게시판 게시글이 삭제되었습니다.");
+    FREE_POST_DELETE_SUCCESS(HttpStatus.OK, "FPOST_200_4", "자유게시판 게시글이 삭제되었습니다."),
+    FREE_POST_SEARCH_SUCCESS(HttpStatus.OK, "FPOST_200_5", "자유게시판 게시글 검색에 성공했습니다."),
+    FREE_POST_CREATE_SUCCESS(HttpStatus.CREATED, "FPOST_201_1", "자유게시판 게시글이 작성되었습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

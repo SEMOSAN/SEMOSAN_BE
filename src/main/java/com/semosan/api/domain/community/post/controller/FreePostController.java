@@ -49,6 +49,17 @@ public class FreePostController implements FreePostControllerDocs {
         );
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> search(
+            @RequestParam String keyword,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ApiResponse.success(
+                SuccessStatus.FREE_POST_SEARCH_SUCCESS,
+                PageResponse.from(freePostService.search(keyword, pageable))
+        );
+    }
+
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> getMyList(
             @AuthenticationPrincipal Long userId,

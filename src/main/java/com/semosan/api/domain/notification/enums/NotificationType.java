@@ -13,6 +13,16 @@ public enum NotificationType {
             "새 댓글이 달렸어요",
             "{actorName}: {commentPreview}",
             Set.of("actorName", "commentPreview")
+    ),
+
+    /**
+     * 트래킹 중 거리 마일스톤 도달 시 사진 촬영 유도.
+     * iOS 잠금화면에 title 은 앱 이름(SEMOSAN)이 자동 표시되므로 본 title 은 빈 문자열.
+     */
+    TRACKING_PHOTO_MILESTONE(
+            "",
+            "{distance}m 돌파! 인증 사진을 남겨보세요!",
+            Set.of("distance")
     );
 
     private final String titleTemplate;

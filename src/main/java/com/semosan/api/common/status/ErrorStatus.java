@@ -49,22 +49,22 @@ public enum ErrorStatus implements BaseStatus {
     /**
      * User
      */
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_1", "사용자를 찾을 수 없습니다."),
-    ONBOARDING_ALREADY_COMPLETED(HttpStatus.CONFLICT, "USER_409_1", "이미 온보딩을 완료한 사용자입니다."),
     PREFERRED_DIFFICULTY_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_1", "숙련자는 선호 난이도를 선택해야 합니다."),
     PREFERRED_DIFFICULTY_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "USER_400_2", "선호 난이도는 숙련자만 선택할 수 있습니다."),
     PROFILE_UPDATE_FIELD_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_3", "수정할 프로필 정보가 없습니다."),
-    NOTIFICATION_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_2", "알림 설정을 찾을 수 없습니다."),
     INVALID_NICKNAME(HttpStatus.BAD_REQUEST, "USER_400_4", "사용할 수 없는 닉네임입니다."),
-    DUPLICATED_NICKNAME(HttpStatus.CONFLICT, "USER_409_2", "이미 사용 중인 닉네임입니다."),
     UNDER_AGE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "USER_400_5", "만 14세 미만은 가입할 수 없습니다."),
     INVALID_NICKNAME_FORMAT(HttpStatus.BAD_REQUEST, "USER_400_6", "닉네임 형식이 올바르지 않습니다."),
     NICKNAME_RESERVED(HttpStatus.BAD_REQUEST, "USER_400_7", "사용할 수 없는 사칭 표현이 포함된 닉네임입니다."),
     NICKNAME_BLOCKED_WORD(HttpStatus.BAD_REQUEST, "USER_400_8", "금칙어가 포함된 닉네임입니다."),
     EXERCISE_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_9", "운동 빈도와 운동 시간을 입력해야 합니다."),
     EXERCISE_DETAIL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "USER_400_10", "운동 안함 선택 시 운동 빈도와 운동 시간을 입력할 수 없습니다."),
-    ONBOARDING_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_3", "온보딩 정보를 찾을 수 없습니다."),
     ONBOARDING_NOT_COMPLETED(HttpStatus.FORBIDDEN, "USER_403_1", "온보딩을 완료해야 이용할 수 있습니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_1", "사용자를 찾을 수 없습니다."),
+    NOTIFICATION_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_2", "알림 설정을 찾을 수 없습니다."),
+    ONBOARDING_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_3", "온보딩 정보를 찾을 수 없습니다."),
+    ONBOARDING_ALREADY_COMPLETED(HttpStatus.CONFLICT, "USER_409_1", "이미 온보딩을 완료한 사용자입니다."),
+    DUPLICATED_NICKNAME(HttpStatus.CONFLICT, "USER_409_2", "이미 사용 중인 닉네임입니다."),
 
     /**
      * Notification
@@ -74,17 +74,18 @@ public enum ErrorStatus implements BaseStatus {
     /**
      * Apple OAuth
      */
-    APPLE_PUBLIC_KEY_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "APPLE_502_1", "애플 공개키 조회에 실패했습니다."),
     APPLE_PUBLIC_KEY_NOT_FOUND(HttpStatus.UNAUTHORIZED, "APPLE_401_1", "유효한 애플 공개키를 찾을 수 없습니다."),
     APPLE_IDENTITY_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "APPLE_401_2", "애플 identity token이 유효하지 않습니다."),
+    APPLE_PUBLIC_KEY_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "APPLE_502_1", "애플 공개키 조회에 실패했습니다."),
 
     /**
      * Mountain
      */
     MOUNTAIN_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_1", "산을 찾을 수 없습니다."),
     MOUNTAIN_LIKE_ALREADY_EXISTS(HttpStatus.CONFLICT, "MTN_409_1", "이미 좋아요한 산입니다."),
-    MOUNTAIN_LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_2", "좋아요한 산이 아닙니다."),
     MOUNTAIN_BBOX_PARTIAL(HttpStatus.BAD_REQUEST, "MTN_400_1", "BBox 좌표는 4개(swLat, swLng, neLat, neLng) 모두 보내거나 모두 비워주세요."),
+    MOUNTAIN_LIKE_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_2", "좋아요한 산이 아닙니다."),
+    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_3", "코스를 찾을 수 없습니다."),
 
     /**
      * Image
@@ -102,37 +103,45 @@ public enum ErrorStatus implements BaseStatus {
     /**
      * Hiking (등산 기록)
      */
-    HIKING_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "HIKE_404_1", "등산 기록을 찾을 수 없습니다."),
     HIKING_RECORD_FORBIDDEN(HttpStatus.FORBIDDEN, "HIKE_403_1", "본인이 참여한 등산 기록만 공유할 수 있습니다."),
+    HIKING_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "HIKE_404_1", "등산 기록을 찾을 수 없습니다."),
 
     /**
      * Tracking (트래킹 세션)
      */
-    TRACKING_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "TRK_404_1", "트래킹 세션을 찾을 수 없습니다."),
-    TRACKING_SESSION_FORBIDDEN(HttpStatus.FORBIDDEN, "TRK_403_1", "본인의 트래킹 세션만 조작할 수 있습니다."),
-    TRACKING_SESSION_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "TRK_409_1", "이미 진행 중인 트래킹 세션이 있습니다."),
-    TRACKING_SESSION_INVALID_STATE(HttpStatus.CONFLICT, "TRK_409_2", "현재 상태에서는 수행할 수 없는 작업입니다."),
     TRACKING_COURSE_MOUNTAIN_MISMATCH(HttpStatus.BAD_REQUEST, "TRK_400_1", "선택한 코스가 해당 산의 코스가 아닙니다."),
     TRACKING_COURSE_ID_REQUIRED(HttpStatus.BAD_REQUEST, "TRK_400_2", "자유 기록이 아니면 코스 ID는 필수입니다."),
+    TRACKING_SESSION_FORBIDDEN(HttpStatus.FORBIDDEN, "TRK_403_1", "본인의 트래킹 세션만 조작할 수 있습니다."),
+    TRACKING_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "TRK_404_1", "트래킹 세션을 찾을 수 없습니다."),
+    TRACKING_PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "TRK_404_2", "트래킹 사진을 찾을 수 없습니다."),
+    TRACKING_SESSION_ALREADY_IN_PROGRESS(HttpStatus.CONFLICT, "TRK_409_1", "이미 진행 중인 트래킹 세션이 있습니다."),
+    TRACKING_SESSION_INVALID_STATE(HttpStatus.CONFLICT, "TRK_409_2", "현재 상태에서는 수행할 수 없는 작업입니다."),
+    TRACKING_PHOTO_DUPLICATE(HttpStatus.CONFLICT, "TRK_409_3", "해당 마일스톤에 이미 업로드된 사진이 있습니다."),
+    TRACKING_PHOTO_SESSION_INACTIVE(HttpStatus.CONFLICT, "TRK_409_4", "활성 상태가 아닌 세션에는 사진을 업로드할 수 없습니다."),
     TRACKING_COURSE_POLYLINE_REQUIRED(HttpStatus.UNPROCESSABLE_ENTITY, "TRK_422_1", "코스 경로 좌표가 등록되지 않았습니다."),
-    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_3", "코스를 찾을 수 없습니다."),
 
     /**
      * Post (게시글 공통)
      */
-    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_404_1", "게시글을 찾을 수 없습니다."),
-    POST_DELETED(HttpStatus.NOT_FOUND, "POST_404_2", "삭제된 게시글입니다."),
-    POST_FORBIDDEN(HttpStatus.FORBIDDEN, "POST_403_1", "본인의 게시글만 처리할 수 있습니다."),
     POST_CONTENT_REQUIRED(HttpStatus.BAD_REQUEST, "POST_400_1", "본문은 비어있을 수 없습니다."),
     POST_IMAGE_INDEX_INVALID(HttpStatus.BAD_REQUEST, "POST_400_2", "대표 이미지 인덱스가 잘못되었습니다."),
+    POST_FORBIDDEN(HttpStatus.FORBIDDEN, "POST_403_1", "본인의 게시글만 처리할 수 있습니다."),
+    POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_404_1", "게시글을 찾을 수 없습니다."),
+    POST_DELETED(HttpStatus.NOT_FOUND, "POST_404_2", "삭제된 게시글입니다."),
 
     /**
      * Comment (댓글/대댓글)
      */
+    COMMENT_PARENT_POST_MISMATCH(HttpStatus.BAD_REQUEST, "CMT_400_1", "부모 댓글이 같은 게시글의 댓글이 아닙니다."),
+    COMMENT_FORBIDDEN(HttpStatus.FORBIDDEN, "CMT_403_1", "본인의 댓글만 처리할 수 있습니다."),
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "CMT_404_1", "댓글을 찾을 수 없습니다."),
     COMMENT_DELETED(HttpStatus.NOT_FOUND, "CMT_404_2", "삭제된 댓글입니다."),
-    COMMENT_FORBIDDEN(HttpStatus.FORBIDDEN, "CMT_403_1", "본인의 댓글만 처리할 수 있습니다."),
-    COMMENT_PARENT_POST_MISMATCH(HttpStatus.BAD_REQUEST, "CMT_400_1", "부모 댓글이 같은 게시글의 댓글이 아닙니다.");
+
+    /**
+     * SemoFeed (세모피드)
+     */
+    SEMOFEED_FORBIDDEN(HttpStatus.FORBIDDEN, "SF_403_1", "본인의 세모피드만 처리할 수 있습니다."),
+    SEMOFEED_NOT_FOUND(HttpStatus.NOT_FOUND, "SF_404_1", "세모피드를 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

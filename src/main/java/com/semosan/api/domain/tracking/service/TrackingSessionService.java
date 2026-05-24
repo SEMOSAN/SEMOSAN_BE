@@ -43,8 +43,18 @@ public class TrackingSessionService {
     private final TrackingSessionStatsService statsService;
     private final HikingRecordRepository hikingRecordRepository;
     private final HikingMemberRepository hikingMemberRepository;
+    private final TrackingPhotoTriggerService photoTriggerService;
     private final ApplicationEventPublisher eventPublisher;
 
+    /**
+     * 세션 생성. 유저당 진행 중 세션은 1개만 허용한다.
+     *
+     * TODO/주의 — 사용자가 종료(complete/abandon)를 누르지 않고 앱을 강제 종료하면 이전 세션이 IN_PROGRESS
+     * 로 유령처럼 남아 다음 세션 생성을 막을 수 있다. 대응 메커니즘:
+     *  1) 클라이언트 진입 시 GET /me/active 로 진행 중 세션 확인 후 "이어서 / 폐기 후 새로 시작" 분기 노출
+     *  2) {@link TrackingSessionExpiryScheduler} 가 24h 무업데이트 세션을 ABANDONED 처리하는 fallback
+     * 운영 시 자주 발생할 수 있는 케이스이므로 클라이언트 흐름에서 (1)을 반드시 구현할 것.
+     */
     @Transactional
     public TrackingSessionResponse create(Long userId, CreateTrackingSessionRequest request) {
         if (trackingSessionRepository.existsByUser_IdAndStatusIn(userId, TrackingSessionStatus.ACTIVE_STATES)) {
