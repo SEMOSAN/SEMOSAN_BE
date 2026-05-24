@@ -10,6 +10,8 @@ import java.util.Set;
 @Component
 public class TrackScorer {
 
+    // courses.distance 는 KOMOUNT distance_m 원본을 저장한 미터 단위 값이다.
+    private static final double METERS_PER_KILOMETER = 1000;
     private static final Set<String> SCENIC_CATEGORIES = Set.of("VIEW", "PHOTO", "PEAK");
     private static final Set<String> ACCESS_CATEGORIES = Set.of("TRANS", "PARK");
 
@@ -94,7 +96,7 @@ public class TrackScorer {
                     : course.getWaypoints();
 
             return new TrackMetrics(
-                    course.getDistance() / 1000,
+                    course.getDistance() / METERS_PER_KILOMETER,
                     elevationRange.gain(),
                     (int) Math.round(elevationRange.maxElevation()),
                     countCategory(waypoints, "DANGER"),

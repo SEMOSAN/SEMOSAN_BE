@@ -117,6 +117,8 @@ class MountainServiceTest {
                 .extracting(MountainRecommendationResponse::name)
                 .containsExactly("첫번째산", "두번째산", "세번째산");
         assertThat(result).hasSize(3);
+        assertThat(result.get(0).difficultyLabel()).isEqualTo("중");
+        assertThat(result.get(0).mountainHeightM()).isEqualTo(123);
     }
 
     private User user() {
@@ -166,7 +168,7 @@ class MountainServiceTest {
     private TrackScorer.TrackEvaluation evaluation(Course course, boolean eligible, double score) {
         return new TrackScorer.TrackEvaluation(
                 course,
-                new TrackScorer.TrackMetrics(1, 1, 1, 0, 0, 0, 0),
+                new TrackScorer.TrackMetrics(1, 1, 123, 0, 0, 0, 0),
                 eligible,
                 score,
                 score
