@@ -1,5 +1,7 @@
 package com.semosan.api.domain.tracking.dto.response;
 
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.mountain.entity.Course;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
@@ -24,8 +26,8 @@ public record LiveActivityCourseResponse(
     }
 
     private static List<CoordinateInfo> toCoordinates(LineString polyline) {
-        if (polyline == null) {
-            return List.of();
+        if (polyline == null || polyline.isEmpty()) {
+            throw new GeneralException(ErrorStatus.TRACKING_COURSE_POLYLINE_REQUIRED);
         }
         return Arrays.stream(polyline.getCoordinates())
                 .map(CoordinateInfo::from)

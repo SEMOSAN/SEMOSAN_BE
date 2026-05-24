@@ -114,6 +114,7 @@ public enum ErrorStatus implements BaseStatus {
     TRACKING_SESSION_INVALID_STATE(HttpStatus.CONFLICT, "TRK_409_2", "현재 상태에서는 수행할 수 없는 작업입니다."),
     TRACKING_COURSE_MOUNTAIN_MISMATCH(HttpStatus.BAD_REQUEST, "TRK_400_1", "선택한 코스가 해당 산의 코스가 아닙니다."),
     TRACKING_COURSE_ID_REQUIRED(HttpStatus.BAD_REQUEST, "TRK_400_2", "자유 기록이 아니면 코스 ID는 필수입니다."),
+    TRACKING_COURSE_POLYLINE_REQUIRED(HttpStatus.UNPROCESSABLE_ENTITY, "TRK_422_1", "코스 경로 좌표가 등록되지 않았습니다."),
     COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "MTN_404_3", "코스를 찾을 수 없습니다."),
 
     /**
