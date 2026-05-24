@@ -68,6 +68,12 @@ public class TrackingSessionService {
 
         TrackingSession session = TrackingSession.create(user, mountain, course, request.isFreeRecording());
         TrackingSession saved = saveSession(session);
+
+        // 세션 생성과 동시에 사진 마일스톤 거리 리스트(코스 4컷 / 자유 6컷)를 Redis 에 적재한다.
+        // 이후 GPS Consumer 가 매 점마다 evaluate 호출 시 이 키를 읽어 마일스톤 도달을 판정하므로,
+        // 여기서 빠지면 모든 photo-window OPEN/CLOSED 와 FCM 알림이 영영 발송되지 않는다.
+        photoTriggerService.initializeMilestones(saved);
+
         return TrackingSessionResponse.from(saved);
     }
 
