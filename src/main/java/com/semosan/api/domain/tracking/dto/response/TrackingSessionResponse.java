@@ -6,7 +6,6 @@ import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
 
 import java.time.LocalDateTime;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record TrackingSessionResponse(
         Long sessionId,
         Long userId,
@@ -21,6 +20,7 @@ public record TrackingSessionResponse(
         LocalDateTime pausedAt,
         Integer pausedSecondsTotal,
         /** complete 시에만 채워짐 — 변환된 HikingRecord 의 ID. 다른 경로에선 null 직렬화에서 제외. */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         Long hikingRecordId
 ) {
 
