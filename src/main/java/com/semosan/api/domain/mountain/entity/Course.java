@@ -29,9 +29,11 @@ public class Course extends BaseEntity {
     @Column(name = "difficulty", nullable = false, length = 20)
     private Difficulty difficulty;
 
+    /** 코스 총 거리. 단위: 미터(m). 시드/응답/마일스톤 계산 모두 m 기준 일관. */
     @Column(name = "distance", nullable = false)
     private Double distance;
 
+    /** 코스 소요 시간. 단위: 분. */
     @Column(name = "duration", nullable = false)
     private Integer duration;
 
