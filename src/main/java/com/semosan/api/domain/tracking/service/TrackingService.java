@@ -5,6 +5,7 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
+import com.semosan.api.domain.tracking.dto.response.LiveActivityCourseResponse;
 import com.semosan.api.domain.tracking.dto.response.NearbyMountainResponse;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -33,5 +34,12 @@ public class TrackingService {
                 mountain,
                 courseRepository.findByMountainId(mountain.getId())
         );
+    }
+
+    public LiveActivityCourseResponse getLiveActivityCourse(Long userId, Long courseId) {
+        userReader.findActiveUserById(userId);
+        return courseRepository.findById(courseId)
+                .map(LiveActivityCourseResponse::from)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.COURSE_NOT_FOUND));
     }
 }

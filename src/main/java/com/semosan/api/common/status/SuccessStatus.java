@@ -62,6 +62,7 @@ public enum SuccessStatus implements BaseStatus {
     TRACKING_SESSION_RESUME_SUCCESS(HttpStatus.OK, "TRK_200_5", "트래킹 세션을 재개했습니다."),
     TRACKING_SESSION_COMPLETE_SUCCESS(HttpStatus.OK, "TRK_200_6", "트래킹 세션을 종료했습니다."),
     TRACKING_SESSION_ABANDON_SUCCESS(HttpStatus.OK, "TRK_200_7", "트래킹 세션을 포기 처리했습니다."),
+    TRACKING_LIVE_ACTIVITY_COURSE_SUCCESS(HttpStatus.OK, "TRK_200_8", "라이브 액티비티용 코스 정보 조회에 성공했습니다."),
 
     /**
      * Image
