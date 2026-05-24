@@ -13,6 +13,14 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
     List<Course> findByMountainId(Long mountainId);
 
+    @Query("""
+            SELECT c
+            FROM Course c
+            JOIN FETCH c.mountain
+            ORDER BY c.mountain.id ASC, c.id ASC
+            """)
+    List<Course> findAllWithMountainForRecommendation();
+
     /**
      * 코스 상세 — polyline 은 PostGIS LineString 을 GeoJSON 으로 변환,
      * altitudes 는 jsonb 를 그대로 문자열로 반환. 클라이언트 응답 시 raw JSON 으로 직렬화한다.
