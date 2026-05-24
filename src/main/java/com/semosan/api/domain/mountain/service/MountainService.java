@@ -115,8 +115,7 @@ public class MountainService {
                 .limit(3)
                 .map(candidate -> MountainRecommendationResponse.from(
                         candidate.mountain(),
-                        candidate.evaluation().metrics(),
-                        fitnessLevel
+                        candidate.evaluation().metrics()
                 ))
                 .toList();
     }

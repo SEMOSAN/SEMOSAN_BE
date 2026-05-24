@@ -2,7 +2,6 @@ package com.semosan.api.domain.mountain.dto.response;
 
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.enums.Difficulty;
-import com.semosan.api.domain.mountain.enums.FitnessLevel;
 import com.semosan.api.domain.mountain.service.recommendation.TrackScorer.TrackMetrics;
 
 public record MountainRecommendationResponse(
@@ -16,23 +15,19 @@ public record MountainRecommendationResponse(
 
     public static MountainRecommendationResponse from(
             Mountain mountain,
-            TrackMetrics metrics,
-            FitnessLevel fitnessLevel
+            TrackMetrics metrics
     ) {
         return new MountainRecommendationResponse(
                 mountain.getId(),
                 mountain.getName(),
                 firstImageUrl(mountain),
-                difficultyLabel(mountain.getDifficulty(), fitnessLevel),
+                difficultyLabel(mountain.getDifficulty()),
                 metrics.mountainHeightM(),
                 mountain.getAddress()
         );
     }
 
-    private static String difficultyLabel(Difficulty difficulty, FitnessLevel fitnessLevel) {
-        if (difficulty == null) {
-            return fitnessLevel.getLabel();
-        }
+    private static String difficultyLabel(Difficulty difficulty) {
         return switch (difficulty) {
             case EASY -> "초";
             case NORMAL -> "중";
