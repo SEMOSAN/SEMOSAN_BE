@@ -20,6 +20,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.List;
+
 @Tag(name = "Mountain", description = "산 관련 API")
 public interface MountainControllerDocs {
 
@@ -86,10 +88,8 @@ public interface MountainControllerDocs {
 
     @Operation(
             summary = "레벨 맞춤 산 추천 (홈 화면)",
-            description = "로그인 사용자의 등산 레벨(HikingLevel) → 산 난이도(Difficulty) 매핑으로 후보를 추리고, "
-                    + "사용자 위치(lat, lng)에서 가까운 순으로 정렬해 페이지 단위로 반환합니다. "
-                    + "온보딩이 완료되지 않은 사용자는 모든 난이도가 fallback으로 사용됩니다. "
-                    + "Pageable.sort 는 무시됩니다 (서버 정책상 '거리 가까운 순' 고정)."
+            description = "로그인 사용자의 온보딩/신체 정보로 체력 레벨을 산정하고, "
+                    + "KOMOUNT 코스 점수 기준으로 산 3개를 추천합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -102,13 +102,12 @@ public interface MountainControllerDocs {
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))
             )
     })
-    ResponseEntity<ApiResponse<PageResponse<MountainRecommendationResponse>>> getRecommendedMountains(
+    ResponseEntity<ApiResponse<List<MountainRecommendationResponse>>> getRecommendedMountains(
             @AuthenticationPrincipal Long userId,
             @Parameter(description = "사용자 현재 위치 위도 (필수)", required = true, example = "37.4533700")
             @RequestParam Double lat,
             @Parameter(description = "사용자 현재 위치 경도 (필수)", required = true, example = "126.9571678")
-            @RequestParam Double lng,
-            @PageableDefault(size = 10) Pageable pageable
+            @RequestParam Double lng
     );
 
     @Operation(

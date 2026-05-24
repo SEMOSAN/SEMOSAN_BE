@@ -24,8 +24,6 @@ import com.semosan.api.domain.user.repository.UserOnboardingRepository;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,11 +90,10 @@ public class MountainService {
         return MountainMapListResponse.of(hasHikingRecord, mountains);
     }
 
-    public Page<MountainRecommendationResponse> getRecommendedMountains(
+    public List<MountainRecommendationResponse> getRecommendedMountains(
             Long userId,
             Double lat,
-            Double lng,
-            Pageable pageable
+            Double lng
     ) {
         User user = userReader.findCompletedOnboardingUserById(userId);
         UserOnboarding onboarding = userOnboardingRepository.findByUser_Id(userId)
@@ -113,13 +110,11 @@ public class MountainService {
             );
         }
 
-        List<MountainRecommendationResponse> content = candidateByMountainId.values().stream()
+        return candidateByMountainId.values().stream()
                 .sorted(RecommendationCandidate.recommendationOrder())
                 .limit(3)
                 .map(candidate -> MountainRecommendationResponse.from(candidate.mountain()))
                 .toList();
-
-        return new PageImpl<>(content, PageRequest.of(0, 3), content.size());
     }
 
     private static RecommendationCandidate selectBetterCandidate(

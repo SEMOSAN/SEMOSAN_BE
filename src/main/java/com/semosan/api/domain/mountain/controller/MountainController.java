@@ -18,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/mountains")
 @RequiredArgsConstructor
@@ -69,21 +71,17 @@ public class MountainController implements MountainControllerDocs {
     }
 
     /**
-     * 사용자의 현재 위치(lat, lng)에서 가까운 순으로 레벨 맞춤 산을 추천한다.
+     * 사용자의 온보딩 정보를 기준으로 레벨 맞춤 산 3개를 추천한다.
      * lat, lng 는 필수임. 누락 시 400 BAD_REQUEST.
-     * Pageable.sort 는 무시됨 (서버 정책상 "거리 가까운 순" 고정).
      */
     @GetMapping("/recommendations")
     @Override
-    public ResponseEntity<ApiResponse<PageResponse<MountainRecommendationResponse>>> getRecommendedMountains(
+    public ResponseEntity<ApiResponse<List<MountainRecommendationResponse>>> getRecommendedMountains(
             @AuthenticationPrincipal Long userId,
             @RequestParam Double lat,
-            @RequestParam Double lng,
-            @PageableDefault(size = 10) Pageable pageable
+            @RequestParam Double lng
     ) {
-        PageResponse<MountainRecommendationResponse> response = PageResponse.from(
-                mountainService.getRecommendedMountains(userId, lat, lng, pageable)
-        );
+        List<MountainRecommendationResponse> response = mountainService.getRecommendedMountains(userId, lat, lng);
         return ApiResponse.success(SuccessStatus.MOUNTAIN_RECOMMENDATION_SUCCESS, response);
     }
 

@@ -30,8 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
@@ -109,17 +107,16 @@ class MountainServiceTest {
         when(trackScorer.evaluate(fourthCourse, com.semosan.api.domain.mountain.enums.FitnessLevel.INTERMEDIATE))
                 .thenReturn(evaluation(fourthCourse, true, 40));
 
-        Page<MountainRecommendationResponse> result = mountainService.getRecommendedMountains(
+        List<MountainRecommendationResponse> result = mountainService.getRecommendedMountains(
                 1L,
                 37.0,
-                127.0,
-                PageRequest.of(0, 10)
+                127.0
         );
 
-        assertThat(result.getContent())
+        assertThat(result)
                 .extracting(MountainRecommendationResponse::name)
                 .containsExactly("첫번째산", "두번째산", "세번째산");
-        assertThat(result.getTotalElements()).isEqualTo(3);
+        assertThat(result).hasSize(3);
     }
 
     private User user() {
