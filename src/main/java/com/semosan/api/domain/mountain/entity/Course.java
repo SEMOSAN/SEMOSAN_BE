@@ -4,7 +4,11 @@ import com.semosan.api.common.base.BaseEntity;
 import com.semosan.api.domain.mountain.enums.Difficulty;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.locationtech.jts.geom.LineString;
+
+import java.util.List;
 
 @Table(name = "courses")
 @Getter
@@ -37,4 +41,17 @@ public class Course extends BaseEntity {
 
     @Column(name = "polyline", columnDefinition = "geography(LineString, 4326)")
     private LineString polyline;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "waypoints", columnDefinition = "jsonb")
+    private List<CourseWaypoint> waypoints;
+
+    public record CourseWaypoint(
+            Double lat,
+            Double lng,
+            Double ele,
+            String name,
+            String category
+    ) {
+    }
 }
