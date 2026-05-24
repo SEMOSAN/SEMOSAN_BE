@@ -3,6 +3,7 @@ package com.semosan.api.domain.tracking.controller;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.tracking.controller.docs.TrackingControllerDocs;
+import com.semosan.api.domain.tracking.dto.response.LiveActivityCourseResponse;
 import com.semosan.api.domain.tracking.dto.response.NearbyMountainResponse;
 import com.semosan.api.domain.tracking.service.TrackingService;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,5 +39,15 @@ public class TrackingController implements TrackingControllerDocs {
     ) {
         NearbyMountainResponse response = trackingService.getNearbyMountain(userId, lat, lng);
         return ApiResponse.success(SuccessStatus.TRACKING_NEAREST_MOUNTAIN_SUCCESS, response);
+    }
+
+    @GetMapping("/live-activity/courses/{courseId}")
+    @Override
+    public ResponseEntity<ApiResponse<LiveActivityCourseResponse>> getLiveActivityCourse(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long courseId
+    ) {
+        LiveActivityCourseResponse response = trackingService.getLiveActivityCourse(userId, courseId);
+        return ApiResponse.success(SuccessStatus.TRACKING_LIVE_ACTIVITY_COURSE_SUCCESS, response);
     }
 }

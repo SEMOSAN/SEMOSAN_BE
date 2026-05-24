@@ -4,6 +4,7 @@ import com.semosan.api.common.base.BaseEntity;
 import com.semosan.api.domain.mountain.enums.Difficulty;
 import jakarta.persistence.*;
 import lombok.*;
+import org.locationtech.jts.geom.LineString;
 
 @Table(name = "courses")
 @Getter
@@ -33,4 +34,7 @@ public class Course extends BaseEntity {
 
     @Column(name = "duration", nullable = false)
     private Integer duration;
+
+    @Column(name = "polyline", columnDefinition = "geography(LineString, 4326)")
+    private LineString polyline;
 }

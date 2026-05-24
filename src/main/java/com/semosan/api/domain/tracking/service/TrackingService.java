@@ -5,6 +5,7 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
+import com.semosan.api.domain.tracking.dto.response.LiveActivityCourseResponse;
 import com.semosan.api.domain.tracking.dto.response.NearbyMountainResponse;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class TrackingService {
      * 산 데이터가 비어있거나 location 이 null 인 산만 존재할 경우 MOUNTAIN_NOT_FOUND 로 응답.
      */
     public NearbyMountainResponse getNearbyMountain(Long userId, Double lat, Double lng) {
+        // JWT 인증 이후에도 탈퇴/비활성 유저의 트래킹 진입을 막기 위한 도메인 검증.
         userReader.findActiveUserById(userId);
         Mountain mountain = mountainRepository.findNearestByLatLng(lat, lng)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MOUNTAIN_NOT_FOUND));
@@ -33,5 +35,13 @@ public class TrackingService {
                 mountain,
                 courseRepository.findByMountainId(mountain.getId())
         );
+    }
+
+    public LiveActivityCourseResponse getLiveActivityCourse(Long userId, Long courseId) {
+        // JWT 인증 이후에도 탈퇴/비활성 유저의 Live Activity 코스 조회를 막기 위한 도메인 검증.
+        userReader.findActiveUserById(userId);
+        return courseRepository.findById(courseId)
+                .map(LiveActivityCourseResponse::from)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.COURSE_NOT_FOUND));
     }
 }
