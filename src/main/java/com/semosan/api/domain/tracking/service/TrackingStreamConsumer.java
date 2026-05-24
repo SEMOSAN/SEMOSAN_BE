@@ -49,7 +49,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
 
     private final TrackingSessionStatsService statsService;
     private final TrackingPointFlushService flushService;
-    private final TrackingPhotoTriggerService photoTriggerService;
+    private final TrackingMilestoneTriggerService milestoneTriggerService;
     private final TrackingSessionActivityService activityService;
 
     @Override
@@ -65,7 +65,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
 
             double distanceTotal = statsService.recordPoint(sessionId, lat, lng, altitude, recordedAt);
             activityService.markActive(sessionId);
-            photoTriggerService.evaluate(sessionId, userId, distanceTotal);
+            milestoneTriggerService.evaluate(sessionId, userId, distanceTotal);
 
             Queue<TrackingPointFlushService.PendingPoint> queue =
                     buffers.computeIfAbsent(sessionId, k -> new ConcurrentLinkedQueue<>());

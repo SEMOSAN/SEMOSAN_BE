@@ -19,11 +19,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 트래킹 진행 중 GPS 거리 누적값을 보고, 사전에 결정된 마일스톤 거리 ±10% 윈도우에
- * 진입/이탈할 때 다음 동작을 수행한다.
- *  - 진입(OPEN): WebSocket OPEN 메시지 + FCM 푸시 ("{distance}m 돌파! 인증 사진을 남겨보세요!")
- *  - 이탈(CLOSED): WebSocket CLOSED 메시지 (FCM 없음)
- * 마일스톤 도달 상태는 Redis Set 으로 idempotent 하게 관리.
+ * 트래킹 진행 중 GPS 거리 누적값을 보고, 사전에 결정된 마일스톤 거리에 도달하면
+ * 사용자에게 두 종류의 알림을 트리거한다.
+ *
+ * 1) 사진 마일스톤(photo) — 코스 4컷 / 자유 6컷.
+ *    ±10% 윈도우 진입 시 OPEN, 이탈 시 CLOSED. 채널: WebSocket(/topic/.../photo-window) + FCM OPEN 시점만.
+ *
+ * 2) 정상 도달(summit) — 코스 거리 50% 지점 도달 시 1회 (자유 기록은 skip).
+ *    코스 정상 좌표를 정확히 식별 못해 임시 정책으로 "코스 절반" 을 정상 근처로 본다.
+ *    채널: WebSocket(/topic/.../summit) + FCM. Redis Set 으로 1회 idempotent 보장.
  *
  * TODO: 다중 인스턴스 동시성 — 같은 마일스톤에 대해 두 인스턴스가 동시 OPEN 발송할 가능성.
  *       Lua 스크립트 또는 분산 락으로 보강 필요.
@@ -32,10 +36,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TrackingPhotoTriggerService {
+public class TrackingMilestoneTriggerService {
 
     private static final double TOLERANCE_RATIO = 0.10;
     private static final Duration TTL = Duration.ofHours(24);
+    /** 코스 모드의 사진 마일스톤 개수 (1/4, 2/4, 3/4, 4/4). TrackingMilestoneCalculator 와 동기 유지. */
+    private static final int COURSE_MILESTONE_COUNT = 4;
 
     private final StringRedisTemplate redisTemplate;
     private final SimpMessagingTemplate messagingTemplate;
@@ -82,6 +88,12 @@ public class TrackingPhotoTriggerService {
                 redisTemplate.expire(closedKey(sessionId), TTL);
             }
         }
+
+        // 코스 모드(마일스톤 4개)일 때만 정상(=코스 절반 지점) 알림 평가.
+        // 마지막 마일스톤(4/4)이 곧 코스 distance 이므로 그걸 courseDistance 로 사용.
+        if (milestones.size() == COURSE_MILESTONE_COUNT) {
+            evaluateSummit(sessionId, userId, distanceTotal, milestones.get(milestones.size() - 1));
+        }
     }
 
     private void sendOpen(Long sessionId, Long userId, int idx, double mi) {
@@ -114,6 +126,57 @@ public class TrackingPhotoTriggerService {
         payload.put("closedAt", LocalDateTime.now().toString());
         messagingTemplate.convertAndSend(photoTopic(sessionId), payload);
         log.info("Photo window CLOSED: sessionId={} idx={} milestone={}m", sessionId, idx, (int) Math.round(mi));
+    }
+
+    /**
+     * 코스 거리 50% 지점 도달 시 1회 정상 알림을 발송한다.
+     *  - 자유 기록(session.course == null) 인 경우 정상 개념이 없으니 호출자에서 courseDistance=0 으로 넘기면 skip.
+     *  - Redis SADD 의 반환값으로 idempotent — 두 인스턴스가 동시 호출해도 한 인스턴스만 발송.
+     *  - WebSocket /topic/tracking/{sessionId}/summit + FCM 둘 다 발송.
+     */
+    public void evaluateSummit(Long sessionId, Long userId, double distanceTotal, double courseDistance) {
+        if (courseDistance <= 0) {
+            return;
+        }
+        double halfwayMark = courseDistance / 2.0;
+        if (distanceTotal < halfwayMark) {
+            return;
+        }
+        String key = summitNotifiedKey(sessionId);
+        Long added = redisTemplate.opsForSet().add(key, "1");
+        redisTemplate.expire(key, TTL);
+        if (added == null || added == 0L) {
+            // 이미 다른 호출에서 보낸 상태 — silent skip
+            return;
+        }
+        sendSummit(sessionId, userId, halfwayMark);
+    }
+
+    private void sendSummit(Long sessionId, Long userId, double halfwayMark) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("halfwayMark", halfwayMark);
+        payload.put("reachedAt", LocalDateTime.now().toString());
+        messagingTemplate.convertAndSend(summitTopic(sessionId), payload);
+        log.info("Summit reached: sessionId={} userId={} halfwayMark={}m", sessionId, userId, (int) Math.round(halfwayMark));
+
+        try {
+            notificationService.send(
+                    userId,
+                    NotificationType.TRACKING_SUMMIT_REACHED,
+                    Map.of()
+            );
+        } catch (Exception e) {
+            // FCM 실패가 WebSocket summit 자체를 막아선 안 됨 — 로그만 남기고 진행
+            log.warn("Failed to send TRACKING_SUMMIT_REACHED FCM: sessionId={} err={}", sessionId, e.getMessage());
+        }
+    }
+
+    private static String summitNotifiedKey(Long sessionId) {
+        return "tracking:session:" + sessionId + ":summit:notified";
+    }
+
+    private static String summitTopic(Long sessionId) {
+        return "/topic/tracking/" + sessionId + "/summit";
     }
 
     private List<Double> loadMilestones(Long sessionId) {
