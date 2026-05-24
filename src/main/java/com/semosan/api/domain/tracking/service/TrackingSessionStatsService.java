@@ -101,12 +101,8 @@ public class TrackingSessionStatsService {
      * 점이 한 번도 들어오지 않았으면 모든 필드 0/null.
      */
     public Stats getStats(Long sessionId) {
-        Map<String, String> entries = redisTemplate.opsForHash().entries(statsKey(sessionId))
-                .entrySet().stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        e -> String.valueOf(e.getKey()),
-                        e -> String.valueOf(e.getValue())
-                ));
+        HashOperations<String, String, String> hash = redisTemplate.opsForHash();
+        Map<String, String> entries = hash.entries(statsKey(sessionId));
         return new Stats(
                 parseDouble(entries.get(F_DISTANCE_TOTAL)),
                 parseDouble(entries.get(F_ASCENT_TOTAL)),
