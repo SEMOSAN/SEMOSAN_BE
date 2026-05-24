@@ -43,6 +43,10 @@ public class Course extends BaseEntity {
     private LineString polyline;
 
     @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "altitudes", columnDefinition = "jsonb")
+    private List<Double> altitudes;
+
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "waypoints", columnDefinition = "jsonb")
     private List<CourseWaypoint> waypoints;
 
