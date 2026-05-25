@@ -144,11 +144,12 @@ public class TrackingMilestoneTriggerService {
         }
         String key = summitNotifiedKey(sessionId);
         Long added = redisTemplate.opsForSet().add(key, "1");
-        redisTemplate.expire(key, TTL);
         if (added == null || added == 0L) {
-            // 이미 다른 호출에서 보낸 상태 — silent skip
+            // 이미 다른 호출에서 보낸 상태 — silent skip.
+            // EXPIRE 도 함께 skip 해야 50% 통과 후 매 GPS 점마다 TTL 이 리셋되는 핫패스 부하를 막을 수 있다.
             return;
         }
+        redisTemplate.expire(key, TTL);
         sendSummit(sessionId, userId, halfwayMark);
     }
 
