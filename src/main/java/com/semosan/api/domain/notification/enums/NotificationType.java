@@ -23,6 +23,17 @@ public enum NotificationType {
             "",
             "{distance}m 돌파! 인증 사진을 남겨보세요!",
             Set.of("distance")
+    ),
+
+    /**
+     * 코스 거리 50% 도달 시 정상 인증 유도.
+     * 진짜 정상 좌표가 식별 불가해 코스 절반 지점을 "정상" 근처로 간주하는 임시 정책.
+     * iOS 잠금화면에 title 은 앱 이름(SEMOSAN)이 자동 표시되므로 본 title 은 빈 문자열.
+     */
+    TRACKING_SUMMIT_REACHED(
+            "",
+            "정상에 도착했나요? 정상 인증하기!",
+            Set.of()
     );
 
     private final String titleTemplate;
