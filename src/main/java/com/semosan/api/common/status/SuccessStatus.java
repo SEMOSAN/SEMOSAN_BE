@@ -120,7 +120,13 @@ public enum SuccessStatus implements BaseStatus {
     FREE_POST_DETAIL_SUCCESS(HttpStatus.OK, "FPOST_200_3", "자유게시판 게시글 상세 조회에 성공했습니다."),
     FREE_POST_DELETE_SUCCESS(HttpStatus.OK, "FPOST_200_4", "자유게시판 게시글이 삭제되었습니다."),
     FREE_POST_SEARCH_SUCCESS(HttpStatus.OK, "FPOST_200_5", "자유게시판 게시글 검색에 성공했습니다."),
-    FREE_POST_CREATE_SUCCESS(HttpStatus.CREATED, "FPOST_201_1", "자유게시판 게시글이 작성되었습니다.");
+    FREE_POST_CREATE_SUCCESS(HttpStatus.CREATED, "FPOST_201_1", "자유게시판 게시글이 작성되었습니다."),
+
+    /**
+     * App Version
+     */
+    APP_VERSION_GET_SUCCESS(HttpStatus.OK, "APPV_200_1", "앱 버전 정보 조회에 성공했습니다."),
+    APP_VERSION_UPDATE_SUCCESS(HttpStatus.OK, "APPV_200_2", "앱 버전 정보 수정에 성공했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
