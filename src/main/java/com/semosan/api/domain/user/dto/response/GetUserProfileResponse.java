@@ -9,6 +9,7 @@ import com.semosan.api.domain.user.enums.user.Gender;
 import java.time.LocalDate;
 
 public record GetUserProfileResponse(
+        Long userId,
         String profileUrl,
         String nickname,
         HikingLevel hikingLevel,
@@ -29,6 +30,7 @@ public record GetUserProfileResponse(
         }
 
         return new GetUserProfileResponse(
+                user.getId(),
                 user.getProfileUrl(),
                 user.getNickname(),
                 hikingLevel,
