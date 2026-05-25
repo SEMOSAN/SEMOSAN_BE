@@ -1,6 +1,7 @@
 package com.semosan.api.domain.appversion.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.semosan.api.common.constant.MinioConstants;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.appversion.dto.request.UpdateAppVersionRequest;
@@ -14,13 +15,12 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
 public class AppVersionService {
 
-    private static final String BUCKET = "app-config";
+    private static final String BUCKET = MinioConstants.APP_CONFIG_BUCKET;
     private static final String OBJECT_KEY = "app-version.json";
 
     private final MinioClient minioClient;
@@ -46,10 +46,25 @@ public class AppVersionService {
 
     public AppVersionResponse updateAppVersion(UpdateAppVersionRequest request) {
         AppVersionResponse response = new AppVersionResponse(
-                request.minimumVersion(),
-                request.latestVersion(),
-                request.updateUrl(),
-                request.message()
+                new AppVersionResponse.PlatformVersion(
+                        request.ios().latestVersion(),
+                        request.ios().minimumVersion(),
+                        request.ios().forceUpdate(),
+                        request.ios().storeUrl(),
+                        request.ios().releaseNotes(),
+                        request.ios().maintenanceMode(),
+                        request.ios().maintenanceMessage()
+                ),
+                new AppVersionResponse.PlatformVersion(
+                        request.android().latestVersion(),
+                        request.android().minimumVersion(),
+                        request.android().forceUpdate(),
+                        request.android().storeUrl(),
+                        request.android().releaseNotes(),
+                        request.android().maintenanceMode(),
+                        request.android().maintenanceMessage()
+                ),
+                java.time.Instant.now().toString()
         );
 
         try {
