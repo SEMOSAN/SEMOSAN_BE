@@ -15,7 +15,15 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     Optional<Comment> findByIdAndDeletedFalse(Long id);
 
-    Page<Comment> findByPostAndParentIsNullAndDeletedFalse(Post post, Pageable pageable);
+    /**
+     * 게시글의 최상위 댓글 목록을 페이징 조회.
+     * 삭제된 부모라도 살아있는 대댓글이 하나라도 있으면 placeholder("삭제된 댓글입니다") 노출용으로 함께 반환한다.
+     * 자식이 전부 삭제됐거나 처음부터 없는 삭제 부모는 응답에서 제외해 노이즈를 줄인다.
+     */
+    @Query("SELECT c FROM Comment c WHERE c.post = :post AND c.parent IS NULL " +
+            "AND (c.deleted = false " +
+            "     OR EXISTS (SELECT 1 FROM Comment r WHERE r.parent = c AND r.deleted = false))")
+    Page<Comment> findVisibleParentsByPost(@Param("post") Post post, Pageable pageable);
 
     List<Comment> findByParentAndDeletedFalseOrderByCreatedAtAsc(Comment parent);
 
