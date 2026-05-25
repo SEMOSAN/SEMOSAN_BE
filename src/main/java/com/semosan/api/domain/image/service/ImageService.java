@@ -3,7 +3,7 @@ package com.semosan.api.domain.image.service;
 import com.semosan.api.common.config.MinioProperties;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
-import com.semosan.api.domain.image.constant.ImageConstants;
+import com.semosan.api.common.constant.MinioConstants;
 import com.semosan.api.domain.image.dto.response.PresignedUrlResponse;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
@@ -48,13 +48,13 @@ public class ImageService {
     }
 
     private void validateBucket(String bucket) {
-        if (bucket == null || !ImageConstants.ALLOWED_BUCKETS.contains(bucket)) {
+        if (bucket == null || !MinioConstants.ALLOWED_IMAGE_BUCKETS.contains(bucket)) {
             throw new GeneralException(ErrorStatus.INVALID_IMAGE_BUCKET);
         }
     }
 
     private void validateExtension(String extension) {
-        if (extension.isEmpty() || !ImageConstants.ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
+        if (extension.isEmpty() || !MinioConstants.ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
             throw new GeneralException(ErrorStatus.INVALID_IMAGE_EXTENSION);
         }
     }
