@@ -55,11 +55,16 @@ public class CommentService {
 
     public Page<Comment> getCommentsByPost(Long postId, Pageable pageable) {
         Post post = findPostOrThrow(postId);
-        return commentRepository.findByPostAndParentIsNullAndDeletedFalse(post, pageable);
+        return commentRepository.findVisibleParentsByPost(post, pageable);
     }
 
     public List<Comment> getReplies(Long parentId) {
-        Comment parent = findActiveCommentOrThrow(parentId);
+        // 부모가 삭제됐더라도 살아있는 대댓글이 있으면 댓글 목록 응답에 placeholder 로 노출된다.
+        // 클라가 placeholder 의 id 로 이 엔드포인트를 호출했을 때 404 가 나면 일관성이 깨지므로
+        // findActiveCommentOrThrow 대신 deleted 여부를 가리지 않는 findById 로 조회한다.
+        // 대댓글 자체는 deleted=false 만 반환하므로 placeholder + 빈 자식 케이스도 자연스럽게 빈 리스트.
+        Comment parent = commentRepository.findById(parentId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.COMMENT_NOT_FOUND));
         return commentRepository.findByParentAndDeletedFalseOrderByCreatedAtAsc(parent);
     }
 
