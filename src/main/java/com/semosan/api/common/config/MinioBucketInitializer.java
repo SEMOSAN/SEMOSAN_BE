@@ -1,6 +1,6 @@
 package com.semosan.api.common.config;
 
-import com.semosan.api.domain.image.constant.ImageConstants;
+import com.semosan.api.common.constant.MinioConstants;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
@@ -19,7 +19,7 @@ public class MinioBucketInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        for (String bucket : ImageConstants.ALLOWED_BUCKETS) {
+        for (String bucket : MinioConstants.REQUIRED_BUCKETS) {
             try {
                 if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build())) {
                     minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());

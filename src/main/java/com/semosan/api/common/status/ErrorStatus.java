@@ -141,7 +141,14 @@ public enum ErrorStatus implements BaseStatus {
      * SemoFeed (세모피드)
      */
     SEMOFEED_FORBIDDEN(HttpStatus.FORBIDDEN, "SF_403_1", "본인의 세모피드만 처리할 수 있습니다."),
-    SEMOFEED_NOT_FOUND(HttpStatus.NOT_FOUND, "SF_404_1", "세모피드를 찾을 수 없습니다.");
+    SEMOFEED_NOT_FOUND(HttpStatus.NOT_FOUND, "SF_404_1", "세모피드를 찾을 수 없습니다."),
+
+    /**
+     * App Version
+     */
+    APP_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "APPV_404_1", "앱 버전 정보를 찾을 수 없습니다."),
+    APP_VERSION_READ_FAILED(HttpStatus.BAD_GATEWAY, "APPV_502_1", "앱 버전 정보 조회에 실패했습니다."),
+    APP_VERSION_UPDATE_FAILED(HttpStatus.BAD_GATEWAY, "APPV_502_2", "앱 버전 정보 저장에 실패했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
