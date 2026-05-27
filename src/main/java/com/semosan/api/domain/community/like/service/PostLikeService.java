@@ -87,6 +87,9 @@ public class PostLikeService {
         if (receiver.getId().equals(user.getId())) {
             return;
         }
+        if (!userRepository.existsByIdAndDeletedFalse(receiver.getId())) {
+            return;
+        }
 
         notificationService.send(
                 receiver.getId(),

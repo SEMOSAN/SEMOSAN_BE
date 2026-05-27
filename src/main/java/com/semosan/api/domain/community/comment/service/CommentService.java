@@ -115,6 +115,9 @@ public class CommentService {
         if (receiver.getId().equals(author.getId())) {
             return;
         }
+        if (!userRepository.existsByIdAndDeletedFalse(receiver.getId())) {
+            return;
+        }
 
         notificationService.send(
                 receiver.getId(),
@@ -132,6 +135,9 @@ public class CommentService {
     private void sendReplyNotification(Post post, User author, Comment parent, Comment reply) {
         User receiver = parent.getAuthor();
         if (receiver.getId().equals(author.getId())) {
+            return;
+        }
+        if (!userRepository.existsByIdAndDeletedFalse(receiver.getId())) {
             return;
         }
 

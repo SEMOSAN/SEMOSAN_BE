@@ -56,6 +56,7 @@ class PostLikeServiceTest {
 
         when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
         when(userRepository.findById(2L)).thenReturn(Optional.of(liker));
+        when(userRepository.existsByIdAndDeletedFalse(1L)).thenReturn(true);
         when(postLikeRepository.findByPostAndUser(post, liker)).thenReturn(Optional.empty());
         when(postLikeRepository.countByPost(post)).thenReturn(1L);
 
@@ -101,6 +102,23 @@ class PostLikeServiceTest {
         when(postLikeRepository.countByPost(post)).thenReturn(1L);
 
         postLikeService.toggleWithCount(10L, 1L);
+
+        verify(notificationService, never()).send(any(), any(), any());
+    }
+
+    @Test
+    void toggleWithCountDoesNotSendLikeNotificationToInactivePostAuthor() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User liker = user(2L, "liker");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+
+        when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(liker));
+        when(userRepository.existsByIdAndDeletedFalse(1L)).thenReturn(false);
+        when(postLikeRepository.findByPostAndUser(post, liker)).thenReturn(Optional.empty());
+        when(postLikeRepository.countByPost(post)).thenReturn(1L);
+
+        postLikeService.toggleWithCount(10L, 2L);
 
         verify(notificationService, never()).send(any(), any(), any());
     }

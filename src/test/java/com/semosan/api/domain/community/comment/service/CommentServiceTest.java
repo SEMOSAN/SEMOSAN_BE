@@ -59,6 +59,7 @@ class CommentServiceTest {
 
         when(postRepository.findById(10L)).thenReturn(Optional.of(post));
         when(userRepository.findById(2L)).thenReturn(Optional.of(commentAuthor));
+        when(userRepository.existsByIdAndDeletedFalse(1L)).thenReturn(true);
         when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
             Comment comment = invocation.getArgument(0);
             ReflectionTestUtils.setField(comment, "id", 100L);
@@ -98,6 +99,27 @@ class CommentServiceTest {
     }
 
     @Test
+    void createDoesNotSendCommentNotificationToInactivePostAuthor() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User commentAuthor = user(2L, "comment-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(commentAuthor));
+        when(userRepository.existsByIdAndDeletedFalse(1L)).thenReturn(false);
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0);
+            ReflectionTestUtils.setField(comment, "id", 100L);
+            return comment;
+        });
+
+        Comment result = commentService.create(10L, 2L, "댓글입니다");
+
+        assertThat(result.getId()).isEqualTo(100L);
+        verify(notificationService, never()).send(any(), any(), any());
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void replySendsReplyNotificationToParentCommentAuthor() throws Exception {
         User postAuthor = user(1L, "post-author");
@@ -109,6 +131,7 @@ class CommentServiceTest {
         when(postRepository.findById(10L)).thenReturn(Optional.of(post));
         when(userRepository.findById(3L)).thenReturn(Optional.of(replyAuthor));
         when(commentRepository.findByIdAndDeletedFalse(100L)).thenReturn(Optional.of(parent));
+        when(userRepository.existsByIdAndDeletedFalse(2L)).thenReturn(true);
         when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
             Comment comment = invocation.getArgument(0);
             ReflectionTestUtils.setField(comment, "id", 101L);
@@ -148,6 +171,30 @@ class CommentServiceTest {
 
         commentService.reply(10L, 2L, 100L, null, "내 대댓글");
 
+        verify(notificationService, never()).send(any(), any(), any());
+    }
+
+    @Test
+    void replyDoesNotSendReplyNotificationToInactiveParentAuthor() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User parentAuthor = user(2L, "parent-author");
+        User replyAuthor = user(3L, "reply-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        Comment parent = comment(100L, post, parentAuthor, "부모 댓글");
+
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(replyAuthor));
+        when(commentRepository.findByIdAndDeletedFalse(100L)).thenReturn(Optional.of(parent));
+        when(userRepository.existsByIdAndDeletedFalse(2L)).thenReturn(false);
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0);
+            ReflectionTestUtils.setField(comment, "id", 101L);
+            return comment;
+        });
+
+        Comment result = commentService.reply(10L, 3L, 100L, null, "대댓글입니다");
+
+        assertThat(result.getId()).isEqualTo(101L);
         verify(notificationService, never()).send(any(), any(), any());
     }
 
