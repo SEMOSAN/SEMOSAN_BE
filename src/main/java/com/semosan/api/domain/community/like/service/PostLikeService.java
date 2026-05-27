@@ -96,19 +96,9 @@ public class PostLikeService {
                 NotificationType.COMMUNITY_POST_LIKE,
                 Map.of(
                         "actorId", user.getId(),
-                        "actorName", displayName(user),
+                        "actorName", user.displayName(),
                         "postId", post.getId()
                 )
         );
-    }
-
-    private String displayName(User user) {
-        if (user.getNickname() != null && !user.getNickname().isBlank()) {
-            return user.getNickname();
-        }
-        if (user.getName() != null && !user.getName().isBlank()) {
-            return user.getName();
-        }
-        return "사용자";
     }
 }

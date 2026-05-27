@@ -144,6 +144,16 @@ public class User extends BaseEntity {
         this.nickname = nickname;
     }
 
+    public String displayName() {
+        if (this.nickname != null && !this.nickname.isBlank()) {
+            return this.nickname;
+        }
+        if (this.name != null && !this.name.isBlank()) {
+            return this.name;
+        }
+        return "사용자";
+    }
+
     // 온보딩 완료 처리
     public void completeOnboarding(CompleteOnboardingCommand command) {
         this.nickname = command.nickname();

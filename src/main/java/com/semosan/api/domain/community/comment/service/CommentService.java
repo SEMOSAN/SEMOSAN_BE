@@ -124,7 +124,7 @@ public class CommentService {
                 NotificationType.COMMUNITY_COMMENT,
                 Map.of(
                         "actorId", author.getId(),
-                        "actorName", displayName(author),
+                        "actorName", author.displayName(),
                         "postId", post.getId(),
                         "commentId", comment.getId(),
                         "commentPreview", comment.getContent()
@@ -163,22 +163,12 @@ public class CommentService {
                 NotificationType.COMMUNITY_REPLY,
                 Map.of(
                         "actorId", author.getId(),
-                        "actorName", displayName(author),
+                        "actorName", author.displayName(),
                         "postId", post.getId(),
                         "parentCommentId", parent.getId(),
                         "commentId", reply.getId(),
                         "commentPreview", reply.getContent()
                 )
         );
-    }
-
-    private String displayName(User user) {
-        if (user.getNickname() != null && !user.getNickname().isBlank()) {
-            return user.getNickname();
-        }
-        if (user.getName() != null && !user.getName().isBlank()) {
-            return user.getName();
-        }
-        return "사용자";
     }
 }
