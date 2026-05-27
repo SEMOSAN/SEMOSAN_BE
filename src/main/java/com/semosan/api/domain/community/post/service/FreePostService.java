@@ -10,6 +10,7 @@ import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.entity.PostImage;
 import com.semosan.api.domain.community.post.repository.FreePostRepository;
 import com.semosan.api.domain.community.post.repository.PostImageRepository;
+import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ public class FreePostService {
     private final PostImageRepository postImageRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
+    private final UserBlockRepository userBlockRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -56,16 +58,16 @@ public class FreePostService {
         return FreePostDetailResponse.of(post, images, 0L, 0L);
     }
 
-    public Page<FreePostListResponse> getList(Pageable pageable) {
-        return enrichWithCounts(freePostRepository.findAllByDeletedFalse(pageable));
+    public Page<FreePostListResponse> getList(Long viewerId, Pageable pageable) {
+        return enrichWithCounts(freePostRepository.findVisibleByViewerId(viewerId, pageable));
     }
 
-    public Page<FreePostListResponse> search(String keyword, Pageable pageable) {
+    public Page<FreePostListResponse> search(Long viewerId, String keyword, Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
             return Page.empty(pageable);
         }
         Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-        return enrichWithCounts(freePostRepository.searchByKeyword(keyword.strip(), unsorted));
+        return enrichWithCounts(freePostRepository.searchByKeyword(viewerId, keyword.strip(), unsorted));
     }
 
     public Page<FreePostListResponse> getMyList(Long authorId, Pageable pageable) {
@@ -75,8 +77,11 @@ public class FreePostService {
     }
 
     @Transactional
-    public FreePostDetailResponse getDetail(Long postId) {
+    public FreePostDetailResponse getDetail(Long viewerId, Long postId) {
         FreePost post = findActivePostOrThrow(postId);
+        if (userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(viewerId, post.getAuthor().getId())) {
+            throw new GeneralException(ErrorStatus.POST_AUTHOR_BLOCKED);
+        }
         post.increaseViewCount();
 
         List<PostImage> images = postImageRepository.findByPostOrderBySortOrderAsc(post);

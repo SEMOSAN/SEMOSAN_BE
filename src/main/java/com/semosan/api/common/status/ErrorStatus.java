@@ -128,6 +128,7 @@ public enum ErrorStatus implements BaseStatus {
     POST_CONTENT_REQUIRED(HttpStatus.BAD_REQUEST, "POST_400_1", "본문은 비어있을 수 없습니다."),
     POST_IMAGE_INDEX_INVALID(HttpStatus.BAD_REQUEST, "POST_400_2", "대표 이미지 인덱스가 잘못되었습니다."),
     POST_FORBIDDEN(HttpStatus.FORBIDDEN, "POST_403_1", "본인의 게시글만 처리할 수 있습니다."),
+    POST_AUTHOR_BLOCKED(HttpStatus.FORBIDDEN, "POST_403_2", "차단한 사용자의 게시글입니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_404_1", "게시글을 찾을 수 없습니다."),
     POST_DELETED(HttpStatus.NOT_FOUND, "POST_404_2", "삭제된 게시글입니다."),
 

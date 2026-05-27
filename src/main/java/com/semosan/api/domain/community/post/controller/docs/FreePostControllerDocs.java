@@ -34,13 +34,17 @@ public interface FreePostControllerDocs {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
     })
-    ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> getList(Pageable pageable);
+    ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> getList(
+            @AuthenticationPrincipal Long userId,
+            Pageable pageable
+    );
 
     @Operation(summary = "자유게시판 검색", description = "제목/내용 기반 키워드 검색. 최신순 페이징.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "검색 성공")
     })
     ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> search(
+            @AuthenticationPrincipal Long userId,
             String keyword,
             Pageable pageable
     );
@@ -57,9 +61,13 @@ public interface FreePostControllerDocs {
     @Operation(summary = "자유게시판 상세", description = "게시글 상세 (전체 이미지 + 카운트). 호출 시 조회수 +1.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "차단한 사용자의 게시글"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글 없음 또는 삭제됨")
     })
-    ResponseEntity<ApiResponse<FreePostDetailResponse>> getDetail(@PathVariable Long postId);
+    ResponseEntity<ApiResponse<FreePostDetailResponse>> getDetail(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId
+    );
 
     @Operation(summary = "자유게시판 삭제", description = "본인의 게시글을 soft delete 합니다.")
     @ApiResponses({

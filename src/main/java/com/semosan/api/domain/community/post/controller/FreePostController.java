@@ -46,22 +46,24 @@ public class FreePostController implements FreePostControllerDocs {
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> getList(
+            @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ApiResponse.success(
                 SuccessStatus.FREE_POST_LIST_SUCCESS,
-                PageResponse.from(freePostService.getList(pageable))
+                PageResponse.from(freePostService.getList(userId, pageable))
         );
     }
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> search(
+            @AuthenticationPrincipal Long userId,
             @RequestParam String keyword,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ApiResponse.success(
                 SuccessStatus.FREE_POST_SEARCH_SUCCESS,
-                PageResponse.from(freePostService.search(keyword, pageable))
+                PageResponse.from(freePostService.search(userId, keyword, pageable))
         );
     }
 
@@ -78,11 +80,12 @@ public class FreePostController implements FreePostControllerDocs {
 
     @GetMapping("/{postId}")
     public ResponseEntity<ApiResponse<FreePostDetailResponse>> getDetail(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long postId
     ) {
         return ApiResponse.success(
                 SuccessStatus.FREE_POST_DETAIL_SUCCESS,
-                freePostService.getDetail(postId)
+                freePostService.getDetail(userId, postId)
         );
     }
 
