@@ -80,7 +80,6 @@ class FreePostServiceTest {
 
     @Test
     void getDetailReturnsLikedByMe() throws Exception {
-        User viewer = user(1L, "viewer");
         User author = user(2L, "author");
         FreePost post = freePost(10L, author, "제목", "본문");
 
@@ -89,8 +88,7 @@ class FreePostServiceTest {
         when(postImageRepository.findByPostOrderBySortOrderAsc(post)).thenReturn(List.of());
         when(postLikeRepository.countByPost(post)).thenReturn(3L);
         when(commentRepository.countByPostAndDeletedFalse(post)).thenReturn(2L);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(viewer));
-        when(postLikeRepository.existsByPostAndUser(post, viewer)).thenReturn(true);
+        when(postLikeRepository.existsByPostIdAndUserId(10L, 1L)).thenReturn(true);
 
         FreePostDetailResponse result = freePostService.getDetail(1L, 10L);
 
