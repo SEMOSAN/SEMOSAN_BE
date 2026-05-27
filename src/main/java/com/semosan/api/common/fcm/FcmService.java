@@ -1,5 +1,7 @@
 package com.semosan.api.common.fcm;
 
+import com.google.firebase.messaging.ApnsConfig;
+import com.google.firebase.messaging.Aps;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
@@ -29,6 +31,8 @@ public class FcmService {
                     .setBody(body)
                     .build();
             builder.setNotification(notification);
+        } else {
+            builder.setApnsConfig(silentPushApnsConfig());
         }
 
         if (data != null && !data.isEmpty()) {
@@ -38,6 +42,14 @@ public class FcmService {
         String response = FirebaseMessaging.getInstance().send(builder.build());
         log.info("FCM 발송 성공: {}", response);
         return response;
+    }
+
+    private ApnsConfig silentPushApnsConfig() {
+        return ApnsConfig.builder()
+                .setAps(Aps.builder()
+                        .setContentAvailable(true)
+                        .build())
+                .build();
     }
 
 }
