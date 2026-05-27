@@ -31,7 +31,9 @@ public class FcmService {
                     .setBody(body)
                     .build();
             builder.setNotification(notification);
-        } else {
+        }
+
+        if (dataOnly) {
             builder.setApnsConfig(silentPushApnsConfig());
         }
 
