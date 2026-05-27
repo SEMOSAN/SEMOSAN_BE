@@ -5,10 +5,9 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.like.dto.PostLikeToggleResponse;
 import com.semosan.api.domain.community.like.entity.PostLike;
 import com.semosan.api.domain.community.like.repository.PostLikeRepository;
+import com.semosan.api.domain.community.notification.service.CommunityNotificationService;
 import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.repository.PostRepository;
-import com.semosan.api.domain.notification.enums.NotificationType;
-import com.semosan.api.domain.notification.service.NotificationService;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +16,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -29,7 +27,7 @@ public class PostLikeService {
     private final PostLikeRepository postLikeRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final NotificationService notificationService;
+    private final CommunityNotificationService communityNotificationService;
 
     /**
      * @return true = 좋아요 누름 / false = 좋아요 취소
@@ -46,7 +44,7 @@ public class PostLikeService {
 
         try {
             postLikeRepository.save(PostLike.create(post, user));
-            sendPostLikeNotification(post, user);
+            communityNotificationService.sendPostLikeNotification(post, user);
             return true;
         } catch (DataIntegrityViolationException e) {
             log.warn("PostLike 동시 요청 감지: postId={}, userId={}", postId, userId);
@@ -80,25 +78,5 @@ public class PostLikeService {
     private User findUserOrThrow(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
-    }
-
-    private void sendPostLikeNotification(Post post, User user) {
-        User receiver = post.getAuthor();
-        if (receiver.getId().equals(user.getId())) {
-            return;
-        }
-        if (!userRepository.existsByIdAndDeletedFalse(receiver.getId())) {
-            return;
-        }
-
-        notificationService.send(
-                receiver.getId(),
-                NotificationType.COMMUNITY_POST_LIKE,
-                Map.of(
-                        "actorId", user.getId(),
-                        "actorName", user.displayName(),
-                        "postId", post.getId()
-                )
-        );
     }
 }

@@ -5,10 +5,9 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.comment.dto.CommentResponse;
 import com.semosan.api.domain.community.comment.entity.Comment;
 import com.semosan.api.domain.community.comment.repository.CommentRepository;
+import com.semosan.api.domain.community.notification.service.CommunityNotificationService;
 import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.repository.PostRepository;
-import com.semosan.api.domain.notification.enums.NotificationType;
-import com.semosan.api.domain.notification.service.NotificationService;
 import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.repository.UserRepository;
@@ -20,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -28,13 +26,11 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class CommentService {
 
-    private static final int COMMENT_PREVIEW_MAX_LENGTH = 50;
-
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final UserBlockRepository userBlockRepository;
-    private final NotificationService notificationService;
+    private final CommunityNotificationService communityNotificationService;
 
     @Transactional
     public Comment create(Long postId, Long authorId, String content) {
@@ -43,7 +39,7 @@ public class CommentService {
 
         Comment comment = Comment.create(post, author, content);
         Comment savedComment = commentRepository.save(comment);
-        sendCommentNotification(post, author, savedComment);
+        communityNotificationService.sendCommentNotification(post, author, savedComment);
         return savedComment;
     }
 
@@ -64,7 +60,7 @@ public class CommentService {
 
         Comment reply = Comment.reply(post, author, actualParent, mentionedUser, content);
         Comment savedReply = commentRepository.save(reply);
-        sendReplyNotification(post, author, actualParent, mentionedUser, savedReply);
+        communityNotificationService.sendReplyNotification(post, author, actualParent, mentionedUser, savedReply);
         return savedReply;
     }
 
@@ -110,77 +106,5 @@ public class CommentService {
     private Comment findActiveCommentOrThrow(Long commentId) {
         return commentRepository.findByIdAndDeletedFalse(commentId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.COMMENT_NOT_FOUND));
-    }
-
-    private void sendCommentNotification(Post post, User author, Comment comment) {
-        User receiver = post.getAuthor();
-        if (receiver.getId().equals(author.getId())) {
-            return;
-        }
-        if (!userRepository.existsByIdAndDeletedFalse(receiver.getId())) {
-            return;
-        }
-
-        notificationService.send(
-                receiver.getId(),
-                NotificationType.COMMUNITY_COMMENT,
-                Map.of(
-                        "actorId", author.getId(),
-                        "actorName", author.displayName(),
-                        "postId", post.getId(),
-                        "commentId", comment.getId(),
-                        "commentPreview", preview(comment.getContent())
-                )
-        );
-    }
-
-    private void sendReplyNotification(Post post, User author, Comment parent, User mentionedUser, Comment reply) {
-        Set<Long> sentReceiverIds = new HashSet<>();
-        sendReplyNotificationToReceiver(post, author, parent, reply, parent.getAuthor(), sentReceiverIds);
-        if (mentionedUser != null) {
-            sendReplyNotificationToReceiver(post, author, parent, reply, mentionedUser, sentReceiverIds);
-        }
-    }
-
-    private void sendReplyNotificationToReceiver(
-            Post post,
-            User author,
-            Comment parent,
-            Comment reply,
-            User receiver,
-            Set<Long> sentReceiverIds
-    ) {
-        if (receiver.getId().equals(author.getId())) {
-            return;
-        }
-        if (!sentReceiverIds.add(receiver.getId())) {
-            return;
-        }
-        if (!userRepository.existsByIdAndDeletedFalse(receiver.getId())) {
-            return;
-        }
-
-        notificationService.send(
-                receiver.getId(),
-                NotificationType.COMMUNITY_REPLY,
-                Map.of(
-                        "actorId", author.getId(),
-                        "actorName", author.displayName(),
-                        "postId", post.getId(),
-                        "parentCommentId", parent.getId(),
-                        "commentId", reply.getId(),
-                        "commentPreview", preview(reply.getContent())
-                )
-        );
-    }
-
-    private String preview(String content) {
-        if (content == null) {
-            return "";
-        }
-        if (content.length() <= COMMENT_PREVIEW_MAX_LENGTH) {
-            return content;
-        }
-        return content.substring(0, COMMENT_PREVIEW_MAX_LENGTH) + "...";
     }
 }
