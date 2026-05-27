@@ -41,6 +41,12 @@ public class Course extends BaseEntity {
     @Column(name = "duration", nullable = false)
     private Integer duration;
 
+    @Column(name = "start_name", length = 100)
+    private String startName;
+
+    @Column(name = "end_name", length = 100)
+    private String endName;
+
     @Column(name = "polyline", columnDefinition = "geography(LineString, 4326)")
     private LineString polyline;
 

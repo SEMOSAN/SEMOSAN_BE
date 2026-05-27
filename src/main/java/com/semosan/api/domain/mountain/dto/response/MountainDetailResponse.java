@@ -50,7 +50,9 @@ public record MountainDetailResponse(
             String name,
             Difficulty difficulty,
             Double distance,
-            Integer duration
+            Integer duration,
+            String startName,
+            String endName
     ) {
         public static CourseInfo from(Course course) {
             return new CourseInfo(
@@ -58,7 +60,9 @@ public record MountainDetailResponse(
                     course.getName(),
                     course.getDifficulty(),
                     course.getDistance(),
-                    course.getDuration()
+                    course.getDuration(),
+                    course.getStartName(),
+                    course.getEndName()
             );
         }
     }
