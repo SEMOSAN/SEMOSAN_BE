@@ -3,7 +3,6 @@ package com.semosan.api.domain.hiking.entity;
 import com.semosan.api.common.base.BaseEntity;
 import com.semosan.api.domain.hiking.enums.DifficultyFeedbackType;
 import com.semosan.api.domain.mountain.entity.Course;
-import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.enums.Difficulty;
 import com.semosan.api.domain.user.entity.User;
 import jakarta.persistence.*;
@@ -42,10 +41,6 @@ public class CourseDifficultyFeedback extends BaseEntity {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "mountain_id", nullable = false)
-    private Mountain mountain;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
@@ -66,7 +61,6 @@ public class CourseDifficultyFeedback extends BaseEntity {
         return CourseDifficultyFeedback.builder()
                 .hikingRecord(hikingRecord)
                 .user(user)
-                .mountain(hikingRecord.getMountain())
                 .course(course)
                 .guideDifficulty(course.getDifficulty())
                 .comparison(comparison)

@@ -19,8 +19,8 @@ public record CourseDifficultyFeedbackResponse(
         return new CourseDifficultyFeedbackResponse(
                 feedback.getId(),
                 feedback.getHikingRecord().getId(),
-                feedback.getMountain().getId(),
-                feedback.getMountain().getName(),
+                feedback.getCourse().getMountain().getId(),
+                feedback.getCourse().getMountain().getName(),
                 feedback.getCourse().getId(),
                 feedback.getCourse().getName(),
                 feedback.getGuideDifficulty(),

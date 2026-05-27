@@ -12,9 +12,6 @@ CREATE TABLE IF NOT EXISTS course_difficulty_feedbacks
     user_id           bigint       not null
         constraint fk_course_difficulty_feedback_user
             references users,
-    mountain_id       bigint       not null
-        constraint fk_course_difficulty_feedback_mountain
-            references mountains,
     course_id         bigint       not null
         constraint fk_course_difficulty_feedback_course
             references courses,
