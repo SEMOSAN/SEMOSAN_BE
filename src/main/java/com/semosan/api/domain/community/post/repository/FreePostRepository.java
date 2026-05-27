@@ -14,6 +14,8 @@ public interface FreePostRepository extends JpaRepository<FreePost, Long> {
 
     Page<FreePost> findByAuthorAndDeletedFalse(User author, Pageable pageable);
 
+    java.util.Optional<FreePost> findByIdAndDeletedFalse(Long id);
+
     @Query("SELECT fp FROM FreePost fp " +
             "WHERE fp.deleted = false " +
             "AND (LOWER(fp.title) LIKE LOWER(CONCAT('%', :keyword, '%')) " +

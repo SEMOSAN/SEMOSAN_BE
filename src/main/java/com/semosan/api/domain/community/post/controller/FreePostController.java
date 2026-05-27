@@ -7,6 +7,8 @@ import com.semosan.api.domain.community.post.controller.docs.FreePostControllerD
 import com.semosan.api.domain.community.post.dto.FreePostCreateRequest;
 import com.semosan.api.domain.community.post.dto.FreePostDetailResponse;
 import com.semosan.api.domain.community.post.dto.FreePostListResponse;
+import com.semosan.api.domain.community.post.dto.FreePostReportRequest;
+import com.semosan.api.domain.community.post.service.FreePostReportService;
 import com.semosan.api.domain.community.post.service.FreePostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class FreePostController implements FreePostControllerDocs {
 
     private final FreePostService freePostService;
+    private final FreePostReportService freePostReportService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<FreePostDetailResponse>> create(
@@ -88,5 +91,15 @@ public class FreePostController implements FreePostControllerDocs {
     ) {
         freePostService.delete(postId, userId);
         return ApiResponse.success(SuccessStatus.FREE_POST_DELETE_SUCCESS);
+    }
+
+    @PostMapping("/{postId}/reports")
+    public ResponseEntity<ApiResponse<Void>> report(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody FreePostReportRequest request
+    ) {
+        freePostReportService.report(userId, postId, request.reason());
+        return ApiResponse.success(SuccessStatus.FREE_POST_REPORT_SUCCESS);
     }
 }

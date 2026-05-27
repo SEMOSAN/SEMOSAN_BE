@@ -5,6 +5,7 @@ import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.domain.community.post.dto.FreePostCreateRequest;
 import com.semosan.api.domain.community.post.dto.FreePostDetailResponse;
 import com.semosan.api.domain.community.post.dto.FreePostListResponse;
+import com.semosan.api.domain.community.post.dto.FreePostReportRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -69,5 +70,18 @@ public interface FreePostControllerDocs {
     ResponseEntity<ApiResponse<Void>> delete(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long postId
+    );
+
+    @Operation(summary = "자유게시판 신고", description = "자유게시판 게시글을 신고하고 운영자 Discord 채널로 접수합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "신고 접수 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "본인 게시글 신고 불가"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글 없음 또는 삭제됨"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 신고한 게시글")
+    })
+    ResponseEntity<ApiResponse<Void>> report(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody FreePostReportRequest request
     );
 }

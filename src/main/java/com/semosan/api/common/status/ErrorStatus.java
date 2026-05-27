@@ -146,6 +146,12 @@ public enum ErrorStatus implements BaseStatus {
     SEMOFEED_NOT_FOUND(HttpStatus.NOT_FOUND, "SF_404_1", "세모피드를 찾을 수 없습니다."),
 
     /**
+     * Free Post Report
+     */
+    FREE_POST_REPORT_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "FPR_400_1", "본인 게시글은 신고할 수 없습니다."),
+    FREE_POST_REPORT_ALREADY_EXISTS(HttpStatus.CONFLICT, "FPR_409_1", "이미 신고한 게시글입니다."),
+
+    /**
      * App Version
      */
     APP_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "APPV_404_1", "앱 버전 정보를 찾을 수 없습니다."),
