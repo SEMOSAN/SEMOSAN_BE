@@ -28,6 +28,8 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class CommentService {
 
+    private static final int COMMENT_PREVIEW_MAX_LENGTH = 50;
+
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
@@ -127,7 +129,7 @@ public class CommentService {
                         "actorName", author.displayName(),
                         "postId", post.getId(),
                         "commentId", comment.getId(),
-                        "commentPreview", comment.getContent()
+                        "commentPreview", preview(comment.getContent())
                 )
         );
     }
@@ -167,8 +169,18 @@ public class CommentService {
                         "postId", post.getId(),
                         "parentCommentId", parent.getId(),
                         "commentId", reply.getId(),
-                        "commentPreview", reply.getContent()
+                        "commentPreview", preview(reply.getContent())
                 )
         );
+    }
+
+    private String preview(String content) {
+        if (content == null) {
+            return "";
+        }
+        if (content.length() <= COMMENT_PREVIEW_MAX_LENGTH) {
+            return content;
+        }
+        return content.substring(0, COMMENT_PREVIEW_MAX_LENGTH) + "...";
     }
 }

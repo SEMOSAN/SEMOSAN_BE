@@ -122,6 +122,35 @@ class CommentServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void createTrimsCommentPreview() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User commentAuthor = user(2L, "comment-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        String longContent = "가".repeat(51);
+
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(commentAuthor));
+        when(userRepository.existsByIdAndDeletedFalse(1L)).thenReturn(true);
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0);
+            ReflectionTestUtils.setField(comment, "id", 100L);
+            return comment;
+        });
+
+        commentService.create(10L, 2L, longContent);
+
+        ArgumentCaptor<Map<String, Object>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(notificationService).send(
+                eq(1L),
+                eq(NotificationType.COMMUNITY_COMMENT),
+                paramsCaptor.capture()
+        );
+        assertThat(paramsCaptor.getValue())
+                .containsEntry("commentPreview", "가".repeat(50) + "...");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void replySendsReplyNotificationToParentCommentAuthor() throws Exception {
         User postAuthor = user(1L, "post-author");
         User parentAuthor = user(2L, "parent-author");
