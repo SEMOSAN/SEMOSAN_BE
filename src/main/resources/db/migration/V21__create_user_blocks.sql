@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS user_blocks
         constraint fk_user_blocks_blocked_user
             references users,
     constraint uk_user_blocks_blocker_blocked
-        unique (blocker_id, blocked_user_id)
+        unique (blocker_id, blocked_user_id),
+    constraint chk_user_blocks_no_self_block
+        check (blocker_id != blocked_user_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_blocks_blocker_id

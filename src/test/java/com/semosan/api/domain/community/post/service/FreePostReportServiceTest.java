@@ -13,6 +13,8 @@ import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.repository.UserRepository;
 import org.hibernate.exception.ConstraintViolationException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -21,6 +23,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.lang.reflect.Constructor;
 import java.sql.SQLException;
@@ -52,6 +56,16 @@ class FreePostReportServiceTest {
     @InjectMocks
     private FreePostReportService freePostReportService;
 
+    @BeforeEach
+    void setUp() {
+        TransactionSynchronizationManager.initSynchronization();
+    }
+
+    @AfterEach
+    void tearDown() {
+        TransactionSynchronizationManager.clearSynchronization();
+    }
+
     @Test
     void reportSavesReportAndSendsDiscordAlert() throws Exception {
         User reporter = user(1L, "reporter");
@@ -66,9 +80,13 @@ class FreePostReportServiceTest {
 
         FreePostReport saved = freePostReportService.report(1L, 10L, FreePostReportReason.SPAM);
 
+        // afterCommit 수동 트리거
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(TransactionSynchronization::afterCommit);
+
         assertThat(saved.getReason()).isEqualTo(FreePostReportReason.SPAM);
         ArgumentCaptor<DiscordMessage> messageCaptor = ArgumentCaptor.forClass(DiscordMessage.class);
-        verify(discordAlertClient).send(messageCaptor.capture());
+        verify(discordAlertClient).sendReport(messageCaptor.capture());
         assertThat(messageCaptor.getValue().content()).contains("자유게시판 신고 접수");
         assertThat(messageCaptor.getValue().embeds().get(0).description()).contains("스팸");
     }
@@ -86,7 +104,7 @@ class FreePostReportServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.FREE_POST_REPORT_SELF_NOT_ALLOWED);
         verify(freePostReportRepository, never()).saveAndFlush(any());
-        verify(discordAlertClient, never()).send(any());
+        verify(discordAlertClient, never()).sendReport(any());
     }
 
     @Test
@@ -104,7 +122,7 @@ class FreePostReportServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.FREE_POST_REPORT_ALREADY_EXISTS);
         verify(freePostReportRepository, never()).saveAndFlush(any());
-        verify(discordAlertClient, never()).send(any());
+        verify(discordAlertClient, never()).sendReport(any());
     }
 
     @Test
