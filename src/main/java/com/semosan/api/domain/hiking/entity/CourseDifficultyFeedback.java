@@ -58,6 +58,9 @@ public class CourseDifficultyFeedback extends BaseEntity {
             DifficultyFeedbackType comparison
     ) {
         Course course = hikingRecord.getCourse();
+        if (course == null) {
+            throw new IllegalArgumentException("course is required");
+        }
         return CourseDifficultyFeedback.builder()
                 .hikingRecord(hikingRecord)
                 .user(user)

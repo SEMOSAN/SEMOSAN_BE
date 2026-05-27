@@ -17,6 +17,7 @@ import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class HikingRecordService {
+
+    private static final String DIFFICULTY_FEEDBACK_HIKING_RECORD_UNIQUE_CONSTRAINT =
+            "uk_course_difficulty_feedback_hiking_record";
 
     private final HikingRecordRepository hikingRecordRepository;
     private final UserReader userReader;
@@ -105,7 +109,26 @@ public class HikingRecordService {
         try {
             return CourseDifficultyFeedbackResponse.from(courseDifficultyFeedbackRepository.saveAndFlush(feedback));
         } catch (DataIntegrityViolationException e) {
-            throw new GeneralException(ErrorStatus.COURSE_DIFFICULTY_FEEDBACK_ALREADY_EXISTS);
+            if (isDifficultyFeedbackHikingRecordUniqueViolation(e)) {
+                throw new GeneralException(ErrorStatus.COURSE_DIFFICULTY_FEEDBACK_ALREADY_EXISTS);
+            }
+            throw e;
         }
+    }
+
+    private boolean isDifficultyFeedbackHikingRecordUniqueViolation(Throwable exception) {
+        Throwable current = exception;
+        while (current != null) {
+            if (current instanceof ConstraintViolationException constraintViolation
+                    && DIFFICULTY_FEEDBACK_HIKING_RECORD_UNIQUE_CONSTRAINT.equals(constraintViolation.getConstraintName())) {
+                return true;
+            }
+            String message = current.getMessage();
+            if (message != null && message.contains(DIFFICULTY_FEEDBACK_HIKING_RECORD_UNIQUE_CONSTRAINT)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }

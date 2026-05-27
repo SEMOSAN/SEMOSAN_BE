@@ -19,15 +19,17 @@ import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.Gender;
 import com.semosan.api.domain.user.service.UserReader;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -158,7 +160,7 @@ class HikingRecordServiceTest {
         when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
         when(courseDifficultyFeedbackRepository.existsByHikingRecord_Id(10L)).thenReturn(false);
         when(courseDifficultyFeedbackRepository.saveAndFlush(any(CourseDifficultyFeedback.class)))
-                .thenThrow(new DataIntegrityViolationException("duplicate hiking_record_id"));
+                .thenThrow(duplicateFeedbackDataIntegrityViolation());
 
         assertThatThrownBy(() -> hikingRecordService.createCourseDifficultyFeedback(
                 1L,
@@ -168,6 +170,49 @@ class HikingRecordServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.COURSE_DIFFICULTY_FEEDBACK_ALREADY_EXISTS);
+    }
+
+    @Test
+    void createCourseDifficultyFeedbackRethrowsUnrelatedDataIntegrityViolation() throws Exception {
+        User user = user(1L);
+        HikingRecord hikingRecord = hikingRecord(10L, course(mountain(20L, "관악산"), 30L, "과천향교 출발 코스"));
+        DataIntegrityViolationException exception = new DataIntegrityViolationException("other constraint");
+
+        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(hikingRecordRepository.findById(10L)).thenReturn(Optional.of(hikingRecord));
+        when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
+        when(courseDifficultyFeedbackRepository.existsByHikingRecord_Id(10L)).thenReturn(false);
+        when(courseDifficultyFeedbackRepository.saveAndFlush(any(CourseDifficultyFeedback.class)))
+                .thenThrow(exception);
+
+        assertThatThrownBy(() -> hikingRecordService.createCourseDifficultyFeedback(
+                1L,
+                10L,
+                new CreateCourseDifficultyFeedbackRequest(DifficultyFeedbackType.SIMILAR)
+        ))
+                .isSameAs(exception);
+    }
+
+    @Test
+    void courseDifficultyFeedbackCreateThrowsWhenRecordHasNoCourse() throws Exception {
+        HikingRecord hikingRecord = hikingRecord(10L, null);
+
+        assertThatThrownBy(() -> CourseDifficultyFeedback.create(
+                hikingRecord,
+                user(1L),
+                DifficultyFeedbackType.SIMILAR
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("course is required");
+    }
+
+    private DataIntegrityViolationException duplicateFeedbackDataIntegrityViolation() {
+        ConstraintViolationException cause = new ConstraintViolationException(
+                "duplicate hiking_record_id",
+                new SQLException("unique violation"),
+                "uk_course_difficulty_feedback_hiking_record"
+        );
+        return new DataIntegrityViolationException("duplicate hiking_record_id", cause);
     }
 
     private User user(Long id) {
