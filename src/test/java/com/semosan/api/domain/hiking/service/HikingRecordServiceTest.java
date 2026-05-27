@@ -21,6 +21,7 @@ import com.semosan.api.domain.user.enums.user.Gender;
 import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -69,7 +70,7 @@ class HikingRecordServiceTest {
         when(hikingRecordRepository.findById(10L)).thenReturn(Optional.of(hikingRecord));
         when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
         when(courseDifficultyFeedbackRepository.existsByHikingRecord_Id(10L)).thenReturn(false);
-        when(courseDifficultyFeedbackRepository.save(any(CourseDifficultyFeedback.class)))
+        when(courseDifficultyFeedbackRepository.saveAndFlush(any(CourseDifficultyFeedback.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         CourseDifficultyFeedbackResponse response = hikingRecordService.createCourseDifficultyFeedback(
@@ -83,7 +84,7 @@ class HikingRecordServiceTest {
         assertThat(response.courseId()).isEqualTo(30L);
         assertThat(response.guideDifficulty()).isEqualTo(Difficulty.NORMAL);
         assertThat(response.comparison()).isEqualTo(DifficultyFeedbackType.HARDER);
-        verify(courseDifficultyFeedbackRepository).save(any(CourseDifficultyFeedback.class));
+        verify(courseDifficultyFeedbackRepository).saveAndFlush(any(CourseDifficultyFeedback.class));
     }
 
     @Test
@@ -103,7 +104,7 @@ class HikingRecordServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.HIKING_RECORD_FORBIDDEN);
-        verify(courseDifficultyFeedbackRepository, never()).save(any());
+        verify(courseDifficultyFeedbackRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -123,7 +124,7 @@ class HikingRecordServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.HIKING_RECORD_COURSE_REQUIRED);
-        verify(courseDifficultyFeedbackRepository, never()).save(any());
+        verify(courseDifficultyFeedbackRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -144,7 +145,29 @@ class HikingRecordServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.COURSE_DIFFICULTY_FEEDBACK_ALREADY_EXISTS);
-        verify(courseDifficultyFeedbackRepository, never()).save(any());
+        verify(courseDifficultyFeedbackRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void createCourseDifficultyFeedbackThrowsConflictWhenConcurrentDuplicateSaveOccurs() throws Exception {
+        User user = user(1L);
+        HikingRecord hikingRecord = hikingRecord(10L, course(mountain(20L, "관악산"), 30L, "과천향교 출발 코스"));
+
+        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(hikingRecordRepository.findById(10L)).thenReturn(Optional.of(hikingRecord));
+        when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
+        when(courseDifficultyFeedbackRepository.existsByHikingRecord_Id(10L)).thenReturn(false);
+        when(courseDifficultyFeedbackRepository.saveAndFlush(any(CourseDifficultyFeedback.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate hiking_record_id"));
+
+        assertThatThrownBy(() -> hikingRecordService.createCourseDifficultyFeedback(
+                1L,
+                10L,
+                new CreateCourseDifficultyFeedbackRequest(DifficultyFeedbackType.SIMILAR)
+        ))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.COURSE_DIFFICULTY_FEEDBACK_ALREADY_EXISTS);
     }
 
     private User user(Long id) {

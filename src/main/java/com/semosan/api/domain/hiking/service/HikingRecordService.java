@@ -17,6 +17,7 @@ import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -101,6 +102,10 @@ public class HikingRecordService {
                 user,
                 request.comparison()
         );
-        return CourseDifficultyFeedbackResponse.from(courseDifficultyFeedbackRepository.save(feedback));
+        try {
+            return CourseDifficultyFeedbackResponse.from(courseDifficultyFeedbackRepository.saveAndFlush(feedback));
+        } catch (DataIntegrityViolationException e) {
+            throw new GeneralException(ErrorStatus.COURSE_DIFFICULTY_FEEDBACK_ALREADY_EXISTS);
+        }
     }
 }
