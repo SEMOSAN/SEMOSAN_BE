@@ -35,6 +35,9 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
                         c.duration      AS duration,
                         c.start_name    AS startName,
                         c.end_name      AS endName,
+                        c.ascent        AS ascent,
+                        c.descent       AS descent,
+                        c.max_altitude  AS maxAltitude,
                         ST_AsGeoJSON(c.polyline)::text AS polyline,
                         c.altitudes::text              AS altitudes
                     FROM courses c

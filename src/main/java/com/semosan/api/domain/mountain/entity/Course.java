@@ -47,6 +47,18 @@ public class Course extends BaseEntity {
     @Column(name = "end_name", length = 100)
     private String endName;
 
+    /** 누적 상승 고도(m). Σ max(0, current - previous). altitudes 없거나 점 1개 이하면 null. */
+    @Column(name = "ascent")
+    private Double ascent;
+
+    /** 누적 하강 고도(m). Σ max(0, previous - current). altitudes 없거나 점 1개 이하면 null. */
+    @Column(name = "descent")
+    private Double descent;
+
+    /** 코스 최고 고도(m). altitudes 의 max. null 가능. */
+    @Column(name = "max_altitude")
+    private Double maxAltitude;
+
     @Column(name = "polyline", columnDefinition = "geography(LineString, 4326)")
     private LineString polyline;
 
