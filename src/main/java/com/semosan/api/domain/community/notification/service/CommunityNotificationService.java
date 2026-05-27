@@ -40,9 +40,10 @@ public class CommunityNotificationService {
 
     public void sendReplyNotification(Post post, User author, Comment parent, User mentionedUser, Comment reply) {
         Set<Long> sentReceiverIds = new HashSet<>();
-        sendReplyNotificationToReceiver(post, author, parent, reply, parent.getAuthor(), sentReceiverIds);
+        ReplyNotificationContext context = new ReplyNotificationContext(post, author, parent, reply);
+        sendReplyNotificationToReceiver(context, parent.getAuthor(), sentReceiverIds);
         if (mentionedUser != null) {
-            sendReplyNotificationToReceiver(post, author, parent, reply, mentionedUser, sentReceiverIds);
+            sendReplyNotificationToReceiver(context, mentionedUser, sentReceiverIds);
         }
     }
 
@@ -61,10 +62,7 @@ public class CommunityNotificationService {
     }
 
     private void sendReplyNotificationToReceiver(
-            Post post,
-            User author,
-            Comment parent,
-            Comment reply,
+            ReplyNotificationContext context,
             User receiver,
             Set<Long> sentReceiverIds
     ) {
@@ -74,15 +72,15 @@ public class CommunityNotificationService {
 
         sendIfEligible(
                 receiver,
-                author,
+                context.author(),
                 NotificationType.COMMUNITY_REPLY,
                 Map.of(
-                        "actorId", author.getId(),
-                        "actorName", author.displayName(),
-                        "postId", post.getId(),
-                        "parentCommentId", parent.getId(),
-                        "commentId", reply.getId(),
-                        "commentPreview", preview(reply.getContent())
+                        "actorId", context.author().getId(),
+                        "actorName", context.author().displayName(),
+                        "postId", context.post().getId(),
+                        "parentCommentId", context.parent().getId(),
+                        "commentId", context.reply().getId(),
+                        "commentPreview", preview(context.reply().getContent())
                 )
         );
     }
@@ -106,5 +104,13 @@ public class CommunityNotificationService {
             return content;
         }
         return content.substring(0, COMMENT_PREVIEW_MAX_LENGTH) + "...";
+    }
+
+    private record ReplyNotificationContext(
+            Post post,
+            User author,
+            Comment parent,
+            Comment reply
+    ) {
     }
 }
