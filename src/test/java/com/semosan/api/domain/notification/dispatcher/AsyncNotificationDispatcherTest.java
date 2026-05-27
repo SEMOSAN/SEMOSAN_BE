@@ -1,6 +1,5 @@
 package com.semosan.api.domain.notification.dispatcher;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.semosan.api.common.fcm.FcmService;
 import com.semosan.api.domain.notification.enums.NotificationType;
 import com.semosan.api.domain.notification.service.FcmTokenService;
@@ -55,7 +54,8 @@ class AsyncNotificationDispatcherTest {
                 .containsEntry("title", "SEMOSAN")
                 .containsEntry("body", "500m 돌파! 인증 사진을 남겨보세요!")
                 .containsEntry("distance", "500")
-                .containsEntry("notificationId", "1");
+                .containsEntry("notificationId", "1")
+                .doesNotContainKey("extras");
     }
 
     @Test
@@ -85,14 +85,14 @@ class AsyncNotificationDispatcherTest {
         assertThat(dataCaptor.getValue())
                 .containsEntry("type", "COMMUNITY_COMMENT")
                 .containsEntry("title", "새 댓글이 달렸어요")
-                .containsEntry("body", "푸름: 확인했어요");
+                .containsEntry("body", "푸름: 확인했어요")
+                .doesNotContainKey("extras");
     }
 
     private AsyncNotificationDispatcher dispatcher() {
         return new AsyncNotificationDispatcher(
                 fcmService,
                 fcmTokenService,
-                new ObjectMapper(),
                 new FcmPayloadPolicy()
         );
     }

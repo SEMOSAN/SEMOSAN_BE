@@ -1,7 +1,5 @@
 package com.semosan.api.domain.notification.dispatcher;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.semosan.api.common.fcm.FcmService;
@@ -21,7 +19,6 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
 
     private final FcmService fcmService;
     private final FcmTokenService fcmTokenService;
-    private final ObjectMapper objectMapper;
     private final FcmPayloadPolicy fcmPayloadPolicy;
 
     /**
@@ -58,12 +55,6 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
         data.put("title", cmd.title());
         data.put("body", cmd.body());
         data.put("notificationId", String.valueOf(cmd.notificationId()));
-        try {
-            data.put("extras", objectMapper.writeValueAsString(cmd.extras()));
-        } catch (JsonProcessingException e) {
-            log.error("extras 직렬화 실패", e);
-            data.put("extras", "{}");
-        }
         return data;
     }
 
