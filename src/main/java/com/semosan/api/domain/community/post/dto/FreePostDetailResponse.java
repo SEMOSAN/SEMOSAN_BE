@@ -14,6 +14,7 @@ public record FreePostDetailResponse(
         List<PostImageResponse> images,
         Integer viewCount,
         Long likeCount,
+        boolean likedByMe,
         Long commentCount,
         LocalDateTime createdAt
 ) {
@@ -21,7 +22,8 @@ public record FreePostDetailResponse(
             FreePost post,
             List<PostImage> images,
             long likeCount,
-            long commentCount
+            long commentCount,
+            boolean likedByMe
     ) {
         return new FreePostDetailResponse(
                 post.getId(),
@@ -31,6 +33,7 @@ public record FreePostDetailResponse(
                 images.stream().map(PostImageResponse::from).toList(),
                 post.getViewCount(),
                 likeCount,
+                likedByMe,
                 commentCount,
                 post.getCreatedAt()
         );

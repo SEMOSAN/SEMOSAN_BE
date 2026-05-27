@@ -55,7 +55,7 @@ public class FreePostService {
 
         List<PostImage> images = saveImages(post, imageUrls, mainImageIndex);
 
-        return FreePostDetailResponse.of(post, images, 0L, 0L);
+        return FreePostDetailResponse.of(post, images, 0L, 0L, false);
     }
 
     public Page<FreePostListResponse> getList(Long viewerId, Pageable pageable) {
@@ -87,8 +87,9 @@ public class FreePostService {
         List<PostImage> images = postImageRepository.findByPostOrderBySortOrderAsc(post);
         long likeCount = postLikeRepository.countByPost(post);
         long commentCount = commentRepository.countByPostAndDeletedFalse(post);
+        boolean likedByMe = postLikeRepository.existsByPostIdAndUserId(post.getId(), viewerId);
 
-        return FreePostDetailResponse.of(post, images, likeCount, commentCount);
+        return FreePostDetailResponse.of(post, images, likeCount, commentCount, likedByMe);
     }
 
     @Transactional

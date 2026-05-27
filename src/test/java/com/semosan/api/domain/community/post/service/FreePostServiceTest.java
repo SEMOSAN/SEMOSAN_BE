@@ -67,8 +67,8 @@ class FreePostServiceTest {
         Page<FreePost> page = new PageImpl<>(List.of(post), PageRequest.of(0, 10), 1);
 
         when(freePostRepository.findVisibleByViewerId(1L, PageRequest.of(0, 10))).thenReturn(page);
-        when(postLikeRepository.countByPostIdsGrouped(anyList())).thenReturn(List.of(new Object[]{10L, 3L}));
-        when(commentRepository.countByPostIdsGrouped(anyList())).thenReturn(List.of(new Object[]{10L, 2L}));
+        when(postLikeRepository.countByPostIdsGrouped(anyList())).thenReturn(List.<Object[]>of(new Object[]{10L, 3L}));
+        when(commentRepository.countByPostIdsGrouped(anyList())).thenReturn(List.<Object[]>of(new Object[]{10L, 2L}));
         when(postImageRepository.findMainImagesByPostIds(anyList())).thenReturn(List.of());
         when(postImageRepository.countByPostIdsGrouped(anyList())).thenReturn(List.of());
 
@@ -76,6 +76,25 @@ class FreePostServiceTest {
 
         assertThat(result).hasSize(1);
         verify(freePostRepository).findVisibleByViewerId(eq(1L), eq(PageRequest.of(0, 10)));
+    }
+
+    @Test
+    void getDetailReturnsLikedByMe() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+
+        when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(1L, 2L)).thenReturn(false);
+        when(postImageRepository.findByPostOrderBySortOrderAsc(post)).thenReturn(List.of());
+        when(postLikeRepository.countByPost(post)).thenReturn(3L);
+        when(commentRepository.countByPostAndDeletedFalse(post)).thenReturn(2L);
+        when(postLikeRepository.existsByPostIdAndUserId(10L, 1L)).thenReturn(true);
+
+        FreePostDetailResponse result = freePostService.getDetail(1L, 10L);
+
+        assertThat(result.likedByMe()).isTrue();
+        assertThat(result.likeCount()).isEqualTo(3L);
+        assertThat(result.commentCount()).isEqualTo(2L);
     }
 
     @Test
