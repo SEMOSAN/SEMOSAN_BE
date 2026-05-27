@@ -18,6 +18,9 @@ public record CourseDetailResponse(
         Integer duration,
         String startName,
         String endName,
+        Double ascent,
+        Double descent,
+        Double maxAltitude,
         @JsonRawValue String polyline,
         @JsonRawValue String altitudes
 ) {
@@ -30,6 +33,9 @@ public record CourseDetailResponse(
                 p.getDuration(),
                 p.getStartName(),
                 p.getEndName(),
+                p.getAscent(),
+                p.getDescent(),
+                p.getMaxAltitude(),
                 p.getPolyline(),
                 p.getAltitudes()
         );
