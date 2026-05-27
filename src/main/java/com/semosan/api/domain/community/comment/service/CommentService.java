@@ -7,6 +7,8 @@ import com.semosan.api.domain.community.comment.entity.Comment;
 import com.semosan.api.domain.community.comment.repository.CommentRepository;
 import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.repository.PostRepository;
+import com.semosan.api.domain.notification.enums.NotificationType;
+import com.semosan.api.domain.notification.service.NotificationService;
 import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.repository.UserRepository;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -29,6 +32,7 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final UserBlockRepository userBlockRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public Comment create(Long postId, Long authorId, String content) {
@@ -36,7 +40,9 @@ public class CommentService {
         User author = findUserOrThrow(authorId);
 
         Comment comment = Comment.create(post, author, content);
-        return commentRepository.save(comment);
+        Comment savedComment = commentRepository.save(comment);
+        sendCommentNotification(post, author, savedComment);
+        return savedComment;
     }
 
     @Transactional
@@ -100,5 +106,34 @@ public class CommentService {
     private Comment findActiveCommentOrThrow(Long commentId) {
         return commentRepository.findByIdAndDeletedFalse(commentId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.COMMENT_NOT_FOUND));
+    }
+
+    private void sendCommentNotification(Post post, User author, Comment comment) {
+        User receiver = post.getAuthor();
+        if (receiver.getId().equals(author.getId())) {
+            return;
+        }
+
+        notificationService.send(
+                receiver.getId(),
+                NotificationType.COMMUNITY_COMMENT,
+                Map.of(
+                        "actorId", author.getId(),
+                        "actorName", displayName(author),
+                        "postId", post.getId(),
+                        "commentId", comment.getId(),
+                        "commentPreview", comment.getContent()
+                )
+        );
+    }
+
+    private String displayName(User user) {
+        if (user.getNickname() != null && !user.getNickname().isBlank()) {
+            return user.getNickname();
+        }
+        if (user.getName() != null && !user.getName().isBlank()) {
+            return user.getName();
+        }
+        return "사용자";
     }
 }
