@@ -18,7 +18,8 @@ public record GetUserProfileResponse(
         Double height,
         Double weight,
         ExerciseType exerciseType,
-        LocalDate birthDate
+        LocalDate birthDate,
+        String email
 ) {
     // User와 온보딩 정보로 프로필 조회 응답 DTO를 생성합니다.
     public static GetUserProfileResponse of(User user, UserOnboarding userOnboarding) {
@@ -39,7 +40,8 @@ public record GetUserProfileResponse(
                 user.getHeight(),
                 user.getWeight(),
                 exerciseType,
-                user.getBirthDate()
+                user.getBirthDate(),
+                user.getEmail()
         );
     }
 }
