@@ -12,38 +12,43 @@ public enum NotificationType {
     COMMUNITY_COMMENT(
             "새 댓글이 달렸어요",
             "{actorName}: {commentPreview}",
-            Set.of("actorName", "commentPreview")
+            Set.of("actorName", "commentPreview"),
+            false
     ),
 
     /**
      * 트래킹 중 거리 마일스톤 도달 시 사진 촬영 유도.
-     * iOS 배너 노출을 위해 notification.title 에 앱 이름을 명시한다.
+     * 포그라운드 즉시 표시를 위해 FCM data-only 로 발송하고, 앱에서 로컬 알림을 생성한다.
      */
     TRACKING_PHOTO_MILESTONE(
             "SEMOSAN",
             "{distance}m 돌파! 인증 사진을 남겨보세요!",
-            Set.of("distance")
+            Set.of("distance"),
+            true
     ),
 
     /**
      * 코스 거리 50% 도달 시 정상 인증 유도.
      * 진짜 정상 좌표가 식별 불가해 코스 절반 지점을 "정상" 근처로 간주하는 임시 정책.
-     * iOS 배너 노출을 위해 notification.title 에 앱 이름을 명시한다.
+     * 포그라운드 즉시 표시를 위해 FCM data-only 로 발송하고, 앱에서 로컬 알림을 생성한다.
      */
     TRACKING_SUMMIT_REACHED(
             "SEMOSAN",
             "정상에 도착했나요? 정상 인증하기!",
-            Set.of()
+            Set.of(),
+            true
     );
 
     private final String titleTemplate;
     private final String bodyTemplate;
     private final Set<String> requiredKeys;
+    private final boolean dataOnly;
 
-    NotificationType(String titleTemplate, String bodyTemplate, Set<String> requiredKeys) {
+    NotificationType(String titleTemplate, String bodyTemplate, Set<String> requiredKeys, boolean dataOnly) {
         this.titleTemplate = titleTemplate;
         this.bodyTemplate = bodyTemplate;
         this.requiredKeys = requiredKeys;
+        this.dataOnly = dataOnly;
     }
 
     /**
@@ -67,6 +72,10 @@ public enum NotificationType {
 
     public String formatBody(Map<String, Object> params) {
         return format(bodyTemplate, params);
+    }
+
+    public boolean isDataOnly() {
+        return dataOnly;
     }
 
     private static String format(String template, Map<String, Object> params) {

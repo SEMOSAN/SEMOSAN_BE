@@ -1,7 +1,5 @@
 package com.semosan.api.domain.notification.dispatcher;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.semosan.api.common.fcm.FcmService;
@@ -21,7 +19,6 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
 
     private final FcmService fcmService;
     private final FcmTokenService fcmTokenService;
-    private final ObjectMapper objectMapper;
 
     /**
      * @Async 가 같은 클래스에 있는 함수를 호출 할 때는 비동기로 작동하지 않으니 주의해야함
@@ -34,7 +31,7 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
 
         for (String token : cmd.tokens()) {
             try {
-                fcmService.sendMessage(token, cmd.title(), cmd.body(), dataPayload);
+                fcmService.sendMessage(token, cmd.title(), cmd.body(), dataPayload, cmd.type().isDataOnly());
             } catch (FirebaseMessagingException e) {
                 handleSendError(token, e);
             } catch (Exception e) {
@@ -45,14 +42,17 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
 
     private Map<String, String> buildDataPayload(NotificationDispatchCommand cmd) {
         Map<String, String> data = new HashMap<>();
-        data.put("type", cmd.type().name());
-        data.put("notificationId", String.valueOf(cmd.notificationId()));
-        try {
-            data.put("extras", objectMapper.writeValueAsString(cmd.extras()));
-        } catch (JsonProcessingException e) {
-            log.error("extras 직렬화 실패", e);
-            data.put("extras", "{}");
+        if (cmd.extras() != null) {
+            cmd.extras().forEach((key, value) -> {
+                if (key != null && value != null) {
+                    data.put(key, String.valueOf(value));
+                }
+            });
         }
+        data.put("type", cmd.type().name());
+        data.put("title", cmd.title());
+        data.put("body", cmd.body());
+        data.put("notificationId", String.valueOf(cmd.notificationId()));
         return data;
     }
 
