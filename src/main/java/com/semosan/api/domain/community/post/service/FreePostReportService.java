@@ -50,7 +50,7 @@ public class FreePostReportService {
         FreePostReport report = FreePostReport.create(reporter, post, reason);
         try {
             FreePostReport saved = freePostReportRepository.saveAndFlush(report);
-            discordAlertClient.send(buildDiscordMessage(saved));
+            discordAlertClient.sendReport(buildDiscordMessage(saved));
             return saved;
         } catch (DataIntegrityViolationException e) {
             if (isUniqueViolation(e)) {
