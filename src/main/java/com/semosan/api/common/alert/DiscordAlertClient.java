@@ -23,13 +23,21 @@ public class DiscordAlertClient {
     }
 
     public void send(DiscordMessage message) {
-        if (!properties.isEnabled() || !StringUtils.hasText(properties.getWebhookUrl())) {
+        doSend(properties.getWebhookUrl(), message);
+    }
+
+    public void sendReport(DiscordMessage message) {
+        doSend(properties.getReportWebhookUrl(), message);
+    }
+
+    private void doSend(String webhookUrl, DiscordMessage message) {
+        if (!properties.isEnabled() || !StringUtils.hasText(webhookUrl)) {
             return;
         }
 
         try {
             webClient.post()
-                    .uri(properties.getWebhookUrl())
+                    .uri(webhookUrl)
                     .bodyValue(message)
                     .retrieve()
                     .toBodilessEntity()

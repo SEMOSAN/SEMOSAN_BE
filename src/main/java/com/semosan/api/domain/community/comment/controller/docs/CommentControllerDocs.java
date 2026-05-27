@@ -51,15 +51,19 @@ public interface CommentControllerDocs {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
     })
     ResponseEntity<ApiResponse<PageResponse<CommentResponse>>> getComments(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long postId,
             Pageable pageable
     );
 
-    @Operation(summary = "대댓글 목록", description = "특정 1뎁스 댓글의 대댓글 목록 (시간순).")
+    @Operation(summary = "대댓글 목록", description = "특정 1뎁스 댓글의 대댓글 목록 (시간순). 차단한 사용자의 댓글은 내용이 '차단한 사용자입니다.'로 대체됩니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
     })
-    ResponseEntity<ApiResponse<List<CommentResponse>>> getReplies(@PathVariable Long commentId);
+    ResponseEntity<ApiResponse<List<CommentResponse>>> getReplies(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long commentId
+    );
 
     @Operation(summary = "댓글 삭제", description = "본인의 댓글/대댓글을 soft delete 합니다.")
     @ApiResponses({

@@ -7,7 +7,10 @@ import com.semosan.api.domain.community.post.controller.docs.FreePostControllerD
 import com.semosan.api.domain.community.post.dto.FreePostCreateRequest;
 import com.semosan.api.domain.community.post.dto.FreePostDetailResponse;
 import com.semosan.api.domain.community.post.dto.FreePostListResponse;
+import com.semosan.api.domain.community.post.dto.FreePostReportRequest;
+import com.semosan.api.domain.community.post.service.FreePostReportService;
 import com.semosan.api.domain.community.post.service.FreePostService;
+import com.semosan.api.domain.user.service.UserBlockService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +26,8 @@ import org.springframework.web.bind.annotation.*;
 public class FreePostController implements FreePostControllerDocs {
 
     private final FreePostService freePostService;
+    private final FreePostReportService freePostReportService;
+    private final UserBlockService userBlockService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<FreePostDetailResponse>> create(
@@ -41,22 +46,24 @@ public class FreePostController implements FreePostControllerDocs {
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> getList(
+            @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ApiResponse.success(
                 SuccessStatus.FREE_POST_LIST_SUCCESS,
-                PageResponse.from(freePostService.getList(pageable))
+                PageResponse.from(freePostService.getList(userId, pageable))
         );
     }
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> search(
+            @AuthenticationPrincipal Long userId,
             @RequestParam String keyword,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ApiResponse.success(
                 SuccessStatus.FREE_POST_SEARCH_SUCCESS,
-                PageResponse.from(freePostService.search(keyword, pageable))
+                PageResponse.from(freePostService.search(userId, keyword, pageable))
         );
     }
 
@@ -73,11 +80,12 @@ public class FreePostController implements FreePostControllerDocs {
 
     @GetMapping("/{postId}")
     public ResponseEntity<ApiResponse<FreePostDetailResponse>> getDetail(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long postId
     ) {
         return ApiResponse.success(
                 SuccessStatus.FREE_POST_DETAIL_SUCCESS,
-                freePostService.getDetail(postId)
+                freePostService.getDetail(userId, postId)
         );
     }
 
@@ -88,5 +96,24 @@ public class FreePostController implements FreePostControllerDocs {
     ) {
         freePostService.delete(postId, userId);
         return ApiResponse.success(SuccessStatus.FREE_POST_DELETE_SUCCESS);
+    }
+
+    @PostMapping("/{postId}/reports")
+    public ResponseEntity<ApiResponse<Void>> report(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody FreePostReportRequest request
+    ) {
+        freePostReportService.report(userId, postId, request.reason());
+        return ApiResponse.success(SuccessStatus.FREE_POST_REPORT_SUCCESS);
+    }
+
+    @PostMapping("/{postId}/blocks")
+    public ResponseEntity<ApiResponse<Void>> block(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId
+    ) {
+        userBlockService.blockByPost(userId, postId);
+        return ApiResponse.success(SuccessStatus.FREE_POST_BLOCK_SUCCESS);
     }
 }

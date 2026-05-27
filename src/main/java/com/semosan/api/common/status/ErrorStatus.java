@@ -128,6 +128,7 @@ public enum ErrorStatus implements BaseStatus {
     POST_CONTENT_REQUIRED(HttpStatus.BAD_REQUEST, "POST_400_1", "본문은 비어있을 수 없습니다."),
     POST_IMAGE_INDEX_INVALID(HttpStatus.BAD_REQUEST, "POST_400_2", "대표 이미지 인덱스가 잘못되었습니다."),
     POST_FORBIDDEN(HttpStatus.FORBIDDEN, "POST_403_1", "본인의 게시글만 처리할 수 있습니다."),
+    POST_AUTHOR_BLOCKED(HttpStatus.FORBIDDEN, "POST_403_2", "차단한 사용자의 게시글입니다."),
     POST_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_404_1", "게시글을 찾을 수 없습니다."),
     POST_DELETED(HttpStatus.NOT_FOUND, "POST_404_2", "삭제된 게시글입니다."),
 
@@ -144,6 +145,13 @@ public enum ErrorStatus implements BaseStatus {
      */
     SEMOFEED_FORBIDDEN(HttpStatus.FORBIDDEN, "SF_403_1", "본인의 세모피드만 처리할 수 있습니다."),
     SEMOFEED_NOT_FOUND(HttpStatus.NOT_FOUND, "SF_404_1", "세모피드를 찾을 수 없습니다."),
+
+    /**
+     * Free Post Report / Block
+     */
+    FREE_POST_REPORT_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "FPR_400_1", "본인 게시글은 신고할 수 없습니다."),
+    FREE_POST_REPORT_ALREADY_EXISTS(HttpStatus.CONFLICT, "FPR_409_1", "이미 신고한 게시글입니다."),
+    USER_BLOCK_SELF_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "UB_400_1", "자기 자신은 차단할 수 없습니다."),
 
     /**
      * App Version

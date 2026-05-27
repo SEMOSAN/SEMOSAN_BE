@@ -5,6 +5,7 @@ import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.domain.community.post.dto.FreePostCreateRequest;
 import com.semosan.api.domain.community.post.dto.FreePostDetailResponse;
 import com.semosan.api.domain.community.post.dto.FreePostListResponse;
+import com.semosan.api.domain.community.post.dto.FreePostReportRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,13 +34,17 @@ public interface FreePostControllerDocs {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
     })
-    ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> getList(Pageable pageable);
+    ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> getList(
+            @AuthenticationPrincipal Long userId,
+            Pageable pageable
+    );
 
     @Operation(summary = "자유게시판 검색", description = "제목/내용 기반 키워드 검색. 최신순 페이징.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "검색 성공")
     })
     ResponseEntity<ApiResponse<PageResponse<FreePostListResponse>>> search(
+            @AuthenticationPrincipal Long userId,
             String keyword,
             Pageable pageable
     );
@@ -56,9 +61,13 @@ public interface FreePostControllerDocs {
     @Operation(summary = "자유게시판 상세", description = "게시글 상세 (전체 이미지 + 카운트). 호출 시 조회수 +1.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "차단한 사용자의 게시글"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글 없음 또는 삭제됨")
     })
-    ResponseEntity<ApiResponse<FreePostDetailResponse>> getDetail(@PathVariable Long postId);
+    ResponseEntity<ApiResponse<FreePostDetailResponse>> getDetail(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId
+    );
 
     @Operation(summary = "자유게시판 삭제", description = "본인의 게시글을 soft delete 합니다.")
     @ApiResponses({
@@ -67,6 +76,30 @@ public interface FreePostControllerDocs {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글 없음")
     })
     ResponseEntity<ApiResponse<Void>> delete(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId
+    );
+
+    @Operation(summary = "자유게시판 신고", description = "자유게시판 게시글을 신고하고 운영자 Discord 채널로 접수합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "신고 접수 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "본인 게시글 신고 불가"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글 없음 또는 삭제됨"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 신고한 게시글")
+    })
+    ResponseEntity<ApiResponse<Void>> report(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody FreePostReportRequest request
+    );
+
+    @Operation(summary = "자유게시판 작성자 차단", description = "게시글 작성자를 차단하고 이후 자유게시판 노출에서 제외합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "차단 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "자기 자신 차단 불가"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글 없음 또는 삭제됨")
+    })
+    ResponseEntity<ApiResponse<Void>> block(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long postId
     );
