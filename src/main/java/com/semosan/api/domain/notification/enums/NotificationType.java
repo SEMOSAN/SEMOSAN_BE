@@ -12,7 +12,8 @@ public enum NotificationType {
     COMMUNITY_COMMENT(
             "새 댓글이 달렸어요",
             "{actorName}: {commentPreview}",
-            Set.of("actorName", "commentPreview")
+            Set.of("actorName", "commentPreview"),
+            false
     ),
 
     /**
@@ -22,7 +23,8 @@ public enum NotificationType {
     TRACKING_PHOTO_MILESTONE(
             "SEMOSAN",
             "{distance}m 돌파! 인증 사진을 남겨보세요!",
-            Set.of("distance")
+            Set.of("distance"),
+            true
     ),
 
     /**
@@ -33,17 +35,20 @@ public enum NotificationType {
     TRACKING_SUMMIT_REACHED(
             "SEMOSAN",
             "정상에 도착했나요? 정상 인증하기!",
-            Set.of()
+            Set.of(),
+            true
     );
 
     private final String titleTemplate;
     private final String bodyTemplate;
     private final Set<String> requiredKeys;
+    private final boolean dataOnly;
 
-    NotificationType(String titleTemplate, String bodyTemplate, Set<String> requiredKeys) {
+    NotificationType(String titleTemplate, String bodyTemplate, Set<String> requiredKeys, boolean dataOnly) {
         this.titleTemplate = titleTemplate;
         this.bodyTemplate = bodyTemplate;
         this.requiredKeys = requiredKeys;
+        this.dataOnly = dataOnly;
     }
 
     /**
@@ -67,6 +72,10 @@ public enum NotificationType {
 
     public String formatBody(Map<String, Object> params) {
         return format(bodyTemplate, params);
+    }
+
+    public boolean isDataOnly() {
+        return dataOnly;
     }
 
     private static String format(String template, Map<String, Object> params) {

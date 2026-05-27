@@ -19,7 +19,6 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
 
     private final FcmService fcmService;
     private final FcmTokenService fcmTokenService;
-    private final FcmPayloadPolicy fcmPayloadPolicy;
 
     /**
      * @Async 가 같은 클래스에 있는 함수를 호출 할 때는 비동기로 작동하지 않으니 주의해야함
@@ -29,11 +28,10 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
     @Async("notificationTaskExecutor")
     public void dispatch(NotificationDispatchCommand cmd) {
         Map<String, String> dataPayload = buildDataPayload(cmd);
-        boolean dataOnly = fcmPayloadPolicy.isDataOnly(cmd.type());
 
         for (String token : cmd.tokens()) {
             try {
-                fcmService.sendMessage(token, cmd.title(), cmd.body(), dataPayload, dataOnly);
+                fcmService.sendMessage(token, cmd.title(), cmd.body(), dataPayload, cmd.type().isDataOnly());
             } catch (FirebaseMessagingException e) {
                 handleSendError(token, e);
             } catch (Exception e) {

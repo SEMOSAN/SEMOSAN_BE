@@ -92,8 +92,7 @@ class AsyncNotificationDispatcherTest {
     private AsyncNotificationDispatcher dispatcher() {
         return new AsyncNotificationDispatcher(
                 fcmService,
-                fcmTokenService,
-                new FcmPayloadPolicy()
+                fcmTokenService
         );
     }
 }
