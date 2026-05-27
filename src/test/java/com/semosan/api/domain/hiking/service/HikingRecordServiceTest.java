@@ -202,8 +202,9 @@ class HikingRecordServiceTest {
                 user(1L),
                 DifficultyFeedbackType.SIMILAR
         ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("course is required");
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.HIKING_RECORD_COURSE_REQUIRED);
     }
 
     private DataIntegrityViolationException duplicateFeedbackDataIntegrityViolation() {

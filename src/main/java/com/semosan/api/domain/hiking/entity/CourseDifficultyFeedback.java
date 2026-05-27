@@ -1,6 +1,8 @@
 package com.semosan.api.domain.hiking.entity;
 
 import com.semosan.api.common.base.BaseEntity;
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.hiking.enums.DifficultyFeedbackType;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.enums.Difficulty;
@@ -59,7 +61,7 @@ public class CourseDifficultyFeedback extends BaseEntity {
     ) {
         Course course = hikingRecord.getCourse();
         if (course == null) {
-            throw new IllegalArgumentException("course is required");
+            throw new GeneralException(ErrorStatus.HIKING_RECORD_COURSE_REQUIRED);
         }
         return CourseDifficultyFeedback.builder()
                 .hikingRecord(hikingRecord)
