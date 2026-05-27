@@ -61,7 +61,9 @@ public class CommentService {
         User mentionedUser = mentionedUserId != null ? findUserOrThrow(mentionedUserId) : null;
 
         Comment reply = Comment.reply(post, author, actualParent, mentionedUser, content);
-        return commentRepository.save(reply);
+        Comment savedReply = commentRepository.save(reply);
+        sendReplyNotification(post, author, actualParent, savedReply);
+        return savedReply;
     }
 
     public Page<CommentResponse> getCommentsByPost(Long postId, Long viewerId, Pageable pageable) {
@@ -123,6 +125,26 @@ public class CommentService {
                         "postId", post.getId(),
                         "commentId", comment.getId(),
                         "commentPreview", comment.getContent()
+                )
+        );
+    }
+
+    private void sendReplyNotification(Post post, User author, Comment parent, Comment reply) {
+        User receiver = parent.getAuthor();
+        if (receiver.getId().equals(author.getId())) {
+            return;
+        }
+
+        notificationService.send(
+                receiver.getId(),
+                NotificationType.COMMUNITY_REPLY,
+                Map.of(
+                        "actorId", author.getId(),
+                        "actorName", displayName(author),
+                        "postId", post.getId(),
+                        "parentCommentId", parent.getId(),
+                        "commentId", reply.getId(),
+                        "commentPreview", reply.getContent()
                 )
         );
     }
