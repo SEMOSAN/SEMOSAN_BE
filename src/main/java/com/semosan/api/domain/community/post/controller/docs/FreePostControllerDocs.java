@@ -84,4 +84,15 @@ public interface FreePostControllerDocs {
             @PathVariable Long postId,
             @Valid @RequestBody FreePostReportRequest request
     );
+
+    @Operation(summary = "자유게시판 작성자 차단", description = "게시글 작성자를 차단하고 이후 자유게시판 노출에서 제외합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "차단 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "자기 자신 차단 불가"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글 없음 또는 삭제됨")
+    })
+    ResponseEntity<ApiResponse<Void>> block(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId
+    );
 }

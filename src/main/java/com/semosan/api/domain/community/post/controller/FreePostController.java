@@ -10,6 +10,7 @@ import com.semosan.api.domain.community.post.dto.FreePostListResponse;
 import com.semosan.api.domain.community.post.dto.FreePostReportRequest;
 import com.semosan.api.domain.community.post.service.FreePostReportService;
 import com.semosan.api.domain.community.post.service.FreePostService;
+import com.semosan.api.domain.user.service.UserBlockService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +27,7 @@ public class FreePostController implements FreePostControllerDocs {
 
     private final FreePostService freePostService;
     private final FreePostReportService freePostReportService;
+    private final UserBlockService userBlockService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<FreePostDetailResponse>> create(
@@ -101,5 +103,14 @@ public class FreePostController implements FreePostControllerDocs {
     ) {
         freePostReportService.report(userId, postId, request.reason());
         return ApiResponse.success(SuccessStatus.FREE_POST_REPORT_SUCCESS);
+    }
+
+    @PostMapping("/{postId}/blocks")
+    public ResponseEntity<ApiResponse<Void>> block(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId
+    ) {
+        userBlockService.blockByPost(userId, postId);
+        return ApiResponse.success(SuccessStatus.FREE_POST_BLOCK_SUCCESS);
     }
 }
