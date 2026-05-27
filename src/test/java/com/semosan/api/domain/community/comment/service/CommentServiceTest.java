@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -196,6 +197,75 @@ class CommentServiceTest {
 
         assertThat(result.getId()).isEqualTo(101L);
         verify(notificationService, never()).send(any(), any(), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void replySendsReplyNotificationToMentionedUser() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User parentAuthor = user(2L, "parent-author");
+        User replyAuthor = user(3L, "reply-author");
+        User mentionedUser = user(4L, "mentioned-user");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        Comment parent = comment(100L, post, parentAuthor, "부모 댓글");
+
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(replyAuthor));
+        when(userRepository.findById(4L)).thenReturn(Optional.of(mentionedUser));
+        when(commentRepository.findByIdAndDeletedFalse(100L)).thenReturn(Optional.of(parent));
+        when(userRepository.existsByIdAndDeletedFalse(2L)).thenReturn(true);
+        when(userRepository.existsByIdAndDeletedFalse(4L)).thenReturn(true);
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0);
+            ReflectionTestUtils.setField(comment, "id", 101L);
+            return comment;
+        });
+
+        commentService.reply(10L, 3L, 100L, 4L, "대댓글입니다");
+
+        ArgumentCaptor<Long> receiverCaptor = ArgumentCaptor.forClass(Long.class);
+        ArgumentCaptor<Map<String, Object>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(notificationService, times(2)).send(
+                receiverCaptor.capture(),
+                eq(NotificationType.COMMUNITY_REPLY),
+                paramsCaptor.capture()
+        );
+        assertThat(receiverCaptor.getAllValues()).containsExactly(2L, 4L);
+        assertThat(paramsCaptor.getAllValues().get(1))
+                .containsEntry("actorId", 3L)
+                .containsEntry("actorName", "reply-author")
+                .containsEntry("postId", 10L)
+                .containsEntry("parentCommentId", 100L)
+                .containsEntry("commentId", 101L)
+                .containsEntry("commentPreview", "대댓글입니다");
+    }
+
+    @Test
+    void replyDoesNotSendDuplicateNotificationWhenMentionedUserIsParentAuthor() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User parentAuthor = user(2L, "parent-author");
+        User replyAuthor = user(3L, "reply-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        Comment parent = comment(100L, post, parentAuthor, "부모 댓글");
+
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userRepository.findById(3L)).thenReturn(Optional.of(replyAuthor));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(parentAuthor));
+        when(commentRepository.findByIdAndDeletedFalse(100L)).thenReturn(Optional.of(parent));
+        when(userRepository.existsByIdAndDeletedFalse(2L)).thenReturn(true);
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0);
+            ReflectionTestUtils.setField(comment, "id", 101L);
+            return comment;
+        });
+
+        commentService.reply(10L, 3L, 100L, 2L, "대댓글입니다");
+
+        verify(notificationService, times(1)).send(
+                eq(2L),
+                eq(NotificationType.COMMUNITY_REPLY),
+                any()
+        );
     }
 
     private User user(Long id, String nickname) {

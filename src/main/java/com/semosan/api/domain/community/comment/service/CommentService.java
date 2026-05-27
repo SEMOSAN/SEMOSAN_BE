@@ -62,7 +62,7 @@ public class CommentService {
 
         Comment reply = Comment.reply(post, author, actualParent, mentionedUser, content);
         Comment savedReply = commentRepository.save(reply);
-        sendReplyNotification(post, author, actualParent, savedReply);
+        sendReplyNotification(post, author, actualParent, mentionedUser, savedReply);
         return savedReply;
     }
 
@@ -132,9 +132,26 @@ public class CommentService {
         );
     }
 
-    private void sendReplyNotification(Post post, User author, Comment parent, Comment reply) {
-        User receiver = parent.getAuthor();
+    private void sendReplyNotification(Post post, User author, Comment parent, User mentionedUser, Comment reply) {
+        Set<Long> sentReceiverIds = new HashSet<>();
+        sendReplyNotificationToReceiver(post, author, parent, reply, parent.getAuthor(), sentReceiverIds);
+        if (mentionedUser != null) {
+            sendReplyNotificationToReceiver(post, author, parent, reply, mentionedUser, sentReceiverIds);
+        }
+    }
+
+    private void sendReplyNotificationToReceiver(
+            Post post,
+            User author,
+            Comment parent,
+            Comment reply,
+            User receiver,
+            Set<Long> sentReceiverIds
+    ) {
         if (receiver.getId().equals(author.getId())) {
+            return;
+        }
+        if (!sentReceiverIds.add(receiver.getId())) {
             return;
         }
         if (!userRepository.existsByIdAndDeletedFalse(receiver.getId())) {
