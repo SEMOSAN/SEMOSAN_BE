@@ -2,9 +2,12 @@ package com.semosan.api.domain.hiking.controller.docs;
 
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
+import com.semosan.api.domain.hiking.dto.request.CreateCourseDifficultyFeedbackRequest;
+import com.semosan.api.domain.hiking.dto.response.CourseDifficultyFeedbackResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingMountainRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,6 +19,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Hiking Record", description = "등산 기록 관련 API")
 public interface HikingRecordControllerDocs {
@@ -88,5 +92,43 @@ public interface HikingRecordControllerDocs {
     ResponseEntity<ApiResponse<GetUserHikingRecordSummaryResponse>> getUserHikingRecordSummary(
             @Parameter(hidden = true)
             @AuthenticationPrincipal Long userId
+    );
+
+    @Operation(
+            summary = "코스 난이도 피드백 저장",
+            description = "코스 기반 등산 기록 1개에 대해 사용자가 체감한 난이도 비교 피드백을 저장합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "코스 난이도 피드백 저장 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "자유 기록 등 코스 비교가 불가능한 등산 기록",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "본인이 참여한 등산 기록이 아님",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "등산 기록을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "이미 난이도 피드백을 저장한 등산 기록",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<CourseDifficultyFeedbackResponse>> createCourseDifficultyFeedback(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "등산 기록 ID", required = true)
+            @PathVariable Long hikingRecordId,
+            @Valid @RequestBody CreateCourseDifficultyFeedbackRequest request
     );
 }

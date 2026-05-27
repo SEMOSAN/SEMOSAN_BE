@@ -74,7 +74,7 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
                     FROM hiking_records hr
                     JOIN hiking_members hm ON hm.hiking_record_id = hr.id
                     JOIN mountains m ON m.id = hr.mountain_id
-                    JOIN courses c ON c.id = hr.course_id
+                    LEFT JOIN courses c ON c.id = hr.course_id
                     WHERE hm.user_id = :userId
                     ORDER BY hr.created_at DESC, hr.id DESC
             """,
@@ -121,7 +121,7 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
                     FROM hiking_records hr
                     JOIN hiking_members hm ON hm.hiking_record_id = hr.id
                     JOIN mountains m ON m.id = hr.mountain_id
-                    JOIN courses c ON c.id = hr.course_id
+                    LEFT JOIN courses c ON c.id = hr.course_id
                     WHERE hm.user_id = :userId AND hr.mountain_id = :mountainId
                     ORDER BY hr.created_at DESC, hr.id DESC
                     """,

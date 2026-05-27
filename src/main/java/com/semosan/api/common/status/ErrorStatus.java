@@ -103,8 +103,10 @@ public enum ErrorStatus implements BaseStatus {
     /**
      * Hiking (등산 기록)
      */
+    HIKING_RECORD_COURSE_REQUIRED(HttpStatus.BAD_REQUEST, "HIKE_400_1", "코스 기반 등산 기록에만 난이도 피드백을 남길 수 있습니다."),
     HIKING_RECORD_FORBIDDEN(HttpStatus.FORBIDDEN, "HIKE_403_1", "본인이 참여한 등산 기록만 공유할 수 있습니다."),
     HIKING_RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "HIKE_404_1", "등산 기록을 찾을 수 없습니다."),
+    COURSE_DIFFICULTY_FEEDBACK_ALREADY_EXISTS(HttpStatus.CONFLICT, "HIKE_409_1", "이미 난이도 피드백을 남긴 등산 기록입니다."),
 
     /**
      * Tracking (트래킹 세션)
