@@ -5,6 +5,7 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.like.dto.PostLikeToggleResponse;
 import com.semosan.api.domain.community.like.entity.PostLike;
 import com.semosan.api.domain.community.like.repository.PostLikeRepository;
+import com.semosan.api.domain.community.notification.service.CommunityNotificationService;
 import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
@@ -26,6 +27,7 @@ public class PostLikeService {
     private final PostLikeRepository postLikeRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final CommunityNotificationService communityNotificationService;
 
     /**
      * @return true = 좋아요 누름 / false = 좋아요 취소
@@ -42,6 +44,7 @@ public class PostLikeService {
 
         try {
             postLikeRepository.save(PostLike.create(post, user));
+            communityNotificationService.sendPostLikeNotification(post, user);
             return true;
         } catch (DataIntegrityViolationException e) {
             log.warn("PostLike 동시 요청 감지: postId={}, userId={}", postId, userId);

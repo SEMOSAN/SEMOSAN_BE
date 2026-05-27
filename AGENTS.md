@@ -24,6 +24,7 @@
 - Use Java 21 and Gradle.
 - Follow the existing package structure, naming, and style.
 - Prefer existing services, repositories, DTOs, and response conventions over introducing new abstractions.
+- When adding code, avoid duplicating business rules, payload construction, validation checks, formatting, or helper logic across services. Extract shared behavior into an appropriate existing service/helper or a narrowly scoped new component, and keep callers focused on orchestration.
 
 ## Commands
 - Use `rg` first for searching.

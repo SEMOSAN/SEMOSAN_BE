@@ -8,11 +8,24 @@ import java.util.Set;
 
 public enum NotificationType {
 
-    // 테스트 용
     COMMUNITY_COMMENT(
             "새 댓글이 달렸어요",
             "{actorName}: {commentPreview}",
             Set.of("actorName", "commentPreview"),
+            false
+    ),
+
+    COMMUNITY_REPLY(
+            "새 답글이 달렸어요",
+            "{actorName}: {commentPreview}",
+            Set.of("actorName", "commentPreview"),
+            false
+    ),
+
+    COMMUNITY_POST_LIKE(
+            "게시글에 좋아요가 눌렸어요",
+            "{actorName}님이 게시글을 좋아합니다",
+            Set.of("actorName"),
             false
     ),
 

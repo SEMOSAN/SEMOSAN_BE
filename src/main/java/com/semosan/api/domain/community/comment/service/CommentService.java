@@ -5,6 +5,7 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.comment.dto.CommentResponse;
 import com.semosan.api.domain.community.comment.entity.Comment;
 import com.semosan.api.domain.community.comment.repository.CommentRepository;
+import com.semosan.api.domain.community.notification.service.CommunityNotificationService;
 import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.repository.UserBlockRepository;
@@ -29,6 +30,7 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final UserBlockRepository userBlockRepository;
+    private final CommunityNotificationService communityNotificationService;
 
     @Transactional
     public Comment create(Long postId, Long authorId, String content) {
@@ -36,7 +38,9 @@ public class CommentService {
         User author = findUserOrThrow(authorId);
 
         Comment comment = Comment.create(post, author, content);
-        return commentRepository.save(comment);
+        Comment savedComment = commentRepository.save(comment);
+        communityNotificationService.sendCommentNotification(post, author, savedComment);
+        return savedComment;
     }
 
     @Transactional
@@ -55,7 +59,9 @@ public class CommentService {
         User mentionedUser = mentionedUserId != null ? findUserOrThrow(mentionedUserId) : null;
 
         Comment reply = Comment.reply(post, author, actualParent, mentionedUser, content);
-        return commentRepository.save(reply);
+        Comment savedReply = commentRepository.save(reply);
+        communityNotificationService.sendReplyNotification(post, author, actualParent, mentionedUser, savedReply);
+        return savedReply;
     }
 
     public Page<CommentResponse> getCommentsByPost(Long postId, Long viewerId, Pageable pageable) {
