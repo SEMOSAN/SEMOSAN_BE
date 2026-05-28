@@ -35,6 +35,11 @@
   - `./gradlew build`
 - If full tests fail because local infrastructure such as PostgreSQL or Redis is unavailable, report that clearly and distinguish it from failures caused by the code change.
 
+## Git
+- Commit messages must use the format `type: 한글 메시지`.
+- Keep the type in English, such as `feat`, `fix`, `docs`, `test`, `refactor`, `chore`, and write the description in Korean.
+- Split database migration changes into a separate commit from application code changes.
+
 ## Editing Rules
 - Never revert or overwrite user changes unless explicitly requested.
 - Keep changes narrowly scoped to the requested task.
