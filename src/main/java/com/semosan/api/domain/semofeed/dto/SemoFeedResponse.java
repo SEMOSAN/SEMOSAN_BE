@@ -3,6 +3,7 @@ package com.semosan.api.domain.semofeed.dto;
 import com.semosan.api.domain.semofeed.entity.SemoFeed;
 import com.semosan.api.domain.semofeed.enums.SemoFeedEmojiType;
 
+import java.util.EnumMap;
 import java.util.Map;
 
 public record SemoFeedResponse(
@@ -19,9 +20,9 @@ public record SemoFeedResponse(
     public static SemoFeedResponse from(SemoFeed semoFeed) {
         return of(
                 semoFeed,
-                Map.of(),
-                Map.of(),
-                false
+                defaultEmojiCounts(),
+                defaultReactedByMe(),
+                true
         );
     }
 
@@ -42,5 +43,21 @@ public record SemoFeedResponse(
                 reactedByMe,
                 mine
         );
+    }
+
+    private static Map<SemoFeedEmojiType, Long> defaultEmojiCounts() {
+        Map<SemoFeedEmojiType, Long> emojiCounts = new EnumMap<>(SemoFeedEmojiType.class);
+        for (SemoFeedEmojiType emojiType : SemoFeedEmojiType.values()) {
+            emojiCounts.put(emojiType, 0L);
+        }
+        return emojiCounts;
+    }
+
+    private static Map<SemoFeedEmojiType, Boolean> defaultReactedByMe() {
+        Map<SemoFeedEmojiType, Boolean> reactedByMe = new EnumMap<>(SemoFeedEmojiType.class);
+        for (SemoFeedEmojiType emojiType : SemoFeedEmojiType.values()) {
+            reactedByMe.put(emojiType, false);
+        }
+        return reactedByMe;
     }
 }

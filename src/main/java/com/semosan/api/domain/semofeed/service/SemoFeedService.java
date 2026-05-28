@@ -38,11 +38,6 @@ public class SemoFeedService {
         return SemoFeedResponse.from(semoFeedRepository.save(semoFeed));
     }
 
-    public Page<SemoFeedResponse> listPublic(Pageable pageable) {
-        Page<SemoFeed> semoFeeds = semoFeedRepository.findPublic(pageable);
-        return toResponsePage(semoFeeds, null);
-    }
-
     public List<SemoFeedResponse> listMine(Long userId) {
         List<SemoFeed> semoFeeds = semoFeedRepository.findByUserId(userId);
         SemoFeedResponseAssembler assembler = createResponseAssembler(semoFeeds, userId);

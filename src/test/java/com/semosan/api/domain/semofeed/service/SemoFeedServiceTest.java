@@ -19,8 +19,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -38,6 +40,33 @@ class SemoFeedServiceTest {
 
     @InjectMocks
     private SemoFeedService semoFeedService;
+
+    @Test
+    void createReturnsDefaultEmojiFields() {
+        User user = user(1L, "author", "https://example.com/profile.png");
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(semoFeedRepository.save(any(SemoFeed.class))).thenAnswer(invocation -> {
+            SemoFeed semoFeed = invocation.getArgument(0);
+            ReflectionTestUtils.setField(semoFeed, "id", 10L);
+            return semoFeed;
+        });
+
+        SemoFeedResponse result = semoFeedService.create(1L, "https://example.com/semofeed.png");
+
+        assertThat(result.userId()).isEqualTo(1L);
+        assertThat(result.mine()).isTrue();
+        assertThat(result.emojiCounts())
+                .containsEntry(SemoFeedEmojiType.FIRE, 0L)
+                .containsEntry(SemoFeedEmojiType.HEART, 0L)
+                .containsEntry(SemoFeedEmojiType.CONGRATS, 0L)
+                .containsEntry(SemoFeedEmojiType.LAUGH, 0L);
+        assertThat(result.reactedByMe())
+                .containsEntry(SemoFeedEmojiType.FIRE, false)
+                .containsEntry(SemoFeedEmojiType.HEART, false)
+                .containsEntry(SemoFeedEmojiType.CONGRATS, false)
+                .containsEntry(SemoFeedEmojiType.LAUGH, false);
+    }
 
     @Test
     void listPublicBuildsAuthorEmojiCountsAndReactedByMe() {
