@@ -29,6 +29,7 @@ public class SemoFeedEmojiService {
     private final UserRepository userRepository;
 
     @Transactional(noRollbackFor = DataIntegrityViolationException.class)
+    // 이모지 반응을 토글하고 변경 후 해당 타입의 개수를 반환합니다.
     public SemoFeedEmojiToggleResponse toggleWithCount(
             Long userId,
             Long semoFeedId,
@@ -43,6 +44,7 @@ public class SemoFeedEmojiService {
         return new SemoFeedEmojiToggleResponse(emojiType, reacted, count);
     }
 
+    // 기존 반응이 있으면 취소하고, 없으면 새 반응을 저장합니다.
     private boolean toggle(SemoFeed semoFeed, User user, SemoFeedEmojiType emojiType) {
         Optional<SemoFeedEmoji> existing = semoFeedEmojiRepository.findBySemoFeedAndUserAndEmojiType(
                 semoFeed,
@@ -69,11 +71,13 @@ public class SemoFeedEmojiService {
         }
     }
 
+    // 세모피드가 없으면 도메인 예외를 던집니다.
     private SemoFeed findSemoFeedOrThrow(Long semoFeedId) {
         return semoFeedRepository.findById(semoFeedId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.SEMOFEED_NOT_FOUND));
     }
 
+    // 사용자가 없으면 도메인 예외를 던집니다.
     private User findUserOrThrow(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));

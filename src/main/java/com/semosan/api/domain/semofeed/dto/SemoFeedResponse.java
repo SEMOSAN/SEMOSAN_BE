@@ -45,6 +45,7 @@ public record SemoFeedResponse(
         );
     }
 
+    // 새로 생성된 세모피드 응답에 기본 이모지 개수를 채웁니다.
     private static Map<SemoFeedEmojiType, Long> defaultEmojiCounts() {
         Map<SemoFeedEmojiType, Long> emojiCounts = new EnumMap<>(SemoFeedEmojiType.class);
         for (SemoFeedEmojiType emojiType : SemoFeedEmojiType.values()) {
@@ -53,6 +54,7 @@ public record SemoFeedResponse(
         return emojiCounts;
     }
 
+    // 새로 생성된 세모피드 응답에 기본 내 반응 상태를 채웁니다.
     private static Map<SemoFeedEmojiType, Boolean> defaultReactedByMe() {
         Map<SemoFeedEmojiType, Boolean> reactedByMe = new EnumMap<>(SemoFeedEmojiType.class);
         for (SemoFeedEmojiType emojiType : SemoFeedEmojiType.values()) {

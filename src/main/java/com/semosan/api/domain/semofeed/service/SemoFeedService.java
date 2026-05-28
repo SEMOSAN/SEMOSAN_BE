@@ -46,6 +46,7 @@ public class SemoFeedService {
                 .toList();
     }
 
+    // 공개 세모피드 목록을 N+1 없이 응답 DTO로 조립합니다.
     public Page<SemoFeedResponse> listPublic(Pageable pageable, Long userId) {
         Page<SemoFeed> semoFeeds = semoFeedRepository.findPublic(pageable);
         return toResponsePage(semoFeeds, userId);
@@ -73,11 +74,13 @@ public class SemoFeedService {
         return semoFeed;
     }
 
+    // 페이지 메타데이터를 유지하면서 각 세모피드를 응답 DTO로 변환합니다.
     private Page<SemoFeedResponse> toResponsePage(Page<SemoFeed> semoFeeds, Long userId) {
         SemoFeedResponseAssembler assembler = createResponseAssembler(semoFeeds.getContent(), userId);
         return semoFeeds.map(assembler::toResponse);
     }
 
+    // 피드별 이모지 집계와 내 반응 정보를 한 번씩 조회해 조립기를 만듭니다.
     private SemoFeedResponseAssembler createResponseAssembler(List<SemoFeed> semoFeeds, Long userId) {
         List<Long> semoFeedIds = semoFeeds.stream()
                 .map(SemoFeed::getId)
@@ -89,6 +92,7 @@ public class SemoFeedService {
         return new SemoFeedResponseAssembler(userId, emojiCounts, reactedTypes);
     }
 
+    // 피드 ID 목록 기준으로 이모지 타입별 개수를 한 번에 조회합니다.
     private Map<Long, Map<SemoFeedEmojiType, Long>> findEmojiCounts(List<Long> semoFeedIds) {
         if (semoFeedIds.isEmpty()) {
             return Map.of();
@@ -104,6 +108,7 @@ public class SemoFeedService {
                 ));
     }
 
+    // 피드 ID 목록 기준으로 로그인 사용자가 누른 이모지 타입을 한 번에 조회합니다.
     private Map<Long, Set<SemoFeedEmojiType>> findReactedTypes(List<Long> semoFeedIds, Long userId) {
         if (semoFeedIds.isEmpty() || userId == null) {
             return Map.of();
@@ -122,6 +127,7 @@ public class SemoFeedService {
             Map<Long, Set<SemoFeedEmojiType>> reactedTypes
     ) {
 
+        // 세모피드 엔티티와 집계 결과를 최종 응답 DTO로 변환합니다.
         private SemoFeedResponse toResponse(SemoFeed semoFeed) {
             return SemoFeedResponse.of(
                     semoFeed,
@@ -131,6 +137,7 @@ public class SemoFeedService {
             );
         }
 
+        // 누락된 이모지 타입도 0으로 채워 응답 계약을 일정하게 유지합니다.
         private Map<SemoFeedEmojiType, Long> completeEmojiCounts(Map<SemoFeedEmojiType, Long> counts) {
             Map<SemoFeedEmojiType, Long> completeCounts = new EnumMap<>(SemoFeedEmojiType.class);
             for (SemoFeedEmojiType emojiType : SemoFeedEmojiType.values()) {
@@ -139,6 +146,7 @@ public class SemoFeedService {
             return completeCounts;
         }
 
+        // 누락된 이모지 타입도 false로 채워 응답 계약을 일정하게 유지합니다.
         private Map<SemoFeedEmojiType, Boolean> completeReactedByMe(Set<SemoFeedEmojiType> reactedTypes) {
             Map<SemoFeedEmojiType, Boolean> completeReactedTypes = new EnumMap<>(SemoFeedEmojiType.class);
             for (SemoFeedEmojiType emojiType : SemoFeedEmojiType.values()) {
