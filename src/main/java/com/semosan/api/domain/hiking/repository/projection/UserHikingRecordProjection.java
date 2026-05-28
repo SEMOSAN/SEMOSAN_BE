@@ -6,6 +6,8 @@ public interface UserHikingRecordProjection {
 
     Long getHikingRecordId();
 
+    Long getSessionId();
+
     Long getMountainId();
 
     String getMountainName();
