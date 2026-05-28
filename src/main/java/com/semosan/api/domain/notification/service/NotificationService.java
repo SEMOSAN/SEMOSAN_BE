@@ -43,6 +43,17 @@ public class NotificationService {
      */
     @Transactional
     public void send(Long receiverId, NotificationType type, Map<String, Object> params) {
+        send(receiverId, type, params, null);
+    }
+
+    /**
+     * 본문(body) 을 호출자가 직접 결정해야 할 때 사용한다.
+     * 같은 NotificationType 으로 보내되 발송 시점에 본문만 분기해야 하는 케이스(예: 트래킹 사진 마일스톤idx 별 문구) 를 위해 추가됐다.
+     * bodyOverride 가 null 이면 기존 템플릿(type.formatBody) 을 사용한다.
+     * 알림 이력(notifications.body) 과 FCM data.body 양쪽에 동일하게 반영된다.
+     */
+    @Transactional
+    public void send(Long receiverId, NotificationType type, Map<String, Object> params, String bodyOverride) {
         if (!userRepository.existsByIdAndDeletedFalse(receiverId)) {
             throw new GeneralException(ErrorStatus.USER_NOT_FOUND);
         }
@@ -50,7 +61,7 @@ public class NotificationService {
         type.validate(params);
 
         String title = type.formatTitle(params);
-        String body = type.formatBody(params);
+        String body = bodyOverride != null ? bodyOverride : type.formatBody(params);
 
         Notification notification = notificationRepository.save(
                 Notification.create(receiverId, type, title, body, params)

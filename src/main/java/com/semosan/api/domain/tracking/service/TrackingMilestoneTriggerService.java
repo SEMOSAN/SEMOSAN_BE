@@ -78,7 +78,7 @@ public class TrackingMilestoneTriggerService {
             boolean isClosed = closed.contains(idxStr);
 
             if (!isOpened && distanceTotal >= entry && distanceTotal <= exit) {
-                sendOpen(sessionId, userId, i, mi);
+                sendOpen(sessionId, userId, i, mi, milestones.size());
                 redisTemplate.opsForSet().add(openedKey(sessionId), idxStr);
                 redisTemplate.expire(openedKey(sessionId), TTL);
             }
@@ -96,7 +96,7 @@ public class TrackingMilestoneTriggerService {
         }
     }
 
-    private void sendOpen(Long sessionId, Long userId, int idx, double mi) {
+    private void sendOpen(Long sessionId, Long userId, int idx, double mi, int milestonesSize) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("milestoneIndex", idx);
         payload.put("milestoneDistance", mi);
@@ -106,16 +106,36 @@ public class TrackingMilestoneTriggerService {
         log.info("Photo window OPEN: sessionId={} idx={} milestone={}m", sessionId, idx, (int) Math.round(mi));
 
         try {
+            int distanceMeters = (int) Math.round(mi);
+            String body = courseModeBody(milestonesSize, idx, distanceMeters);
             notificationService.send(
                     userId,
                     NotificationType.TRACKING_PHOTO_MILESTONE,
-                    Map.of("distance", (int) Math.round(mi))
+                    Map.of("distance", distanceMeters),
+                    body
             );
         } catch (Exception e) {
             // FCM 발송 실패가 WebSocket OPEN 자체를 막아선 안 됨 — 로그만 남기고 진행
             log.warn("Failed to send TRACKING_PHOTO_MILESTONE FCM: sessionId={} idx={} mi={} err={}",
                     sessionId, idx, mi, e.getMessage());
         }
+    }
+
+    /**
+     * 코스 모드(4컷) 일 때만 마일스톤 idx 별로 본문을 반환한다.
+     * 자유 기록(6컷) 등 코스 모드가 아닐 땐 기존 distance 기반 문구로 fallback 한다.
+     */
+    private static String courseModeBody(int milestonesSize, int milestoneIdx, int distanceMeters) {
+        if (milestonesSize != COURSE_MILESTONE_COUNT) {
+            return distanceMeters + "m 돌파! 인증 사진을 남겨보세요!";
+        }
+        return switch (milestoneIdx) {
+            case 0 -> "정상 도착_1/4 완료_눌러서 인증 남기기";
+            case 1 -> "정상 도착_절반 돌파_눌러서 인증 남기기";
+            case 2 -> "정상 도착_마지막 1/4_눌러서 인증 남기기";
+            case 3 -> "정상 도착_완료_진짜최종_눌러서 인증하기";
+            default -> distanceMeters + "m 돌파! 인증 사진을 남겨보세요!";
+        };
     }
 
     private void sendClosed(Long sessionId, int idx, double mi) {
