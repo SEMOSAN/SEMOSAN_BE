@@ -39,6 +39,7 @@ public class SemoFeedEmojiService {
 
         boolean reacted = toggle(semoFeed, user, emojiType);
         if (reacted) {
+            // 새 반응 등록일 때만 작성자 알림을 발송합니다.
             semoFeedNotificationService.sendEmojiNotification(semoFeed, user, emojiType);
         }
         long count = semoFeedEmojiRepository.countBySemoFeedAndEmojiType(semoFeed, emojiType);

@@ -32,7 +32,7 @@ public enum NotificationType {
     SEMOFEED_EMOJI(
             "세모피드에 반응이 달렸어요",
             "{actorName}님이 세모피드에 {emojiType} 반응을 남겼어요",
-            Set.of("actorName", "emojiType"),
+            Set.of("actorId", "actorName", "semoFeedId", "emojiType"),
             false
     ),
 

@@ -14,6 +14,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -31,6 +34,16 @@ class SemoFeedNotificationServiceTest {
 
     @InjectMocks
     private SemoFeedNotificationService semoFeedNotificationService;
+
+    @Test
+    void semoFeedEmojiNotificationTypeRequiresNavigationPayload() {
+        assertThatCode(() -> NotificationType.SEMOFEED_EMOJI.validate(Map.of(
+                "actorId", 2L,
+                "actorName", "reactor",
+                "semoFeedId", 10L,
+                "emojiType", "FIRE"
+        ))).doesNotThrowAnyException();
+    }
 
     @Test
     void sendEmojiNotificationSendsToSemoFeedAuthor() {
