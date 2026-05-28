@@ -2,6 +2,7 @@ package com.semosan.api.domain.semofeed.controller.docs;
 
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
+import com.semosan.api.domain.semofeed.dto.SemoFeedCreateRequest;
 import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiRequest;
 import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiToggleResponse;
 import com.semosan.api.domain.semofeed.dto.SemoFeedResponse;
@@ -42,7 +43,7 @@ public interface SemoFeedControllerDocs {
     })
     ResponseEntity<ApiResponse<SemoFeedResponse>> create(
             @AuthenticationPrincipal Long userId,
-            @RequestBody String imageUrl
+            @RequestBody SemoFeedCreateRequest request
     );
 
     @Operation(
