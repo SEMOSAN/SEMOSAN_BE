@@ -4,6 +4,7 @@ import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiToggleResponse;
 import com.semosan.api.domain.semofeed.entity.SemoFeed;
 import com.semosan.api.domain.semofeed.entity.SemoFeedEmoji;
 import com.semosan.api.domain.semofeed.enums.SemoFeedEmojiType;
+import com.semosan.api.domain.semofeed.notification.service.SemoFeedNotificationService;
 import com.semosan.api.domain.semofeed.repository.SemoFeedEmojiRepository;
 import com.semosan.api.domain.semofeed.repository.SemoFeedRepository;
 import com.semosan.api.domain.user.entity.User;
@@ -20,6 +21,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +33,9 @@ class SemoFeedEmojiServiceTest {
 
     @Mock
     private SemoFeedRepository semoFeedRepository;
+
+    @Mock
+    private SemoFeedNotificationService semoFeedNotificationService;
 
     @Mock
     private UserReader userReader;
@@ -63,6 +68,7 @@ class SemoFeedEmojiServiceTest {
         assertThat(result.reacted()).isTrue();
         assertThat(result.count()).isEqualTo(1L);
         verify(semoFeedEmojiRepository).save(any(SemoFeedEmoji.class));
+        verify(semoFeedNotificationService).sendEmojiNotification(semoFeed, reactor, SemoFeedEmojiType.FIRE);
     }
 
     @Test
@@ -90,6 +96,7 @@ class SemoFeedEmojiServiceTest {
         assertThat(result.reacted()).isFalse();
         assertThat(result.count()).isZero();
         verify(semoFeedEmojiRepository).delete(existing);
+        verify(semoFeedNotificationService, never()).sendEmojiNotification(any(), any(), any());
     }
 
     private User user(Long id, String nickname) {
