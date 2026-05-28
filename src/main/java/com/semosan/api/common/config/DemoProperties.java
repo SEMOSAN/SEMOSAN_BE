@@ -7,4 +7,8 @@ import java.util.List;
 @ConfigurationProperties(prefix = "demo")
 public record DemoProperties(
         List<String> photoFilenames
-) {}
+) {
+    public DemoProperties {
+        photoFilenames = photoFilenames == null ? List.of() : photoFilenames;
+    }
+}
