@@ -60,6 +60,9 @@ minio:
   secret-key: ${MINIO_SECRET_KEY}
   public-url: ${MINIO_PUBLIC_URL}
 
+demo:
+  photo-filenames: ${DEMO_PHOTO_FILENAMES}
+
 discord:
   alert:
     enabled: ${DISCORD_ALERT_ENABLED}

@@ -42,6 +42,9 @@ tracking:
 test:
   secret-key: ${TEST_SECRET_KEY}
 
+demo:
+  photo-filenames: ${DEMO_PHOTO_FILENAMES}
+
 discord:
   alert:
     enabled: ${DISCORD_ALERT_ENABLED}
