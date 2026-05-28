@@ -29,6 +29,13 @@ public enum NotificationType {
             false
     ),
 
+    SEMOFEED_EMOJI(
+            "세모피드에 반응이 달렸어요",
+            "{actorName}님이 세모피드에 {emojiType} 반응을 남겼어요",
+            Set.of("actorName", "emojiType"),
+            false
+    ),
+
     /**
      * 트래킹 중 거리 마일스톤 도달 시 사진 촬영 유도.
      * 포그라운드 즉시 표시를 위해 FCM data-only 로 발송하고, 앱에서 로컬 알림을 생성한다.

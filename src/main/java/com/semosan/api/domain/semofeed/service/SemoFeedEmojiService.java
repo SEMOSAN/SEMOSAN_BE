@@ -6,6 +6,7 @@ import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiToggleResponse;
 import com.semosan.api.domain.semofeed.entity.SemoFeed;
 import com.semosan.api.domain.semofeed.entity.SemoFeedEmoji;
 import com.semosan.api.domain.semofeed.enums.SemoFeedEmojiType;
+import com.semosan.api.domain.semofeed.notification.service.SemoFeedNotificationService;
 import com.semosan.api.domain.semofeed.repository.SemoFeedEmojiRepository;
 import com.semosan.api.domain.semofeed.repository.SemoFeedRepository;
 import com.semosan.api.domain.user.entity.User;
@@ -23,6 +24,7 @@ public class SemoFeedEmojiService {
 
     private final SemoFeedEmojiRepository semoFeedEmojiRepository;
     private final SemoFeedRepository semoFeedRepository;
+    private final SemoFeedNotificationService semoFeedNotificationService;
     private final UserReader userReader;
 
     @Transactional
@@ -36,6 +38,9 @@ public class SemoFeedEmojiService {
         User user = userReader.findActiveUserById(userId);
 
         boolean reacted = toggle(semoFeed, user, emojiType);
+        if (reacted) {
+            semoFeedNotificationService.sendEmojiNotification(semoFeed, user, emojiType);
+        }
         long count = semoFeedEmojiRepository.countBySemoFeedAndEmojiType(semoFeed, emojiType);
 
         return new SemoFeedEmojiToggleResponse(emojiType, reacted, count);
