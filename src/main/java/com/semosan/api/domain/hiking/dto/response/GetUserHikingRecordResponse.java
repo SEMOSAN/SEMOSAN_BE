@@ -8,6 +8,7 @@ import java.util.List;
 
 public record GetUserHikingRecordResponse(
         Long hikingRecordId,
+        Long sessionId,
         Long mountainId,
         String mountainName,
         Long courseId,
@@ -23,6 +24,7 @@ public record GetUserHikingRecordResponse(
     public static GetUserHikingRecordResponse from(UserHikingRecordProjection projection) {
         return new GetUserHikingRecordResponse(
                 projection.getHikingRecordId(),
+                projection.getSessionId(),
                 projection.getMountainId(),
                 projection.getMountainName(),
                 projection.getCourseId(),
@@ -34,6 +36,7 @@ public record GetUserHikingRecordResponse(
         );
     }
 
+    // 사진 URL 필드 중 존재하는 값만 응답 순서에 맞춰 모읍니다.
     private static List<String> buildImageUrls(String photoReportImageUrl, String cliveImageUrl) {
         List<String> urls = new ArrayList<>(2);
         if (photoReportImageUrl != null) {

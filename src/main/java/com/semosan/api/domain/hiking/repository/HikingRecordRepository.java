@@ -62,6 +62,7 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
             value = """
                     SELECT
                         hr.id AS hikingRecordId,
+                        hr.tracking_session_id AS sessionId,
                         m.id AS mountainId,
                         m.name AS mountainName,
                         c.id AS courseId,
@@ -109,6 +110,7 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
             value = """
                     SELECT
                         hr.id AS hikingRecordId,
+                        hr.tracking_session_id AS sessionId,
                         m.id AS mountainId,
                         m.name AS mountainName,
                         c.id AS courseId,
