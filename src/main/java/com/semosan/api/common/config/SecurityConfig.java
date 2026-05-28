@@ -59,6 +59,11 @@ public class SecurityConfig {
             "/ws/tracking/**"
     };
 
+    public static final String[] ACTUATOR_URIS = {
+            "/actuator/health",
+            "/actuator/prometheus"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -74,6 +79,7 @@ public class SecurityConfig {
                         .requestMatchers(OAUTH_URIS).permitAll()
                         .requestMatchers(AUTH_URIS).permitAll()
                         .requestMatchers(WEBSOCKET_URIS).permitAll()
+                        .requestMatchers(ACTUATOR_URIS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/app-version").permitAll()
                         .anyRequest().authenticated()
                 )
