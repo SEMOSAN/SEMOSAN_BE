@@ -4,8 +4,12 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.semofeed.controller.docs.SemoFeedControllerDocs;
+import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiRequest;
+import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiToggleResponse;
 import com.semosan.api.domain.semofeed.dto.SemoFeedResponse;
+import com.semosan.api.domain.semofeed.service.SemoFeedEmojiService;
 import com.semosan.api.domain.semofeed.service.SemoFeedService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +26,7 @@ import java.util.List;
 public class SemoFeedController implements SemoFeedControllerDocs {
 
     private final SemoFeedService semoFeedService;
+    private final SemoFeedEmojiService semoFeedEmojiService;
 
     @PostMapping
     @Override
@@ -35,16 +40,28 @@ public class SemoFeedController implements SemoFeedControllerDocs {
 
     @GetMapping
     @Override
+    // 공개 세모피드 목록을 작성자 정보와 이모지 상태까지 포함해 조회합니다.
     public ResponseEntity<ApiResponse<PageResponse<SemoFeedResponse>>> listPublic(
+            @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 100) Pageable pageable
     ) {
         if (pageable.getPageSize() > 100) {
             pageable = PageRequest.of(pageable.getPageNumber(), 100, pageable.getSort());
         }
-        return ApiResponse.success(
-                SuccessStatus.SEMOFEED_LIST_SUCCESS,
-                PageResponse.from(semoFeedService.listPublic(pageable))
-        );
+        PageResponse<SemoFeedResponse> response = PageResponse.from(semoFeedService.listPublic(pageable, userId));
+        return ApiResponse.success(SuccessStatus.SEMOFEED_LIST_SUCCESS, response);
+    }
+
+    @PostMapping("/{semoFeedId}/emojis")
+    @Override
+    // 세모피드 이모지를 타입별로 등록하거나 취소합니다.
+    public ResponseEntity<ApiResponse<SemoFeedEmojiToggleResponse>> toggleEmoji(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long semoFeedId,
+            @Valid @RequestBody SemoFeedEmojiRequest request
+    ) {
+        SemoFeedEmojiToggleResponse response = semoFeedEmojiService.toggleWithCount(userId, semoFeedId, request.emojiType());
+        return ApiResponse.success(SuccessStatus.SEMOFEED_EMOJI_TOGGLE_SUCCESS, response);
     }
 
     @GetMapping("/me")
@@ -52,7 +69,8 @@ public class SemoFeedController implements SemoFeedControllerDocs {
     public ResponseEntity<ApiResponse<List<SemoFeedResponse>>> listMine(
             @AuthenticationPrincipal Long userId
     ) {
-        return ApiResponse.success(SuccessStatus.SEMOFEED_MY_LIST_SUCCESS, semoFeedService.listMine(userId));
+        List<SemoFeedResponse> response = semoFeedService.listMine(userId);
+        return ApiResponse.success(SuccessStatus.SEMOFEED_MY_LIST_SUCCESS, response);
     }
 
     @PatchMapping("/{semoFeedId}/public")

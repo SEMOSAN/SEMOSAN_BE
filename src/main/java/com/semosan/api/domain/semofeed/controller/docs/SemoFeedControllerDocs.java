@@ -2,6 +2,8 @@ package com.semosan.api.domain.semofeed.controller.docs;
 
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
+import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiRequest;
+import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiToggleResponse;
 import com.semosan.api.domain.semofeed.dto.SemoFeedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -9,6 +11,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -53,7 +56,31 @@ public interface SemoFeedControllerDocs {
             )
     })
     ResponseEntity<ApiResponse<PageResponse<SemoFeedResponse>>> listPublic(
+            @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 100) Pageable pageable
+    );
+
+    @Operation(
+            summary = "세모피드 이모지 토글",
+            description = "세모피드에 FIRE, HEART, CONGRATS, LAUGH 이모지를 타입별로 등록하거나 취소합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "세모피드 이모지 처리 성공",
+                    content = @Content(schema = @Schema(implementation = SemoFeedEmojiToggleResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "세모피드를 찾을 수 없음 (SF_404_1)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<SemoFeedEmojiToggleResponse>> toggleEmoji(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "세모피드 ID", required = true)
+            @PathVariable Long semoFeedId,
+            @Valid @RequestBody SemoFeedEmojiRequest request
     );
 
     @Operation(

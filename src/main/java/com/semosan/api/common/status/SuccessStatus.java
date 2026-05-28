@@ -75,6 +75,7 @@ public enum SuccessStatus implements BaseStatus {
     SEMOFEED_MY_LIST_SUCCESS(HttpStatus.OK, "SF_200_2", "내 세모피드 목록 조회에 성공했습니다."),
     SEMOFEED_TOGGLE_PUBLIC_SUCCESS(HttpStatus.OK, "SF_200_3", "세모피드 공개 상태가 변경되었습니다."),
     SEMOFEED_DELETE_SUCCESS(HttpStatus.OK, "SF_200_4", "세모피드가 삭제되었습니다."),
+    SEMOFEED_EMOJI_TOGGLE_SUCCESS(HttpStatus.OK, "SF_200_5", "세모피드 이모지 처리에 성공했습니다."),
     SEMOFEED_CREATE_SUCCESS(HttpStatus.CREATED, "SF_201_1", "세모피드가 저장되었습니다."),
 
     /**
