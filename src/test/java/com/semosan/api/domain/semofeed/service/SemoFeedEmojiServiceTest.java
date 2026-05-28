@@ -8,7 +8,7 @@ import com.semosan.api.domain.semofeed.repository.SemoFeedEmojiRepository;
 import com.semosan.api.domain.semofeed.repository.SemoFeedRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,7 +33,7 @@ class SemoFeedEmojiServiceTest {
     private SemoFeedRepository semoFeedRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserReader userReader;
 
     @InjectMocks
     private SemoFeedEmojiService semoFeedEmojiService;
@@ -45,7 +45,7 @@ class SemoFeedEmojiServiceTest {
         SemoFeed semoFeed = semoFeed(10L, author);
 
         when(semoFeedRepository.findById(10L)).thenReturn(Optional.of(semoFeed));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(reactor));
+        when(userReader.findActiveUserById(2L)).thenReturn(reactor);
         when(semoFeedEmojiRepository.findBySemoFeedAndUserAndEmojiType(
                 semoFeed,
                 reactor,
@@ -73,7 +73,7 @@ class SemoFeedEmojiServiceTest {
         SemoFeedEmoji existing = SemoFeedEmoji.create(semoFeed, reactor, SemoFeedEmojiType.LAUGH);
 
         when(semoFeedRepository.findById(10L)).thenReturn(Optional.of(semoFeed));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(reactor));
+        when(userReader.findActiveUserById(2L)).thenReturn(reactor);
         when(semoFeedEmojiRepository.findBySemoFeedAndUserAndEmojiType(
                 semoFeed,
                 reactor,

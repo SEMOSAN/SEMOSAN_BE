@@ -36,6 +36,15 @@ class UserReaderTest {
     private UserOnboardingRepository userOnboardingRepository;
 
     @Test
+    void findActiveUserByIdThrowsWhenUserIdIsNull() {
+        assertThatThrownBy(() -> new UserReader(userRepository, userOnboardingRepository)
+                .findActiveUserById(null))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+    }
+
+    @Test
     void findCompletedOnboardingByUserIdReturnsOnboardingWhenUserIsCompleted() {
         User user = user();
         UserOnboarding onboarding = onboarding(user);

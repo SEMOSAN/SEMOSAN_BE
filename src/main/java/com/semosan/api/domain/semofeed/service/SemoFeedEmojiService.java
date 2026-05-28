@@ -9,16 +9,13 @@ import com.semosan.api.domain.semofeed.enums.SemoFeedEmojiType;
 import com.semosan.api.domain.semofeed.repository.SemoFeedEmojiRepository;
 import com.semosan.api.domain.semofeed.repository.SemoFeedRepository;
 import com.semosan.api.domain.user.entity.User;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -26,9 +23,9 @@ public class SemoFeedEmojiService {
 
     private final SemoFeedEmojiRepository semoFeedEmojiRepository;
     private final SemoFeedRepository semoFeedRepository;
-    private final UserRepository userRepository;
+    private final UserReader userReader;
 
-    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
+    @Transactional
     // 이모지 반응을 토글하고 변경 후 해당 타입의 개수를 반환합니다.
     public SemoFeedEmojiToggleResponse toggleWithCount(
             Long userId,
@@ -36,7 +33,7 @@ public class SemoFeedEmojiService {
             SemoFeedEmojiType emojiType
     ) {
         SemoFeed semoFeed = findSemoFeedOrThrow(semoFeedId);
-        User user = findUserOrThrow(userId);
+        User user = userReader.findActiveUserById(userId);
 
         boolean reacted = toggle(semoFeed, user, emojiType);
         long count = semoFeedEmojiRepository.countBySemoFeedAndEmojiType(semoFeed, emojiType);
@@ -57,30 +54,14 @@ public class SemoFeedEmojiService {
             return false;
         }
 
-        try {
-            semoFeedEmojiRepository.save(SemoFeedEmoji.create(semoFeed, user, emojiType));
-            return true;
-        } catch (DataIntegrityViolationException e) {
-            log.warn(
-                    "SemoFeedEmoji 동시 요청 감지: semoFeedId={}, userId={}, emojiType={}",
-                    semoFeed.getId(),
-                    user.getId(),
-                    emojiType
-            );
-            return true;
-        }
+        semoFeedEmojiRepository.save(SemoFeedEmoji.create(semoFeed, user, emojiType));
+        return true;
     }
 
     // 세모피드가 없으면 도메인 예외를 던집니다.
     private SemoFeed findSemoFeedOrThrow(Long semoFeedId) {
         return semoFeedRepository.findById(semoFeedId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.SEMOFEED_NOT_FOUND));
-    }
-
-    // 사용자가 없으면 도메인 예외를 던집니다.
-    private User findUserOrThrow(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
 
 }

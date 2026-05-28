@@ -20,6 +20,9 @@ public class UserReader {
 
     @Transactional(readOnly = true)
     public User findActiveUserById(Long userId) {
+        if (userId == null) {
+            throw new GeneralException(ErrorStatus.USER_NOT_FOUND);
+        }
         return userRepository.findByIdAndDeletedFalse(userId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
