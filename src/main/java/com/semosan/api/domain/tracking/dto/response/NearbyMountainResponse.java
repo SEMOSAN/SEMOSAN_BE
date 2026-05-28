@@ -3,6 +3,7 @@ package com.semosan.api.domain.tracking.dto.response;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.enums.Difficulty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
@@ -44,6 +45,7 @@ public record NearbyMountainResponse(
      * 시안의 코스 카드에 표시되는 정보 중 현재 도메인 모델로 채울 수 있는 것만 포함.
      * TODO: ascent / descent / maxAltitude 컬럼이 Course 에 추가되면 함께 노출.
      */
+    @Schema(name = "NearbyMountainCourseInfo")
     public record CourseInfo(
             Long courseId,
             String name,
