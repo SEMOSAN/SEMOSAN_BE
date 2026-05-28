@@ -34,7 +34,7 @@ public class DemoService {
     public List<String> getDemoPhotos(Long sessionId, int count) {
         List<String> shuffled = new ArrayList<>(demoProperties.photoFilenames());
         Collections.shuffle(shuffled);
-        List<String> randomUrls = shuffled.subList(0, Math.min(count, shuffled.size()))
+        List<String> randomUrls = shuffled.subList(0, safeRandomPhotoCount(count, shuffled.size()))
                 .stream()
                 .map(this::presignedGetUrl)
                 .toList();
@@ -48,6 +48,11 @@ public class DemoService {
         List<String> combined = new ArrayList<>(randomUrls);
         combined.addAll(uploadedUrls);
         return combined;
+    }
+
+    // 음수 count 요청이 들어와도 subList 범위를 벗어나지 않도록 보정합니다.
+    private int safeRandomPhotoCount(int count, int availableCount) {
+        return Math.max(0, Math.min(count, availableCount));
     }
 
     private String presignedGetUrl(String objectKey) {
