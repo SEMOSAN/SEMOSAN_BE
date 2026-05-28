@@ -62,18 +62,13 @@ public interface SemoFeedControllerDocs {
 
     @Operation(
             summary = "세모피드 이모지 토글",
-            description = "세모피드에 FIRE, HEART, CONGRATS, LAUGH 이모지를 타입별로 등록하거나 취소합니다. 본인 세모피드에는 반응할 수 없습니다."
+            description = "세모피드에 FIRE, HEART, CONGRATS, LAUGH 이모지를 타입별로 등록하거나 취소합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "세모피드 이모지 처리 성공",
                     content = @Content(schema = @Schema(implementation = SemoFeedEmojiToggleResponse.class))
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "403",
-                    description = "본인의 세모피드에는 이모지를 남길 수 없음 (SF_403_2)",
-                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",

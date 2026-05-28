@@ -36,7 +36,6 @@ public class SemoFeedEmojiService {
     ) {
         SemoFeed semoFeed = findSemoFeedOrThrow(semoFeedId);
         User user = findUserOrThrow(userId);
-        validateNotOwner(semoFeed, userId);
 
         boolean reacted = toggle(semoFeed, user, emojiType);
         long count = semoFeedEmojiRepository.countBySemoFeedAndEmojiType(semoFeed, emojiType);
@@ -80,9 +79,4 @@ public class SemoFeedEmojiService {
                 .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
 
-    private void validateNotOwner(SemoFeed semoFeed, Long userId) {
-        if (semoFeed.isOwnedBy(userId)) {
-            throw new GeneralException(ErrorStatus.SEMOFEED_EMOJI_SELF_NOT_ALLOWED);
-        }
-    }
 }

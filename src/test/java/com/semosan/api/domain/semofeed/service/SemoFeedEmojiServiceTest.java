@@ -1,7 +1,5 @@
 package com.semosan.api.domain.semofeed.service;
 
-import com.semosan.api.common.exception.GeneralException;
-import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiToggleResponse;
 import com.semosan.api.domain.semofeed.entity.SemoFeed;
 import com.semosan.api.domain.semofeed.entity.SemoFeedEmoji;
@@ -21,7 +19,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -93,20 +90,6 @@ class SemoFeedEmojiServiceTest {
         assertThat(result.reacted()).isFalse();
         assertThat(result.count()).isZero();
         verify(semoFeedEmojiRepository).delete(existing);
-    }
-
-    @Test
-    void toggleWithCountRejectsOwnSemoFeed() {
-        User author = user(1L, "author");
-        SemoFeed semoFeed = semoFeed(10L, author);
-
-        when(semoFeedRepository.findById(10L)).thenReturn(Optional.of(semoFeed));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(author));
-
-        assertThatThrownBy(() -> semoFeedEmojiService.toggleWithCount(1L, 10L, SemoFeedEmojiType.HEART))
-                .isInstanceOf(GeneralException.class)
-                .extracting("errorStatus")
-                .isEqualTo(ErrorStatus.SEMOFEED_EMOJI_SELF_NOT_ALLOWED);
     }
 
     private User user(Long id, String nickname) {
