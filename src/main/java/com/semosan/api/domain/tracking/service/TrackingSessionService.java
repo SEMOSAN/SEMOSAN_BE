@@ -68,6 +68,7 @@ public class TrackingSessionService {
 
         TrackingSession session = TrackingSession.create(user, mountain, course, request.isFreeRecording());
         TrackingSession saved = saveSession(session);
+        log.info("Tracking session created: sessionId={} userId={} mountainId={}", saved.getId(), userId, request.mountainId());
 
         // 세션 생성과 동시에 사진 마일스톤 거리 리스트(코스 4컷 / 자유 6컷)를 Redis 에 적재한다.
         // 이후 GPS Consumer 가 매 점마다 evaluate 호출 시 이 키를 읽어 마일스톤 도달을 판정하므로,
@@ -91,6 +92,7 @@ public class TrackingSessionService {
     public TrackingSessionResponse pause(Long userId, Long sessionId) {
         TrackingSession session = findOwnedSession(userId, sessionId);
         session.pause();
+        log.info("Tracking session paused: sessionId={} userId={}", sessionId, userId);
         return TrackingSessionResponse.from(session);
     }
 
@@ -98,6 +100,7 @@ public class TrackingSessionService {
     public TrackingSessionResponse resume(Long userId, Long sessionId) {
         TrackingSession session = findOwnedSession(userId, sessionId);
         session.resume();
+        log.info("Tracking session resumed: sessionId={} userId={}", sessionId, userId);
         return TrackingSessionResponse.from(session);
     }
 
@@ -131,6 +134,8 @@ public class TrackingSessionService {
         hikingMemberRepository.save(member);
 
         eventPublisher.publishEvent(new TrackingSessionTerminatedEvent(sessionId));
+        log.info("Tracking session completed: sessionId={} userId={} distance={}m altitude={}m",
+                sessionId, userId, stats.distanceMeters(), stats.maxAltitudeMeters());
 
         return TrackingSessionResponse.from(session, savedRecord.getId());
     }
@@ -140,6 +145,7 @@ public class TrackingSessionService {
         TrackingSession session = findOwnedSession(userId, sessionId);
         session.abandon();
         eventPublisher.publishEvent(new TrackingSessionTerminatedEvent(sessionId));
+        log.info("Tracking session abandoned: sessionId={} userId={}", sessionId, userId);
         return TrackingSessionResponse.from(session);
     }
 

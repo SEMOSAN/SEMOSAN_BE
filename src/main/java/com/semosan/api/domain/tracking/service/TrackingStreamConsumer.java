@@ -112,7 +112,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
         try {
             int saved = flushService.flush(sessionId, batch);
             if (saved > 0) {
-                log.debug("Flushed {} GPS points for session {}", saved, sessionId);
+                log.info("Flushed {} GPS points for session {}", saved, sessionId);
             }
         } catch (RuntimeException e) {
             // DB flush 실패 시 batch 를 큐로 되돌려 다음 주기에 재시도.
@@ -145,7 +145,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
                         sessionId, chunk.size(), e);
             }
         }
-        log.debug("Cleaned up tracking buffer for terminated session {} ({} points)",
+        log.info("Cleaned up tracking buffer for terminated session {} ({} points)",
                 sessionId, remaining.size());
     }
 
