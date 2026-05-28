@@ -5,6 +5,7 @@ import com.semosan.api.domain.mountain.enums.AmenityType;
 import com.semosan.api.domain.mountain.enums.Difficulty;
 import com.semosan.api.domain.mountain.enums.TransportationType;
 import com.semosan.api.domain.review.entity.Review;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ public record MountainDetailResponse(
         }
     }
 
+    @Schema(name = "MountainDetailCourseInfo")
     public record CourseInfo(
             Long courseId,
             String name,
