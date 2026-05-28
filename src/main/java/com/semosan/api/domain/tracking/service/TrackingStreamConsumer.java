@@ -3,6 +3,7 @@ package com.semosan.api.domain.tracking.service;
 import com.semosan.api.domain.tracking.event.TrackingSessionTerminatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.data.redis.connection.stream.MapRecord;
 import org.springframework.data.redis.stream.StreamListener;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -58,6 +59,9 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
         try {
             Long sessionId = Long.parseLong(body.get(F_SESSION_ID));
             Long userId = Long.parseLong(body.get(F_USER_ID));
+            MDC.put("sessionId", String.valueOf(sessionId));
+            MDC.put("userId", String.valueOf(userId));
+
             double lat = Double.parseDouble(body.get(F_LAT));
             double lng = Double.parseDouble(body.get(F_LNG));
             Double altitude = parseNullableDouble(body.get(F_ALTITUDE));
@@ -76,6 +80,8 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
             }
         } catch (RuntimeException e) {
             log.warn("Failed to process GPS stream message: id={} body={}", message.getId(), body, e);
+        } finally {
+            MDC.clear();
         }
     }
 

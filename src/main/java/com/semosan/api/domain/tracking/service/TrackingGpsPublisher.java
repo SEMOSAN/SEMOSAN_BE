@@ -9,6 +9,7 @@ import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.data.redis.connection.stream.RecordId;
 import org.springframework.data.redis.connection.stream.StringRecord;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -40,26 +41,32 @@ public class TrackingGpsPublisher {
 
     @Transactional(readOnly = true)
     public void publish(Long userId, Long sessionId, GpsPointMessage message) {
-        TrackingSession session = trackingSessionRepository.findById(sessionId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.TRACKING_SESSION_NOT_FOUND));
-        if (!session.isOwnedBy(userId)) {
-            throw new GeneralException(ErrorStatus.TRACKING_SESSION_FORBIDDEN);
-        }
-        if (session.getStatus() != TrackingSessionStatus.IN_PROGRESS) {
-            log.debug("Dropping GPS point: sessionId={} status={}", sessionId, session.getStatus());
-            return;
-        }
+        MDC.put("sessionId", String.valueOf(sessionId));
+        MDC.put("userId", String.valueOf(userId));
+        try {
+            TrackingSession session = trackingSessionRepository.findById(sessionId)
+                    .orElseThrow(() -> new GeneralException(ErrorStatus.TRACKING_SESSION_NOT_FOUND));
+            if (!session.isOwnedBy(userId)) {
+                throw new GeneralException(ErrorStatus.TRACKING_SESSION_FORBIDDEN);
+            }
+            if (session.getStatus() != TrackingSessionStatus.IN_PROGRESS) {
+                log.debug("Dropping GPS point: sessionId={} status={}", sessionId, session.getStatus());
+                return;
+            }
 
-        Map<String, String> body = Map.of(
-                FIELD_SESSION_ID, String.valueOf(sessionId),
-                FIELD_USER_ID, String.valueOf(userId),
-                FIELD_LAT, String.valueOf(message.lat()),
-                FIELD_LNG, String.valueOf(message.lng()),
-                FIELD_ALTITUDE, message.altitude() == null ? "" : String.valueOf(message.altitude()),
-                FIELD_RECORDED_AT, message.recordedAt().toString()
-        );
-        StringRecord record = StringRecord.of(body).withStreamKey(trackingProperties.getStreamKey());
-        RecordId id = redisTemplate.opsForStream().add(record);
-        log.trace("Published GPS point: sessionId={} streamId={}", sessionId, id);
+            Map<String, String> body = Map.of(
+                    FIELD_SESSION_ID, String.valueOf(sessionId),
+                    FIELD_USER_ID, String.valueOf(userId),
+                    FIELD_LAT, String.valueOf(message.lat()),
+                    FIELD_LNG, String.valueOf(message.lng()),
+                    FIELD_ALTITUDE, message.altitude() == null ? "" : String.valueOf(message.altitude()),
+                    FIELD_RECORDED_AT, message.recordedAt().toString()
+            );
+            StringRecord record = StringRecord.of(body).withStreamKey(trackingProperties.getStreamKey());
+            RecordId id = redisTemplate.opsForStream().add(record);
+            log.trace("Published GPS point: sessionId={} streamId={}", sessionId, id);
+        } finally {
+            MDC.clear();
+        }
     }
 }
