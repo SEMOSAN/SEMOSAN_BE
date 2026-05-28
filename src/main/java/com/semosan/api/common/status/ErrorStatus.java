@@ -144,6 +144,7 @@ public enum ErrorStatus implements BaseStatus {
      * SemoFeed (세모피드)
      */
     SEMOFEED_FORBIDDEN(HttpStatus.FORBIDDEN, "SF_403_1", "본인의 세모피드만 처리할 수 있습니다."),
+    SEMOFEED_EMOJI_SELF_NOT_ALLOWED(HttpStatus.FORBIDDEN, "SF_403_2", "본인의 세모피드에는 이모지를 남길 수 없습니다."),
     SEMOFEED_NOT_FOUND(HttpStatus.NOT_FOUND, "SF_404_1", "세모피드를 찾을 수 없습니다."),
 
     /**

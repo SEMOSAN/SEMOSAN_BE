@@ -4,8 +4,12 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.semofeed.controller.docs.SemoFeedControllerDocs;
+import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiRequest;
+import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiToggleResponse;
 import com.semosan.api.domain.semofeed.dto.SemoFeedResponse;
+import com.semosan.api.domain.semofeed.service.SemoFeedEmojiService;
 import com.semosan.api.domain.semofeed.service.SemoFeedService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +26,7 @@ import java.util.List;
 public class SemoFeedController implements SemoFeedControllerDocs {
 
     private final SemoFeedService semoFeedService;
+    private final SemoFeedEmojiService semoFeedEmojiService;
 
     @PostMapping
     @Override
@@ -36,6 +41,7 @@ public class SemoFeedController implements SemoFeedControllerDocs {
     @GetMapping
     @Override
     public ResponseEntity<ApiResponse<PageResponse<SemoFeedResponse>>> listPublic(
+            @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 100) Pageable pageable
     ) {
         if (pageable.getPageSize() > 100) {
@@ -43,7 +49,20 @@ public class SemoFeedController implements SemoFeedControllerDocs {
         }
         return ApiResponse.success(
                 SuccessStatus.SEMOFEED_LIST_SUCCESS,
-                PageResponse.from(semoFeedService.listPublic(pageable))
+                PageResponse.from(semoFeedService.listPublic(pageable, userId))
+        );
+    }
+
+    @PostMapping("/{semoFeedId}/emojis")
+    @Override
+    public ResponseEntity<ApiResponse<SemoFeedEmojiToggleResponse>> toggleEmoji(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long semoFeedId,
+            @Valid @RequestBody SemoFeedEmojiRequest request
+    ) {
+        return ApiResponse.success(
+                SuccessStatus.SEMOFEED_EMOJI_TOGGLE_SUCCESS,
+                semoFeedEmojiService.toggleWithCount(userId, semoFeedId, request.emojiType())
         );
     }
 

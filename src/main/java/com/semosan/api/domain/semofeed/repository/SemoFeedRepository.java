@@ -10,9 +10,12 @@ import java.util.List;
 
 public interface SemoFeedRepository extends JpaRepository<SemoFeed, Long> {
 
-    @Query("SELECT s FROM SemoFeed s WHERE s.isPublic = true ORDER BY s.createdAt DESC")
+    @Query(
+            value = "SELECT s FROM SemoFeed s JOIN FETCH s.user WHERE s.isPublic = true ORDER BY s.createdAt DESC",
+            countQuery = "SELECT COUNT(s) FROM SemoFeed s WHERE s.isPublic = true"
+    )
     Page<SemoFeed> findPublic(Pageable pageable);
 
-    @Query("SELECT s FROM SemoFeed s WHERE s.user.id = :userId ORDER BY s.createdAt DESC")
+    @Query("SELECT s FROM SemoFeed s JOIN FETCH s.user WHERE s.user.id = :userId ORDER BY s.createdAt DESC")
     List<SemoFeed> findByUserId(Long userId);
 }
