@@ -64,7 +64,7 @@ public class TrackingGpsPublisher {
             );
             StringRecord record = StringRecord.of(body).withStreamKey(trackingProperties.getStreamKey());
             RecordId id = redisTemplate.opsForStream().add(record);
-            log.info("[GPS] 좌표 발행 | streamId={}", id);
+            log.debug("[GPS] 좌표 발행 | streamId={}", id);
         } finally {
             MDC.remove("sessionId");
             MDC.remove("userId");

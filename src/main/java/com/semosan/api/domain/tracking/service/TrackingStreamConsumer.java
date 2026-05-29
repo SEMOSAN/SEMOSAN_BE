@@ -113,7 +113,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
         try {
             int saved = flushService.flush(sessionId, batch);
             if (saved > 0) {
-                log.info("[FLUSH] DB 저장 | {}건 | sessionId={}", saved, sessionId);
+                log.debug("[FLUSH] DB 저장 | {}건 | sessionId={}", saved, sessionId);
             }
         } catch (RuntimeException e) {
             // DB flush 실패 시 batch 를 큐로 되돌려 다음 주기에 재시도.
