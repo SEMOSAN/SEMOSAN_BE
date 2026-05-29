@@ -7,6 +7,7 @@ import com.semosan.api.domain.hiking.dto.response.CourseDifficultyFeedbackRespon
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingMountainRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
+import com.semosan.api.domain.hiking.dto.response.HikingRecordDetailResponse;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -92,6 +93,35 @@ public interface HikingRecordControllerDocs {
     ResponseEntity<ApiResponse<GetUserHikingRecordSummaryResponse>> getUserHikingRecordSummary(
             @Parameter(hidden = true)
             @AuthenticationPrincipal Long userId
+    );
+
+    @Operation(
+            summary = "등산 기록 단건 상세 조회",
+            description = "본인이 참여한 등산 기록 1건의 상세 정보를 조회합니다. " +
+                    "기록 메타(코스/거리/소요시간/고도/칼로리) 와 함께 실제 이동 경로(GeoJSON LineString) · 점별 고도 배열 · 마일스톤 사진 마커를 함께 반환합니다. " +
+                    "트래킹 세션 없이 만들어진 기록(수동 입력) 의 경우 track/altitudes 는 null 로 내려갑니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "등산 기록 상세 조회 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "본인이 참여한 등산 기록이 아님",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "등산 기록을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<HikingRecordDetailResponse>> getHikingRecordDetail(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "등산 기록 ID", required = true)
+            @PathVariable Long hikingRecordId
     );
 
     @Operation(

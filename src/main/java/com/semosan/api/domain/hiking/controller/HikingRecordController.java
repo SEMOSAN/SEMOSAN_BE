@@ -9,6 +9,7 @@ import com.semosan.api.domain.hiking.dto.response.CourseDifficultyFeedbackRespon
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingMountainRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
+import com.semosan.api.domain.hiking.dto.response.HikingRecordDetailResponse;
 import com.semosan.api.domain.hiking.service.HikingRecordService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -74,6 +75,17 @@ public class HikingRecordController implements HikingRecordControllerDocs {
     ) {
         GetUserHikingRecordSummaryResponse response = hikingRecordService.getUserHikingRecordSummary(userId);
         return ApiResponse.success(SuccessStatus.GET_HIKING_RECORD_SUMMARY_SUCCESS, response);
+    }
+
+    // 등산 기록 단건 상세 조회 — 이동 경로(track) + 마일스톤 사진 포함.
+    @GetMapping("/{hikingRecordId}")
+    @Override
+    public ResponseEntity<ApiResponse<HikingRecordDetailResponse>> getHikingRecordDetail(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long hikingRecordId
+    ) {
+        HikingRecordDetailResponse response = hikingRecordService.getHikingRecordDetail(userId, hikingRecordId);
+        return ApiResponse.success(SuccessStatus.GET_HIKING_RECORD_DETAIL_SUCCESS, response);
     }
 
     // 코스 난이도 피드백을 저장합니다.

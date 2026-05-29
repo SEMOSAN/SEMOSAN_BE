@@ -1,6 +1,7 @@
 package com.semosan.api.domain.hiking.entity;
 
 import com.semosan.api.common.base.BaseEntity;
+import com.semosan.api.domain.hiking.service.CalorieCalculator;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.tracking.entity.TrackingSession;
@@ -94,13 +95,17 @@ public class HikingRecord extends BaseEntity {
             Double descent
     ) {
         int duration = computeDurationSeconds(session);
+        // 사용자 체중 + 코스 강도(ascent/distance) 기반 MET 공식.
+        // 체중 미등록 시 CalorieCalculator 내부 기본값(65kg) 으로 대체된다.
+        Double weight = session.getUser() == null ? null : session.getUser().getWeight();
+        int calories = CalorieCalculator.calculate(weight, distance, ascent, duration);
         return HikingRecord.builder()
                 .mountain(session.getMountain())
                 .course(session.getCourse())
                 .trackingSession(session)
                 .duration(duration)
                 .maxAltitude(maxAltitude == null ? 0.0 : maxAltitude)
-                .calories(0)  // TODO: 칼로리 산정 공식 도입 시 교체
+                .calories(calories)
                 .distance(distance)
                 .ascent(ascent)
                 .descent(descent)
