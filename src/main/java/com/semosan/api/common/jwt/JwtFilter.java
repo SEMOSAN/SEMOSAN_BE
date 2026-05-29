@@ -80,7 +80,7 @@ public class JwtFilter extends OncePerRequestFilter {
             log.warn("[*] JwtFilter GeneralException : {}", e.getMessage());
             sendErrorResponse(response, e);
         } finally {
-            MDC.clear();
+            MDC.remove("userId");
         }
     }
 

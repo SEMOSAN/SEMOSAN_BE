@@ -66,7 +66,8 @@ public class TrackingGpsPublisher {
             RecordId id = redisTemplate.opsForStream().add(record);
             log.info("[GPS] 좌표 발행 | streamId={}", id);
         } finally {
-            MDC.clear();
+            MDC.remove("sessionId");
+            MDC.remove("userId");
         }
     }
 }

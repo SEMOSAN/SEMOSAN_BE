@@ -73,7 +73,7 @@ management:
     health:
       show-details: never
   server:
-    port: 8080
+    port: 9090
   prometheus:
     metrics:
       export:

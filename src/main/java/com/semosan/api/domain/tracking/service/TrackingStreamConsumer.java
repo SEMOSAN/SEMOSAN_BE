@@ -79,9 +79,10 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
                 flushSession(sessionId);
             }
         } catch (RuntimeException e) {
-            log.warn("Failed to process GPS stream message: id={} body={}", message.getId(), body, e);
+            log.warn("[GPS] 메시지 처리 실패 | streamId={} | sessionId={}", message.getId(), body.get(F_SESSION_ID), e);
         } finally {
-            MDC.clear();
+            MDC.remove("sessionId");
+            MDC.remove("userId");
         }
     }
 
