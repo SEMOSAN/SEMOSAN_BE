@@ -4,6 +4,7 @@ import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
+import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
 import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
 import com.semosan.api.domain.notification.repository.NotificationRepository;
 import com.semosan.api.domain.review.repository.ReviewRepository;
@@ -33,6 +34,7 @@ public class UserService {
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final UserOnboardingRepository userOnboardingRepository;
     private final MountainLikeRepository mountainLikeRepository;
+    private final CourseLikeRepository courseLikeRepository;
     private final ReviewRepository reviewRepository;
     private final HikingMemberRepository hikingMemberRepository;
     private final HikingRecordRepository hikingRecordRepository;
@@ -143,6 +145,7 @@ public class UserService {
 
     private void deleteUserChildRecords(Long userId) {
         mountainLikeRepository.deleteByUser_Id(userId);
+        courseLikeRepository.deleteByUser_Id(userId);
         reviewRepository.deleteByUser_Id(userId);
         List<Long> recordIdsToDelete = hikingRecordRepository.findRecordIdsOnlyParticipatedByUser(userId);
         hikingMemberRepository.deleteByUser_Id(userId);

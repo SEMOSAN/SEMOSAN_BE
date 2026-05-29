@@ -29,6 +29,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             value = """
                     SELECT
                         c.id            AS id,
+                        c.mountain_id   AS mountainId,
                         c.name          AS name,
                         c.difficulty    AS difficulty,
                         c.distance      AS distance,

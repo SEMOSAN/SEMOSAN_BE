@@ -7,6 +7,7 @@ package com.semosan.api.domain.mountain.repository.projection;
  */
 public interface CourseDetailProjection {
     Long getId();
+    Long getMountainId();
     String getName();
     String getDifficulty();
     Double getDistance();

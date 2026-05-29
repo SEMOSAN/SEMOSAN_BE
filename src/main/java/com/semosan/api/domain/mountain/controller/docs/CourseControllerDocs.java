@@ -2,6 +2,7 @@ package com.semosan.api.domain.mountain.controller.docs;
 
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.domain.mountain.dto.response.CourseDetailResponse;
+import com.semosan.api.domain.mountain.dto.response.CourseLikeToggleResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -32,6 +33,27 @@ public interface CourseControllerDocs {
             )
     })
     ResponseEntity<ApiResponse<CourseDetailResponse>> getCourseDetail(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "코스 ID", required = true)
+            @PathVariable Long courseId
+    );
+
+    @Operation(
+            summary = "코스 좋아요 토글",
+            description = "로그인한 사용자가 코스 좋아요를 누르거나 취소합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "코스 좋아요 토글 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "코스를 찾을 수 없음 (MTN_404_3)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<CourseLikeToggleResponse>> toggleCourseLike(
             @AuthenticationPrincipal Long userId,
             @Parameter(description = "코스 ID", required = true)
             @PathVariable Long courseId
