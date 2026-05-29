@@ -35,14 +35,14 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
                     SELECT
                         hr.mountain_id AS mountainId,
                         m.name AS mountainName,
-                        m.image_url AS imageUrl,
+                        m.image_urls->>0 AS imageUrl,
                         COUNT(hr.id) AS hikingCount,
                         MAX(hr.created_at) AS lastHikedAt
                     FROM hiking_records hr
                     JOIN hiking_members hm ON hm.hiking_record_id = hr.id
                     JOIN mountains m ON m.id = hr.mountain_id
                     WHERE hm.user_id = :userId
-                    GROUP BY hr.mountain_id, m.name, m.image_url
+                    GROUP BY hr.mountain_id, m.name, m.image_urls->>0
                     ORDER BY MAX(hr.created_at) DESC, hr.mountain_id DESC
                     """,
             countQuery = """
