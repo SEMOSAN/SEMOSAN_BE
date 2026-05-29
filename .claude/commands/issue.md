@@ -69,12 +69,22 @@
 
 ## 이슈 생성 명령
 
-사용자 확인 후 아래 명령을 실행한다.
+사용자 확인 후 아래 순서로 실행한다.
+본문은 특수문자·마크다운 이스케이프 오류를 막기 위해 임시 파일로 작성 후 `--body-file`로 전달한다.
 
 ```bash
+# 1. 본문을 임시 파일에 저장
+cat > /tmp/issue_body.md << 'EOF'
+<채워진 템플릿 내용>
+EOF
+
+# 2. 이슈 생성
 gh issue create \
   --title "<이슈 제목>" \
-  --body "<채워진 템플릿 내용>"
+  --body-file /tmp/issue_body.md
+
+# 3. 임시 파일 삭제
+rm /tmp/issue_body.md
 ```
 
 생성 완료 후 반환된 이슈 URL을 사용자에게 출력한다.
