@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -68,6 +69,7 @@ public class JwtFilter extends OncePerRequestFilter {
                     throw new GeneralException(ErrorStatus.JWT_BLACKLISTED);
                 }
                 Long userId = jwtService.getUserIdFromJwtToken(accessToken);
+                MDC.put("userId", String.valueOf(userId));
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userId, null, new ArrayList<>());
@@ -75,10 +77,10 @@ public class JwtFilter extends OncePerRequestFilter {
             }
             filterChain.doFilter(request, response);
         } catch (GeneralException e) {
-            // GeneralException을 그대로 ApiResponse 포맷으로 직렬화하여 응답
-            // Spring Security가 가로채지 않도록 직접 response에 작성
             log.warn("[*] JwtFilter GeneralException : {}", e.getMessage());
             sendErrorResponse(response, e);
+        } finally {
+            MDC.remove("userId");
         }
     }
 
