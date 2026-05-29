@@ -47,12 +47,10 @@ class CourseLikeServiceTest {
         when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.empty());
-        when(courseLikeRepository.countByCourse_Id(10L)).thenReturn(1L);
 
         CourseLikeToggleResponse response = courseLikeService.toggleCourseLike(1L, 10L);
 
         assertThat(response.liked()).isTrue();
-        assertThat(response.count()).isEqualTo(1L);
         verify(courseLikeRepository).save(any(CourseLike.class));
     }
 
@@ -65,12 +63,10 @@ class CourseLikeServiceTest {
         when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.of(courseLike));
-        when(courseLikeRepository.countByCourse_Id(10L)).thenReturn(0L);
 
         CourseLikeToggleResponse response = courseLikeService.toggleCourseLike(1L, 10L);
 
         assertThat(response.liked()).isFalse();
-        assertThat(response.count()).isZero();
         verify(courseLikeRepository).delete(courseLike);
     }
 
@@ -83,12 +79,10 @@ class CourseLikeServiceTest {
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.empty());
         when(courseLikeRepository.save(any(CourseLike.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
-        when(courseLikeRepository.countByCourse_Id(10L)).thenReturn(1L);
 
         CourseLikeToggleResponse response = courseLikeService.toggleCourseLike(1L, 10L);
 
         assertThat(response.liked()).isTrue();
-        assertThat(response.count()).isEqualTo(1L);
     }
 
     private User user(Long id) {

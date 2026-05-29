@@ -6,15 +6,11 @@ import com.semosan.api.domain.mountain.dto.response.CourseDetailResponse;
 import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.projection.CourseDetailProjection;
-import com.semosan.api.domain.user.entity.User;
-import com.semosan.api.domain.user.enums.user.DeviceType;
-import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
 
@@ -32,9 +28,6 @@ class CourseServiceTest {
     private CourseLikeRepository courseLikeRepository;
 
     @Mock
-    private UserReader userReader;
-
-    @Mock
     private CourseDetailProjection projection;
 
     @InjectMocks
@@ -42,7 +35,6 @@ class CourseServiceTest {
 
     @Test
     void getCourseDetailIncludesLikedByMe() {
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user(1L));
         when(courseRepository.findCourseDetailById(10L)).thenReturn(Optional.of(projection));
         when(courseLikeRepository.existsByUser_IdAndCourse_Id(1L, 10L)).thenReturn(true);
         stubProjection();
@@ -56,7 +48,6 @@ class CourseServiceTest {
 
     @Test
     void getCourseDetailThrowsWhenCourseNotFound() {
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user(1L));
         when(courseRepository.findCourseDetailById(10L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> courseService.getCourseDetail(1L, 10L))
@@ -80,9 +71,4 @@ class CourseServiceTest {
         when(projection.getAltitudes()).thenReturn(null);
     }
 
-    private User user(Long id) {
-        User user = User.createTestUser("user-" + id, DeviceType.IOS);
-        ReflectionTestUtils.setField(user, "id", id);
-        return user;
-    }
 }

@@ -27,8 +27,7 @@ public class CourseLikeService {
     @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public CourseLikeToggleResponse toggleCourseLike(Long userId, Long courseId) {
         boolean liked = toggle(userId, courseId);
-        long count = courseLikeRepository.countByCourse_Id(courseId);
-        return new CourseLikeToggleResponse(liked, count);
+        return new CourseLikeToggleResponse(liked);
     }
 
     private boolean toggle(Long userId, Long courseId) {
