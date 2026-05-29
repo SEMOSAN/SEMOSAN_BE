@@ -50,7 +50,7 @@ public class TrackingGpsPublisher {
                 throw new GeneralException(ErrorStatus.TRACKING_SESSION_FORBIDDEN);
             }
             if (session.getStatus() != TrackingSessionStatus.IN_PROGRESS) {
-                log.info("GPS point dropped: status={}", session.getStatus());
+                log.info("[GPS] 좌표 드롭 | status={}", session.getStatus());
                 return;
             }
 
@@ -64,7 +64,7 @@ public class TrackingGpsPublisher {
             );
             StringRecord record = StringRecord.of(body).withStreamKey(trackingProperties.getStreamKey());
             RecordId id = redisTemplate.opsForStream().add(record);
-            log.info("GPS point published: streamId={}", id);
+            log.info("[GPS] 좌표 발행 | streamId={}", id);
         } finally {
             MDC.clear();
         }
