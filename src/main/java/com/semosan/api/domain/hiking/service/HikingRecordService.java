@@ -82,7 +82,8 @@ public class HikingRecordService {
     @Transactional(readOnly = true)
     public HikingRecordDetailResponse getHikingRecordDetail(Long userId, Long hikingRecordId) {
         User user = userReader.findCompletedOnboardingUserById(userId);
-        HikingRecord record = hikingRecordRepository.findById(hikingRecordId)
+        // Mountain / Course 를 fetch join 으로 함께 가져와 응답 조립 시 추가 SELECT 를 막는다.
+        HikingRecord record = hikingRecordRepository.findWithMountainAndCourseById(hikingRecordId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.HIKING_RECORD_NOT_FOUND));
 
         if (!hikingMemberRepository.existsByHikingRecordAndUser(record, user)) {

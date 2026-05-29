@@ -12,6 +12,8 @@ package com.semosan.api.domain.hiking.service;
  */
 public final class CalorieCalculator {
 
+    // TODO: 체중 미등록 시 한국 성인 평균치(65kg) 로 일괄 대체 중. 향후 사용자 성별·나이 기반 추정값
+    //       또는 온보딩 단계에서 체중 입력 강제로 정확도 개선 검토.
     static final double DEFAULT_WEIGHT_KG = 65.0;
 
     private static final double MET_EASY = 6.0;

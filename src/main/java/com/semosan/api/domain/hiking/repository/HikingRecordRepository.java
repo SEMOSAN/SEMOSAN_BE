@@ -11,8 +11,21 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long> {
+
+    /**
+     * 단건 상세 조회용. Mountain 은 INNER, Course 는 LEFT JOIN FETCH(자유기록은 null) 로 한 쿼리에 묶는다.
+     * 응답 조립 시 mountain.name / course.name 접근으로 발생하는 추가 SELECT 를 막는다.
+     */
+    @Query("""
+            SELECT hr FROM HikingRecord hr
+            JOIN FETCH hr.mountain
+            LEFT JOIN FETCH hr.course
+            WHERE hr.id = :id
+            """)
+    Optional<HikingRecord> findWithMountainAndCourseById(@Param("id") Long id);
 
     @Query(
             value = """
