@@ -4,6 +4,7 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.semofeed.controller.docs.SemoFeedControllerDocs;
+import com.semosan.api.domain.semofeed.dto.SemoFeedCreateRequest;
 import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiRequest;
 import com.semosan.api.domain.semofeed.dto.SemoFeedEmojiToggleResponse;
 import com.semosan.api.domain.semofeed.dto.SemoFeedResponse;
@@ -30,11 +31,12 @@ public class SemoFeedController implements SemoFeedControllerDocs {
 
     @PostMapping
     @Override
+    // @RequestBody String 대신 DTO를 사용해 Jackson이 JSON 따옴표를 제거한 뒤 imageUrl을 전달합니다.
     public ResponseEntity<ApiResponse<SemoFeedResponse>> create(
             @AuthenticationPrincipal Long userId,
-            @RequestBody String imageUrl
+            @Valid @RequestBody SemoFeedCreateRequest request
     ) {
-        SemoFeedResponse response = semoFeedService.create(userId, imageUrl);
+        SemoFeedResponse response = semoFeedService.create(userId, request.imageUrl());
         return ApiResponse.success(SuccessStatus.SEMOFEED_CREATE_SUCCESS, response);
     }
 
