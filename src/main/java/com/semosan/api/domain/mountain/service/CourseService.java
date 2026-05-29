@@ -3,7 +3,10 @@ package com.semosan.api.domain.mountain.service;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.mountain.dto.response.CourseDetailResponse;
+import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
+import com.semosan.api.domain.mountain.repository.projection.CourseDetailProjection;
+import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,10 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class CourseService {
 
     private final CourseRepository courseRepository;
+    private final CourseLikeRepository courseLikeRepository;
+    private final UserReader userReader;
 
-    public CourseDetailResponse getCourseDetail(Long courseId) {
-        return courseRepository.findCourseDetailById(courseId)
-                .map(CourseDetailResponse::from)
+    public CourseDetailResponse getCourseDetail(Long userId, Long courseId) {
+        userReader.findCompletedOnboardingUserById(userId);
+        CourseDetailProjection course = courseRepository.findCourseDetailById(courseId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.COURSE_NOT_FOUND));
+        boolean likedByMe = courseLikeRepository.existsByUser_IdAndCourse_Id(userId, courseId);
+        return CourseDetailResponse.from(course, likedByMe);
     }
 }

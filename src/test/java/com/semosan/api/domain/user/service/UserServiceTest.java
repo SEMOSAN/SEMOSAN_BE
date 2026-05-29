@@ -2,6 +2,7 @@ package com.semosan.api.domain.user.service;
 
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
+import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
 import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
 import com.semosan.api.domain.notification.repository.NotificationRepository;
 import com.semosan.api.domain.review.repository.ReviewRepository;
@@ -43,6 +44,9 @@ class UserServiceTest {
 
     @Mock
     private MountainLikeRepository mountainLikeRepository;
+
+    @Mock
+    private CourseLikeRepository courseLikeRepository;
 
     @Mock
     private ReviewRepository reviewRepository;

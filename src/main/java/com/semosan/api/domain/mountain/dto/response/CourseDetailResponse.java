@@ -12,6 +12,7 @@ import com.semosan.api.domain.mountain.repository.projection.CourseDetailProject
  */
 public record CourseDetailResponse(
         Long id,
+        Long mountainId,
         String name,
         Difficulty difficulty,
         Double distance,
@@ -21,12 +22,14 @@ public record CourseDetailResponse(
         Double ascent,
         Double descent,
         Double maxAltitude,
+        boolean likedByMe,
         @JsonRawValue String polyline,
         @JsonRawValue String altitudes
 ) {
-    public static CourseDetailResponse from(CourseDetailProjection p) {
+    public static CourseDetailResponse from(CourseDetailProjection p, boolean likedByMe) {
         return new CourseDetailResponse(
                 p.getId(),
+                p.getMountainId(),
                 p.getName(),
                 p.getDifficulty() == null ? null : Difficulty.valueOf(p.getDifficulty()),
                 p.getDistance(),
@@ -36,6 +39,7 @@ public record CourseDetailResponse(
                 p.getAscent(),
                 p.getDescent(),
                 p.getMaxAltitude(),
+                likedByMe,
                 p.getPolyline(),
                 p.getAltitudes()
         );
