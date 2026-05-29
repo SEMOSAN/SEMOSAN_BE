@@ -2,6 +2,7 @@ package com.semosan.api.domain.mountain.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.mountain.dto.response.CourseLikeToggleResponse;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.CourseLike;
 import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
@@ -9,10 +10,12 @@ import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CourseLikeService {
@@ -21,27 +24,33 @@ public class CourseLikeService {
     private final CourseRepository courseRepository;
     private final UserReader userReader;
 
-    @Transactional
-    public void likeCourse(Long userId, Long courseId) {
-        User user = userReader.findCompletedOnboardingUserById(userId);
-        Course course = findCourseById(courseId);
-        if (courseLikeRepository.existsByUser_IdAndCourse_Id(userId, courseId)) {
-            throw new GeneralException(ErrorStatus.COURSE_LIKE_ALREADY_EXISTS);
-        }
-
-        try {
-            courseLikeRepository.save(CourseLike.create(user, course));
-        } catch (DataIntegrityViolationException e) {
-            throw new GeneralException(ErrorStatus.COURSE_LIKE_ALREADY_EXISTS);
-        }
+    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
+    public CourseLikeToggleResponse toggleCourseLike(Long userId, Long courseId) {
+        boolean liked = toggle(userId, courseId);
+        long count = courseLikeRepository.countByCourse_Id(courseId);
+        return new CourseLikeToggleResponse(liked, count);
     }
 
-    @Transactional
-    public void unlikeCourse(Long userId, Long courseId) {
-        userReader.findCompletedOnboardingUserById(userId);
-        CourseLike courseLike = courseLikeRepository.findByUser_IdAndCourse_Id(userId, courseId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.COURSE_LIKE_NOT_FOUND));
-        courseLikeRepository.delete(courseLike);
+    private boolean toggle(Long userId, Long courseId) {
+        User user = userReader.findCompletedOnboardingUserById(userId);
+        Course course = findCourseById(courseId);
+
+        return courseLikeRepository.findByUser_IdAndCourse_Id(userId, courseId)
+                .map(existing -> {
+                    courseLikeRepository.delete(existing);
+                    return false;
+                })
+                .orElseGet(() -> createCourseLike(user, course, userId, courseId));
+    }
+
+    private boolean createCourseLike(User user, Course course, Long userId, Long courseId) {
+        try {
+            courseLikeRepository.save(CourseLike.create(user, course));
+            return true;
+        } catch (DataIntegrityViolationException e) {
+            log.warn("CourseLike 동시 요청 감지: courseId={}, userId={}", courseId, userId);
+            return true;
+        }
     }
 
     private Course findCourseById(Long courseId) {

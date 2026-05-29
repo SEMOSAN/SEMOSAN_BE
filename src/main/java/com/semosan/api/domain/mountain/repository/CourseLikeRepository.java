@@ -14,6 +14,8 @@ public interface CourseLikeRepository extends JpaRepository<CourseLike, Long> {
 
     Optional<CourseLike> findByUser_IdAndCourse_Id(Long userId, Long courseId);
 
+    long countByCourse_Id(Long courseId);
+
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM CourseLike cl WHERE cl.user.id = :userId")
     void deleteByUser_Id(@Param("userId") Long userId);

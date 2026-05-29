@@ -43,8 +43,7 @@ public enum SuccessStatus implements BaseStatus {
     MOUNTAIN_MAP_SUCCESS(HttpStatus.OK, "MTN_200_7", "지도 영역 내 산 조회에 성공했습니다."),
     MOUNTAIN_RECOMMENDATION_SUCCESS(HttpStatus.OK, "MTN_200_8", "레벨 맞춤 산 추천 조회에 성공했습니다."),
     COURSE_DETAIL_SUCCESS(HttpStatus.OK, "MTN_200_9", "코스 상세 정보 조회에 성공했습니다."),
-    COURSE_LIKE_SUCCESS(HttpStatus.OK, "MTN_200_10", "코스 좋아요 등록에 성공했습니다."),
-    COURSE_UNLIKE_SUCCESS(HttpStatus.OK, "MTN_200_11", "코스 좋아요 취소에 성공했습니다."),
+    COURSE_LIKE_TOGGLE_SUCCESS(HttpStatus.OK, "MTN_200_10", "코스 좋아요 처리에 성공했습니다."),
 
     /**
      * Hiking Record

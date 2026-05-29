@@ -1,7 +1,6 @@
 package com.semosan.api.domain.mountain.service;
 
-import com.semosan.api.common.exception.GeneralException;
-import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.mountain.dto.response.CourseLikeToggleResponse;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.CourseLike;
 import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
@@ -20,7 +19,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.lang.reflect.Constructor;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,68 +40,55 @@ class CourseLikeServiceTest {
     private CourseLikeService courseLikeService;
 
     @Test
-    void likeCourseSavesCourseLike() throws Exception {
+    void toggleCourseLikeCreatesLikeWhenNotLiked() throws Exception {
         User user = user(1L);
         Course course = course(10L);
 
         when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
+        when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.empty());
+        when(courseLikeRepository.countByCourse_Id(10L)).thenReturn(1L);
 
-        courseLikeService.likeCourse(1L, 10L);
+        CourseLikeToggleResponse response = courseLikeService.toggleCourseLike(1L, 10L);
 
+        assertThat(response.liked()).isTrue();
+        assertThat(response.count()).isEqualTo(1L);
         verify(courseLikeRepository).save(any(CourseLike.class));
     }
 
     @Test
-    void likeCourseThrowsWhenAlreadyLiked() throws Exception {
-        User user = user(1L);
-        Course course = course(10L);
-
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
-        when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
-        when(courseLikeRepository.existsByUser_IdAndCourse_Id(1L, 10L)).thenReturn(true);
-
-        assertThatThrownBy(() -> courseLikeService.likeCourse(1L, 10L))
-                .isInstanceOf(GeneralException.class)
-                .hasMessage(ErrorStatus.COURSE_LIKE_ALREADY_EXISTS.getMessage());
-    }
-
-    @Test
-    void likeCourseThrowsWhenConcurrentDuplicateDetected() throws Exception {
-        User user = user(1L);
-        Course course = course(10L);
-
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
-        when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
-        when(courseLikeRepository.save(any(CourseLike.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
-
-        assertThatThrownBy(() -> courseLikeService.likeCourse(1L, 10L))
-                .isInstanceOf(GeneralException.class)
-                .hasMessage(ErrorStatus.COURSE_LIKE_ALREADY_EXISTS.getMessage());
-    }
-
-    @Test
-    void unlikeCourseDeletesCourseLike() throws Exception {
+    void toggleCourseLikeDeletesLikeWhenAlreadyLiked() throws Exception {
         User user = user(1L);
         Course course = course(10L);
         CourseLike courseLike = CourseLike.create(user, course);
 
         when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.of(courseLike));
+        when(courseLikeRepository.countByCourse_Id(10L)).thenReturn(0L);
 
-        courseLikeService.unlikeCourse(1L, 10L);
+        CourseLikeToggleResponse response = courseLikeService.toggleCourseLike(1L, 10L);
 
+        assertThat(response.liked()).isFalse();
+        assertThat(response.count()).isZero();
         verify(courseLikeRepository).delete(courseLike);
     }
 
     @Test
-    void unlikeCourseThrowsWhenNotLiked() {
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user(1L));
-        when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.empty());
+    void toggleCourseLikeReturnsLikedWhenConcurrentDuplicateDetected() throws Exception {
+        User user = user(1L);
+        Course course = course(10L);
 
-        assertThatThrownBy(() -> courseLikeService.unlikeCourse(1L, 10L))
-                .isInstanceOf(GeneralException.class)
-                .hasMessage(ErrorStatus.COURSE_LIKE_NOT_FOUND.getMessage());
+        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
+        when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.empty());
+        when(courseLikeRepository.save(any(CourseLike.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+        when(courseLikeRepository.countByCourse_Id(10L)).thenReturn(1L);
+
+        CourseLikeToggleResponse response = courseLikeService.toggleCourseLike(1L, 10L);
+
+        assertThat(response.liked()).isTrue();
+        assertThat(response.count()).isEqualTo(1L);
     }
 
     private User user(Long id) {
