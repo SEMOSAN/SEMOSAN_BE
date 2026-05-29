@@ -51,7 +51,7 @@ k8s/minio/secret.yaml
 .omc
 
 # Claude Code
-.claude/
+.claude/settings.local.json
 
 # Firebase
 src/main/resources/firebase/
