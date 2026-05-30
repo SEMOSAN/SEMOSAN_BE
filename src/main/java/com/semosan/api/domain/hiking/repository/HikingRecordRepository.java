@@ -83,10 +83,9 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
                                 ) AS rn
                             FROM tracking_photos tp
                             JOIN tracking_sessions ts ON ts.id = tp.tracking_session_id
-                            JOIN hiking_records hr2 ON hr2.tracking_session_id = ts.id
-                            JOIN hiking_members hm2 ON hm2.hiking_record_id = hr2.id
-                            WHERE hm2.user_id = :userId
-                              AND hr2.mountain_id = grouped.mountain_id
+                            WHERE ts.user_id = :userId
+                              AND ts.mountain_id = grouped.mountain_id
+                              AND ts.status = 'COMPLETED'
                               AND grouped.mountain_location IS NOT NULL
                               AND NULLIF(tp.image_url, '') IS NOT NULL
                             ORDER BY
