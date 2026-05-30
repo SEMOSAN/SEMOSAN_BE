@@ -8,7 +8,9 @@ public interface UserHikingMountainRecordProjection {
 
     String getMountainName();
 
-    String getImageUrl();
+    String getImageUrl1();
+
+    String getImageUrl2();
 
     Long getHikingCount();
 

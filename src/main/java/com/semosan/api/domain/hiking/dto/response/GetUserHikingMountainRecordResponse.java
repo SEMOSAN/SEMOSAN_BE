@@ -3,11 +3,13 @@ package com.semosan.api.domain.hiking.dto.response;
 import com.semosan.api.domain.hiking.repository.projection.UserHikingMountainRecordProjection;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public record GetUserHikingMountainRecordResponse(
         Long mountainId,
         String mountainName,
-        String imageUrl,
+        List<String> imageUrls,
         Long hikingCount,
         LocalDate lastHikedAt
 ) {
@@ -17,9 +19,22 @@ public record GetUserHikingMountainRecordResponse(
         return new GetUserHikingMountainRecordResponse(
                 projection.getMountainId(),
                 projection.getMountainName(),
-                projection.getImageUrl(),
+                buildImageUrls(projection.getImageUrl1(), projection.getImageUrl2()),
                 projection.getHikingCount(),
                 projection.getLastHikedAt().toLocalDate()
         );
+    }
+
+    private static List<String> buildImageUrls(String imageUrl1, String imageUrl2) {
+        List<String> imageUrls = new ArrayList<>(2);
+        addIfPresent(imageUrls, imageUrl1);
+        addIfPresent(imageUrls, imageUrl2);
+        return imageUrls;
+    }
+
+    private static void addIfPresent(List<String> imageUrls, String imageUrl) {
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            imageUrls.add(imageUrl);
+        }
     }
 }

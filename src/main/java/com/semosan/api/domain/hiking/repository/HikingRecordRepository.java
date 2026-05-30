@@ -46,17 +46,60 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
     @Query(
             value = """
                     SELECT
-                        hr.mountain_id AS mountainId,
-                        m.name AS mountainName,
-                        m.image_urls->>0 AS imageUrl,
-                        COUNT(hr.id) AS hikingCount,
-                        MAX(hr.created_at) AS lastHikedAt
-                    FROM hiking_records hr
-                    JOIN hiking_members hm ON hm.hiking_record_id = hr.id
-                    JOIN mountains m ON m.id = hr.mountain_id
-                    WHERE hm.user_id = :userId
-                    GROUP BY hr.mountain_id, m.name, m.image_urls->>0
-                    ORDER BY MAX(hr.created_at) DESC, hr.mountain_id DESC
+                        grouped.mountain_id AS mountainId,
+                        grouped.mountain_name AS mountainName,
+                        photos.image_url1 AS imageUrl1,
+                        photos.image_url2 AS imageUrl2,
+                        grouped.hiking_count AS hikingCount,
+                        grouped.last_hiked_at AS lastHikedAt
+                    FROM (
+                        SELECT
+                            hr.mountain_id,
+                            m.name AS mountain_name,
+                            m.location AS mountain_location,
+                            COUNT(hr.id) AS hiking_count,
+                            MAX(hr.created_at) AS last_hiked_at
+                        FROM hiking_records hr
+                        JOIN hiking_members hm ON hm.hiking_record_id = hr.id
+                        JOIN mountains m ON m.id = hr.mountain_id
+                        WHERE hm.user_id = :userId
+                        GROUP BY hr.mountain_id, m.name, m.location
+                    ) grouped
+                    LEFT JOIN LATERAL (
+                        SELECT
+                            MAX(CASE WHEN ranked.rn = 1 THEN ranked.image_url END) AS image_url1,
+                            MAX(CASE WHEN ranked.rn = 2 THEN ranked.image_url END) AS image_url2
+                        FROM (
+                            SELECT
+                                tp.image_url,
+                                ROW_NUMBER() OVER (
+                                    ORDER BY
+                                        ST_Distance(
+                                            grouped.mountain_location,
+                                            ST_SetSRID(ST_MakePoint(tp.lng, tp.lat), 4326)::geography
+                                        ) ASC,
+                                        tp.captured_at DESC,
+                                        tp.id DESC
+                                ) AS rn
+                            FROM tracking_photos tp
+                            JOIN tracking_sessions ts ON ts.id = tp.tracking_session_id
+                            JOIN hiking_records hr2 ON hr2.tracking_session_id = ts.id
+                            JOIN hiking_members hm2 ON hm2.hiking_record_id = hr2.id
+                            WHERE hm2.user_id = :userId
+                              AND hr2.mountain_id = grouped.mountain_id
+                              AND grouped.mountain_location IS NOT NULL
+                              AND NULLIF(tp.image_url, '') IS NOT NULL
+                            ORDER BY
+                                ST_Distance(
+                                    grouped.mountain_location,
+                                    ST_SetSRID(ST_MakePoint(tp.lng, tp.lat), 4326)::geography
+                                ) ASC,
+                                tp.captured_at DESC,
+                                tp.id DESC
+                            LIMIT 2
+                        ) ranked
+                    ) photos ON true
+                    ORDER BY grouped.last_hiked_at DESC, grouped.mountain_id DESC
                     """,
             countQuery = """
                     SELECT COUNT(DISTINCT hr.mountain_id)
