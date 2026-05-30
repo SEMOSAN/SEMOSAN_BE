@@ -29,6 +29,15 @@ class GetUserHikingMountainRecordResponseTest {
         assertThat(response.imageUrls()).containsExactly("near-summit-2");
     }
 
+    @Test
+    void fromReturnsEmptyImageUrlsWhenNoPhotos() {
+        GetUserHikingMountainRecordResponse response = GetUserHikingMountainRecordResponse.from(
+                projection(null, null)
+        );
+
+        assertThat(response.imageUrls()).isEmpty();
+    }
+
     private UserHikingMountainRecordProjection projection(String imageUrl1, String imageUrl2) {
         return new UserHikingMountainRecordProjection() {
             @Override
