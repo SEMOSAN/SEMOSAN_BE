@@ -179,10 +179,10 @@ class UserServiceTest {
 
         verify(mountainLikeRepository).deleteByUser_Id(1L);
         verify(reviewRepository).deleteByUser_Id(1L);
-        verify(courseDifficultyFeedbackRepository).deleteByUser_Id(1L);
+        verify(courseDifficultyFeedbackRepository).deleteByUserId(1L);
         verify(hikingRecordRepository).findRecordIdsOnlyParticipatedByUser(1L);
         verify(hikingMemberRepository).deleteByUser_Id(1L);
-        verify(courseDifficultyFeedbackRepository).deleteByHikingRecord_IdIn(List.of(10L, 11L));
+        verify(courseDifficultyFeedbackRepository).deleteByHikingRecordIdIn(List.of(10L, 11L));
         verify(hikingRecordRepository).deleteAllByIdInBatch(List.of(10L, 11L));
         verify(notificationRepository).deleteAllByUserId(1L);
         verify(userOnboardingRepository).deleteByUser_Id(1L);
@@ -197,9 +197,9 @@ class UserServiceTest {
         assertThat(user.getOnboardingStatus()).isEqualTo(OnboardingStatus.INCOMPLETE);
 
         InOrder deleteOrder = inOrder(courseDifficultyFeedbackRepository, hikingRecordRepository);
-        deleteOrder.verify(courseDifficultyFeedbackRepository).deleteByUser_Id(1L);
+        deleteOrder.verify(courseDifficultyFeedbackRepository).deleteByUserId(1L);
         deleteOrder.verify(hikingRecordRepository).findRecordIdsOnlyParticipatedByUser(1L);
-        deleteOrder.verify(courseDifficultyFeedbackRepository).deleteByHikingRecord_IdIn(List.of(10L, 11L));
+        deleteOrder.verify(courseDifficultyFeedbackRepository).deleteByHikingRecordIdIn(List.of(10L, 11L));
         deleteOrder.verify(hikingRecordRepository).deleteAllByIdInBatch(List.of(10L, 11L));
     }
 }

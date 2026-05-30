@@ -149,11 +149,11 @@ public class UserService {
         mountainLikeRepository.deleteByUser_Id(userId);
         courseLikeRepository.deleteByUser_Id(userId);
         reviewRepository.deleteByUser_Id(userId);
-        courseDifficultyFeedbackRepository.deleteByUser_Id(userId);
+        courseDifficultyFeedbackRepository.deleteByUserId(userId);
         List<Long> recordIdsToDelete = hikingRecordRepository.findRecordIdsOnlyParticipatedByUser(userId);
         hikingMemberRepository.deleteByUser_Id(userId);
         if (!recordIdsToDelete.isEmpty()) {
-            courseDifficultyFeedbackRepository.deleteByHikingRecord_IdIn(recordIdsToDelete);
+            courseDifficultyFeedbackRepository.deleteByHikingRecordIdIn(recordIdsToDelete);
             hikingRecordRepository.deleteAllByIdInBatch(recordIdsToDelete);
         }
         notificationRepository.deleteAllByUserId(userId);

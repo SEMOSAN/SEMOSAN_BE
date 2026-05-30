@@ -2,6 +2,9 @@ package com.semosan.api.domain.hiking.repository;
 
 import com.semosan.api.domain.hiking.entity.CourseDifficultyFeedback;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -9,7 +12,11 @@ public interface CourseDifficultyFeedbackRepository extends JpaRepository<Course
 
     boolean existsByHikingRecord_Id(Long hikingRecordId);
 
-    void deleteByUser_Id(Long userId);
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM CourseDifficultyFeedback cdf WHERE cdf.user.id = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
 
-    void deleteByHikingRecord_IdIn(List<Long> hikingRecordIds);
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM CourseDifficultyFeedback cdf WHERE cdf.hikingRecord.id IN :hikingRecordIds")
+    void deleteByHikingRecordIdIn(@Param("hikingRecordIds") List<Long> hikingRecordIds);
 }
