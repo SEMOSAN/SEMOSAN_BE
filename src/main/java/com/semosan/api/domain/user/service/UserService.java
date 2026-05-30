@@ -2,6 +2,7 @@ package com.semosan.api.domain.user.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.hiking.repository.CourseDifficultyFeedbackRepository;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
 import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
@@ -38,6 +39,7 @@ public class UserService {
     private final ReviewRepository reviewRepository;
     private final HikingMemberRepository hikingMemberRepository;
     private final HikingRecordRepository hikingRecordRepository;
+    private final CourseDifficultyFeedbackRepository courseDifficultyFeedbackRepository;
     private final NotificationRepository notificationRepository;
     private final DefaultNicknameGenerator defaultNicknameGenerator;
     private final NicknamePolicy nicknamePolicy;
@@ -147,9 +149,11 @@ public class UserService {
         mountainLikeRepository.deleteByUser_Id(userId);
         courseLikeRepository.deleteByUser_Id(userId);
         reviewRepository.deleteByUser_Id(userId);
+        courseDifficultyFeedbackRepository.deleteByUser_Id(userId);
         List<Long> recordIdsToDelete = hikingRecordRepository.findRecordIdsOnlyParticipatedByUser(userId);
         hikingMemberRepository.deleteByUser_Id(userId);
         if (!recordIdsToDelete.isEmpty()) {
+            courseDifficultyFeedbackRepository.deleteByHikingRecord_IdIn(recordIdsToDelete);
             hikingRecordRepository.deleteAllByIdInBatch(recordIdsToDelete);
         }
         notificationRepository.deleteAllByUserId(userId);

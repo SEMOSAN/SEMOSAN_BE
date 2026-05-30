@@ -1,5 +1,6 @@
 package com.semosan.api.domain.user.service;
 
+import com.semosan.api.domain.hiking.repository.CourseDifficultyFeedbackRepository;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
 import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
@@ -17,6 +18,7 @@ import com.semosan.api.domain.user.repository.UserOnboardingRepository;
 import com.semosan.api.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,6 +29,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -56,6 +59,9 @@ class UserServiceTest {
 
     @Mock
     private HikingRecordRepository hikingRecordRepository;
+
+    @Mock
+    private CourseDifficultyFeedbackRepository courseDifficultyFeedbackRepository;
 
     @Mock
     private NotificationRepository notificationRepository;
@@ -173,8 +179,10 @@ class UserServiceTest {
 
         verify(mountainLikeRepository).deleteByUser_Id(1L);
         verify(reviewRepository).deleteByUser_Id(1L);
+        verify(courseDifficultyFeedbackRepository).deleteByUser_Id(1L);
         verify(hikingRecordRepository).findRecordIdsOnlyParticipatedByUser(1L);
         verify(hikingMemberRepository).deleteByUser_Id(1L);
+        verify(courseDifficultyFeedbackRepository).deleteByHikingRecord_IdIn(List.of(10L, 11L));
         verify(hikingRecordRepository).deleteAllByIdInBatch(List.of(10L, 11L));
         verify(notificationRepository).deleteAllByUserId(1L);
         verify(userOnboardingRepository).deleteByUser_Id(1L);
@@ -187,5 +195,9 @@ class UserServiceTest {
         assertThat(user.getNickname()).isNull();
         assertThat(user.getOauthId()).isEqualTo("WITHDRAWN:1:TEST");
         assertThat(user.getOnboardingStatus()).isEqualTo(OnboardingStatus.INCOMPLETE);
+
+        InOrder deleteOrder = inOrder(courseDifficultyFeedbackRepository, hikingRecordRepository);
+        deleteOrder.verify(courseDifficultyFeedbackRepository).deleteByHikingRecord_IdIn(List.of(10L, 11L));
+        deleteOrder.verify(hikingRecordRepository).deleteAllByIdInBatch(List.of(10L, 11L));
     }
 }
