@@ -197,6 +197,8 @@ class UserServiceTest {
         assertThat(user.getOnboardingStatus()).isEqualTo(OnboardingStatus.INCOMPLETE);
 
         InOrder deleteOrder = inOrder(courseDifficultyFeedbackRepository, hikingRecordRepository);
+        deleteOrder.verify(courseDifficultyFeedbackRepository).deleteByUser_Id(1L);
+        deleteOrder.verify(hikingRecordRepository).findRecordIdsOnlyParticipatedByUser(1L);
         deleteOrder.verify(courseDifficultyFeedbackRepository).deleteByHikingRecord_IdIn(List.of(10L, 11L));
         deleteOrder.verify(hikingRecordRepository).deleteAllByIdInBatch(List.of(10L, 11L));
     }
