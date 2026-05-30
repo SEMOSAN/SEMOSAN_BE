@@ -3,8 +3,8 @@ package com.semosan.api.domain.hiking.dto.response;
 import com.semosan.api.domain.hiking.repository.projection.UserHikingMountainRecordProjection;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public record GetUserHikingMountainRecordResponse(
         Long mountainId,
@@ -26,15 +26,8 @@ public record GetUserHikingMountainRecordResponse(
     }
 
     private static List<String> buildImageUrls(String imageUrl1, String imageUrl2) {
-        List<String> imageUrls = new ArrayList<>(2);
-        addIfPresent(imageUrls, imageUrl1);
-        addIfPresent(imageUrls, imageUrl2);
-        return imageUrls;
-    }
-
-    private static void addIfPresent(List<String> imageUrls, String imageUrl) {
-        if (imageUrl != null && !imageUrl.isBlank()) {
-            imageUrls.add(imageUrl);
-        }
+        return Stream.of(imageUrl1, imageUrl2)
+                .filter(imageUrl -> imageUrl != null && !imageUrl.isBlank())
+                .toList();
     }
 }
