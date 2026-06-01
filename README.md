@@ -10,9 +10,6 @@
 
 <br />
 
-세모산 앱의 인증, 산/코스 조회, 실시간 GPS 트래킹, 등산 기록, 세모피드, 커뮤니티 기능을 제공하는 Spring Boot 백엔드 서버입니다.
-
-
 ## Architecture
 
 ```mermaid
