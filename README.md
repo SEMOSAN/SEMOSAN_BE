@@ -23,7 +23,7 @@ flowchart LR
   API --> KAKAO[Kakao OAuth]
   API --> FCM[Firebase FCM]
 
-  API --> ACTUATOR[Actuator + Prometheus]
+  PROM[Prometheus] -->|Scrape /actuator/prometheus| API
 ```
 
 <br />
