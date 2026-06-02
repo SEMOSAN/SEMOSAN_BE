@@ -42,7 +42,7 @@ public class FreePostReportService {
         User reporter = findReporterOrThrow(reporterId);
         FreePost post = findPostOrThrow(postId);
 
-        if (post.getAuthor().getId().equals(reporterId)) {
+        if (post.isOwnedBy(reporterId)) {
             throw new GeneralException(ErrorStatus.FREE_POST_REPORT_SELF_NOT_ALLOWED);
         }
         if (freePostReportRepository.existsByReporter_IdAndPost_Id(reporterId, postId)) {

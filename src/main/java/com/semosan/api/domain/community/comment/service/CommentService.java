@@ -87,7 +87,7 @@ public class CommentService {
     @Transactional
     public void delete(Long commentId, Long requesterId) {
         Comment comment = findActiveCommentOrThrow(commentId);
-        if (!comment.getAuthor().getId().equals(requesterId)) {
+        if (!comment.isOwnedBy(requesterId)) {
             throw new GeneralException(ErrorStatus.COMMENT_FORBIDDEN);
         }
         comment.softDelete();

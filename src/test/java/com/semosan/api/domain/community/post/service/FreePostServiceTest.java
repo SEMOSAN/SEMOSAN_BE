@@ -112,6 +112,32 @@ class FreePostServiceTest {
         verify(postImageRepository, never()).findByPostOrderBySortOrderAsc(post);
     }
 
+    @Test
+    void deleteSoftDeletesWhenRequesterOwnsPost() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+
+        when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
+
+        freePostService.delete(10L, 2L);
+
+        assertThat(post.isDeleted()).isTrue();
+    }
+
+    @Test
+    void deleteThrowsWhenRequesterDoesNotOwnPost() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+
+        when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
+
+        assertThatThrownBy(() -> freePostService.delete(10L, 3L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_FORBIDDEN);
+        assertThat(post.isDeleted()).isFalse();
+    }
+
     private User user(Long id, String oauthId) {
         User user = User.createTestUser(oauthId, DeviceType.IOS);
         ReflectionTestUtils.setField(user, "id", id);

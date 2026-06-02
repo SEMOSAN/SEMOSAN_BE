@@ -72,4 +72,8 @@ public class Comment extends BaseEntity {
     public boolean isReply() {
         return this.parent != null;
     }
+
+    public boolean isOwnedBy(Long userId) {
+        return author != null && userId != null && userId.equals(author.getId());
+    }
 }
