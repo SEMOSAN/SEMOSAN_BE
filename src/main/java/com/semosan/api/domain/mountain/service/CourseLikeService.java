@@ -40,13 +40,13 @@ public class CourseLikeService {
                     courseLikeRepository.delete(existing);
                     return false;
                 })
-                .orElseGet(() -> createCourseLike(user, course, userId, courseId));
+                .orElseGet(() -> createCourseLike(user, course));
     }
 
-    private boolean createCourseLike(User user, Course course, Long userId, Long courseId) {
+    private boolean createCourseLike(User user, Course course) {
         return LikeConflictHandler.handleConcurrentCreate(
                 () -> courseLikeRepository.save(CourseLike.create(user, course)),
-                () -> log.warn("CourseLike 동시 요청 감지: courseId={}, userId={}", courseId, userId)
+                () -> log.warn("CourseLike 동시 요청 감지: courseId={}, userId={}", course.getId(), user.getId())
         );
     }
 
