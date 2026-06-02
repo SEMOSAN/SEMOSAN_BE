@@ -2,6 +2,7 @@ package com.semosan.api.domain.mountain.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.common.util.LikeConflictHandler;
 import com.semosan.api.domain.mountain.dto.response.CourseLikeToggleResponse;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.CourseLike;
@@ -43,13 +44,10 @@ public class CourseLikeService {
     }
 
     private boolean createCourseLike(User user, Course course, Long userId, Long courseId) {
-        try {
-            courseLikeRepository.save(CourseLike.create(user, course));
-            return true;
-        } catch (DataIntegrityViolationException e) {
-            log.warn("CourseLike 동시 요청 감지: courseId={}, userId={}", courseId, userId);
-            return true;
-        }
+        return LikeConflictHandler.handleConcurrentCreate(
+                () -> courseLikeRepository.save(CourseLike.create(user, course)),
+                () -> log.warn("CourseLike 동시 요청 감지: courseId={}, userId={}", courseId, userId)
+        );
     }
 
     private Course findCourseById(Long courseId) {

@@ -2,6 +2,7 @@ package com.semosan.api.domain.community.like.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.common.util.LikeConflictHandler;
 import com.semosan.api.domain.community.like.dto.PostLikeToggleResponse;
 import com.semosan.api.domain.community.like.entity.PostLike;
 import com.semosan.api.domain.community.like.repository.PostLikeRepository;
@@ -42,14 +43,10 @@ public class PostLikeService {
             return false;
         }
 
-        try {
+        return LikeConflictHandler.handleConcurrentCreate(() -> {
             postLikeRepository.save(PostLike.create(post, user));
             communityNotificationService.sendPostLikeNotification(post, user);
-            return true;
-        } catch (DataIntegrityViolationException e) {
-            log.warn("PostLike 동시 요청 감지: postId={}, userId={}", postId, userId);
-            return true;
-        }
+        }, () -> log.warn("PostLike 동시 요청 감지: postId={}, userId={}", postId, userId));
     }
 
     public long count(Long postId) {
