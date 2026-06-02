@@ -2,16 +2,16 @@ package com.semosan.api.common.exception;
 
 import org.hibernate.exception.ConstraintViolationException;
 
+import java.util.regex.Pattern;
+
 public final class ConstraintViolationUtils {
 
     private ConstraintViolationUtils() {}
 
-    /**
-     * 예외 체인 전체를 탐색해 특정 DB 제약 조건 이름이 원인인지 확인한다.
-     * Hibernate ConstraintViolationException의 constraintName과 메시지 문자열을 모두 검사해
-     * 드라이버마다 다른 예외 래핑 방식에 대응한다.
-     */
     public static boolean isViolation(Throwable exception, String constraintName) {
+        Pattern constraintNamePattern = Pattern.compile(
+                "(?<![A-Za-z0-9_])" + Pattern.quote(constraintName) + "(?![A-Za-z0-9_])"
+        );
         Throwable current = exception;
         while (current != null) {
             if (current instanceof ConstraintViolationException constraintViolation
@@ -19,7 +19,8 @@ public final class ConstraintViolationUtils {
                 return true;
             }
             String message = current.getMessage();
-            if (message != null && message.contains(constraintName)) {
+            // 드라이버마다 다른 예외 래핑에 대응하되, 다른 제약명 일부와 겹치는 오탐은 막는다.
+            if (message != null && constraintNamePattern.matcher(message).find()) {
                 return true;
             }
             current = current.getCause();

@@ -3,6 +3,7 @@ package com.semosan.api.domain.community.post.service;
 import com.semosan.api.common.alert.DiscordAlertClient;
 import com.semosan.api.common.alert.dto.DiscordEmbed;
 import com.semosan.api.common.alert.dto.DiscordMessage;
+import com.semosan.api.common.exception.ConstraintViolationUtils;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.post.entity.FreePost;
@@ -13,7 +14,6 @@ import com.semosan.api.domain.community.post.repository.FreePostRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,7 +61,7 @@ public class FreePostReportService {
             });
             return saved;
         } catch (DataIntegrityViolationException e) {
-            if (isUniqueViolation(e)) {
+            if (ConstraintViolationUtils.isViolation(e, REPORT_UNIQUE_CONSTRAINT)) {
                 throw new GeneralException(ErrorStatus.FREE_POST_REPORT_ALREADY_EXISTS);
             }
             throw e;
@@ -91,22 +91,6 @@ public class FreePostReportService {
                 "자유게시판 신고 접수",
                 List.of(new DiscordEmbed("신고 상세", content, DISCORD_COLOR))
         );
-    }
-
-    private boolean isUniqueViolation(Throwable exception) {
-        Throwable current = exception;
-        while (current != null) {
-            if (current instanceof ConstraintViolationException constraintViolation
-                    && REPORT_UNIQUE_CONSTRAINT.equals(constraintViolation.getConstraintName())) {
-                return true;
-            }
-            String message = current.getMessage();
-            if (message != null && message.contains(REPORT_UNIQUE_CONSTRAINT)) {
-                return true;
-            }
-            current = current.getCause();
-        }
-        return false;
     }
 
     private User findReporterOrThrow(Long reporterId) {
