@@ -16,11 +16,11 @@ import com.semosan.api.domain.tracking.entity.TrackingSession;
 import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
 import com.semosan.api.domain.tracking.event.TrackingSessionTerminatedEvent;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
+import com.semosan.api.common.exception.ConstraintViolationUtils;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -178,26 +178,11 @@ public class TrackingSessionService {
         try {
             return trackingSessionRepository.save(session);
         } catch (DataIntegrityViolationException e) {
-            if (isActiveSessionUniqueViolation(e)) {
+            // 동시 요청으로 유니크 제약 위반 시 이미 진행 중인 세션 존재 에러로 변환
+            if (ConstraintViolationUtils.isViolation(e, ACTIVE_SESSION_UNIQUE_INDEX)) {
                 throw new GeneralException(ErrorStatus.TRACKING_SESSION_ALREADY_IN_PROGRESS);
             }
             throw e;
         }
-    }
-
-    private boolean isActiveSessionUniqueViolation(Throwable exception) {
-        Throwable current = exception;
-        while (current != null) {
-            if (current instanceof ConstraintViolationException constraintViolation
-                    && ACTIVE_SESSION_UNIQUE_INDEX.equals(constraintViolation.getConstraintName())) {
-                return true;
-            }
-            String message = current.getMessage();
-            if (message != null && message.contains(ACTIVE_SESSION_UNIQUE_INDEX)) {
-                return true;
-            }
-            current = current.getCause();
-        }
-        return false;
     }
 }
