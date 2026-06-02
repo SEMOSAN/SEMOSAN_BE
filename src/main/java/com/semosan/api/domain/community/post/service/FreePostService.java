@@ -12,7 +12,7 @@ import com.semosan.api.domain.community.post.repository.FreePostRepository;
 import com.semosan.api.domain.community.post.repository.PostImageRepository;
 import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.entity.User;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -34,7 +34,7 @@ public class FreePostService {
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
     private final UserBlockRepository userBlockRepository;
-    private final UserRepository userRepository;
+    private final UserReader userReader;
 
     @Transactional
     public FreePostDetailResponse create(
@@ -47,8 +47,7 @@ public class FreePostService {
         if (content == null || content.isBlank()) {
             throw new GeneralException(ErrorStatus.POST_CONTENT_REQUIRED);
         }
-        User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
+        User author = userReader.findActiveUserById(authorId);
 
         FreePost post = FreePost.create(author, title, content);
         freePostRepository.save(post);
@@ -71,8 +70,7 @@ public class FreePostService {
     }
 
     public Page<FreePostListResponse> getMyList(Long authorId, Pageable pageable) {
-        User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
+        User author = userReader.findActiveUserById(authorId);
         return enrichWithCounts(freePostRepository.findByAuthorAndDeletedFalse(author, pageable));
     }
 

@@ -8,7 +8,7 @@ import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.repository.UserBlockRepository;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,7 +34,7 @@ class CommentServiceTest {
     private PostRepository postRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserReader userReader;
 
     @Mock
     private UserBlockRepository userBlockRepository;
@@ -52,7 +52,7 @@ class CommentServiceTest {
         FreePost post = freePost(10L, postAuthor, "제목", "본문");
 
         when(postRepository.findById(10L)).thenReturn(Optional.of(post));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(commentAuthor));
+        when(userReader.findActiveUserById(2L)).thenReturn(commentAuthor);
         when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
             Comment comment = invocation.getArgument(0);
             ReflectionTestUtils.setField(comment, "id", 100L);
@@ -75,8 +75,8 @@ class CommentServiceTest {
         Comment parent = comment(100L, post, parentAuthor, "부모 댓글");
 
         when(postRepository.findById(10L)).thenReturn(Optional.of(post));
-        when(userRepository.findById(3L)).thenReturn(Optional.of(replyAuthor));
-        when(userRepository.findById(4L)).thenReturn(Optional.of(mentionedUser));
+        when(userReader.findActiveUserById(3L)).thenReturn(replyAuthor);
+        when(userReader.findActiveUserById(4L)).thenReturn(mentionedUser);
         when(commentRepository.findByIdAndDeletedFalse(100L)).thenReturn(Optional.of(parent));
         when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
             Comment comment = invocation.getArgument(0);

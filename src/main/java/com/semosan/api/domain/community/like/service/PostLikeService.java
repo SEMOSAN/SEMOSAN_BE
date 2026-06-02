@@ -9,7 +9,7 @@ import com.semosan.api.domain.community.notification.service.CommunityNotificati
 import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -26,7 +26,7 @@ public class PostLikeService {
 
     private final PostLikeRepository postLikeRepository;
     private final PostRepository postRepository;
-    private final UserRepository userRepository;
+    private final UserReader userReader;
     private final CommunityNotificationService communityNotificationService;
 
     /**
@@ -76,7 +76,6 @@ public class PostLikeService {
     }
 
     private User findUserOrThrow(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
+        return userReader.findActiveUserById(userId);
     }
 }

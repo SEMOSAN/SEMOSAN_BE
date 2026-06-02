@@ -8,7 +8,7 @@ import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,7 +36,7 @@ class PostLikeServiceTest {
     private PostRepository postRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserReader userReader;
 
     @Mock
     private CommunityNotificationService communityNotificationService;
@@ -51,7 +51,7 @@ class PostLikeServiceTest {
         FreePost post = freePost(10L, postAuthor, "제목", "본문");
 
         when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(liker));
+        when(userReader.findActiveUserById(2L)).thenReturn(liker);
         when(postLikeRepository.findByPostAndUser(post, liker)).thenReturn(Optional.empty());
         when(postLikeRepository.countByPost(post)).thenReturn(1L);
 
@@ -70,7 +70,7 @@ class PostLikeServiceTest {
         PostLike existing = PostLike.create(post, liker);
 
         when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(liker));
+        when(userReader.findActiveUserById(2L)).thenReturn(liker);
         when(postLikeRepository.findByPostAndUser(post, liker)).thenReturn(Optional.of(existing));
         when(postLikeRepository.countByPost(post)).thenReturn(0L);
 
@@ -88,7 +88,7 @@ class PostLikeServiceTest {
         FreePost post = freePost(10L, postAuthor, "제목", "본문");
 
         when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(liker));
+        when(userReader.findActiveUserById(2L)).thenReturn(liker);
         when(postLikeRepository.findByPostAndUser(post, liker)).thenReturn(Optional.empty());
         when(postLikeRepository.save(any(PostLike.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
         when(postLikeRepository.countByPost(post)).thenReturn(1L);

@@ -8,7 +8,7 @@ import com.semosan.api.domain.hiking.entity.HikingRecord;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
 import com.semosan.api.domain.user.entity.User;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,12 +23,11 @@ public class RecordPostService {
     private final RecordPostRepository recordPostRepository;
     private final HikingRecordRepository hikingRecordRepository;
     private final HikingMemberRepository hikingMemberRepository;
-    private final UserRepository userRepository;
+    private final UserReader userReader;
 
     @Transactional
     public RecordPost create(Long authorId, Long hikingRecordId, String content) {
-        User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
+        User author = userReader.findActiveUserById(authorId);
         HikingRecord hikingRecord = hikingRecordRepository.findById(hikingRecordId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.HIKING_RECORD_NOT_FOUND));
 
@@ -45,8 +44,7 @@ public class RecordPostService {
     }
 
     public Page<RecordPost> getMyList(Long authorId, Pageable pageable) {
-        User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
+        User author = userReader.findActiveUserById(authorId);
         return recordPostRepository.findByAuthorAndDeletedFalse(author, pageable);
     }
 

@@ -10,7 +10,7 @@ import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.entity.User;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,7 +28,7 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
-    private final UserRepository userRepository;
+    private final UserReader userReader;
     private final UserBlockRepository userBlockRepository;
     private final CommunityNotificationService communityNotificationService;
 
@@ -99,8 +99,7 @@ public class CommentService {
     }
 
     private User findUserOrThrow(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
+        return userReader.findActiveUserById(userId);
     }
 
     private Comment findActiveCommentOrThrow(Long commentId) {
