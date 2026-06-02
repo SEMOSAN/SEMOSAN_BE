@@ -1,5 +1,6 @@
 package com.semosan.api.domain.user.service;
 
+import com.semosan.api.common.exception.ConstraintViolationUtils;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.post.entity.FreePost;
@@ -9,7 +10,6 @@ import com.semosan.api.domain.user.entity.UserBlock;
 import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,7 +40,8 @@ public class UserBlockService {
         try {
             userBlockRepository.saveAndFlush(UserBlock.create(blocker, blockedUser));
         } catch (DataIntegrityViolationException e) {
-            if (!isUniqueViolation(e)) {
+            // 동시 요청으로 유니크 제약 위반 시 멱등 처리 (이미 차단된 상태로 간주)
+            if (!ConstraintViolationUtils.isViolation(e, BLOCK_UNIQUE_CONSTRAINT)) {
                 throw e;
             }
         }
@@ -51,22 +52,6 @@ public class UserBlockService {
         FreePost post = freePostRepository.findByIdAndDeletedFalse(postId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.POST_NOT_FOUND));
         block(blockerId, post.getAuthor().getId());
-    }
-
-    private boolean isUniqueViolation(Throwable exception) {
-        Throwable current = exception;
-        while (current != null) {
-            if (current instanceof ConstraintViolationException constraintViolation
-                    && BLOCK_UNIQUE_CONSTRAINT.equals(constraintViolation.getConstraintName())) {
-                return true;
-            }
-            String message = current.getMessage();
-            if (message != null && message.contains(BLOCK_UNIQUE_CONSTRAINT)) {
-                return true;
-            }
-            current = current.getCause();
-        }
-        return false;
     }
 
     private User findActiveUserOrThrow(Long userId) {
