@@ -10,7 +10,7 @@ import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.entity.User;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,14 +28,14 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
-    private final UserRepository userRepository;
+    private final UserReader userReader;
     private final UserBlockRepository userBlockRepository;
     private final CommunityNotificationService communityNotificationService;
 
     @Transactional
     public Comment create(Long postId, Long authorId, String content) {
         Post post = findPostOrThrow(postId);
-        User author = findUserOrThrow(authorId);
+        User author = userReader.findActiveUserById(authorId);
 
         Comment comment = Comment.create(post, author, content);
         Comment savedComment = commentRepository.save(comment);
@@ -46,7 +46,7 @@ public class CommentService {
     @Transactional
     public Comment reply(Long postId, Long authorId, Long parentId, Long mentionedUserId, String content) {
         Post post = findPostOrThrow(postId);
-        User author = findUserOrThrow(authorId);
+        User author = userReader.findActiveUserById(authorId);
         Comment requestedParent = findActiveCommentOrThrow(parentId);
 
         if (!requestedParent.getPost().getId().equals(postId)) {
@@ -56,7 +56,7 @@ public class CommentService {
         // 대댓글에 답글을 달면 트리 깊이를 2로 유지하기 위해 1뎁스 댓글로 정규화
         Comment actualParent = requestedParent.isReply() ? requestedParent.getParent() : requestedParent;
 
-        User mentionedUser = mentionedUserId != null ? findUserOrThrow(mentionedUserId) : null;
+        User mentionedUser = mentionedUserId != null ? userReader.findActiveUserById(mentionedUserId) : null;
 
         Comment reply = Comment.reply(post, author, actualParent, mentionedUser, content);
         Comment savedReply = commentRepository.save(reply);
@@ -96,11 +96,6 @@ public class CommentService {
     private Post findPostOrThrow(Long postId) {
         return postRepository.findById(postId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.POST_NOT_FOUND));
-    }
-
-    private User findUserOrThrow(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
     }
 
     private Comment findActiveCommentOrThrow(Long commentId) {

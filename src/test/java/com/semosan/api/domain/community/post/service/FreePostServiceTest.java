@@ -13,7 +13,7 @@ import com.semosan.api.domain.community.post.repository.PostImageRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.repository.UserBlockRepository;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -55,7 +55,7 @@ class FreePostServiceTest {
     private UserBlockRepository userBlockRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserReader userReader;
 
     @InjectMocks
     private FreePostService freePostService;
