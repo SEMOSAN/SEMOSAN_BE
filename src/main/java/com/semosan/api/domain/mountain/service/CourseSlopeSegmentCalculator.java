@@ -43,7 +43,8 @@ public class CourseSlopeSegmentCalculator {
                 return List.of();
             }
             List<Double> altitudes = objectMapper.readValue(altitudesJson, new TypeReference<>() {});
-            if (altitudes.size() != coords.size()) {
+            // altitudesJson 이 "null" (문자열) 인 경우 readValue 가 null 을 반환한다. 명시적으로 가드한다.
+            if (altitudes == null || altitudes.size() != coords.size()) {
                 return List.of();
             }
 
