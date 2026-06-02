@@ -44,4 +44,8 @@ public abstract class Post extends BaseEntity {
     public void softDelete() {
         this.deleted = true;
     }
+
+    public boolean isOwnedBy(Long userId) {
+        return author != null && userId != null && userId.equals(author.getId());
+    }
 }

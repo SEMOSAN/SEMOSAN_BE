@@ -1,5 +1,7 @@
 package com.semosan.api.domain.community.comment.service;
 
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.comment.entity.Comment;
 import com.semosan.api.domain.community.comment.repository.CommentRepository;
 import com.semosan.api.domain.community.notification.service.CommunityNotificationService;
@@ -20,6 +22,7 @@ import java.lang.reflect.Constructor;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -89,6 +92,36 @@ class CommentServiceTest {
         assertThat(result.getId()).isEqualTo(101L);
         verify(communityNotificationService)
                 .sendReplyNotification(post, replyAuthor, parent, mentionedUser, result);
+    }
+
+    @Test
+    void deleteSoftDeletesWhenRequesterOwnsComment() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User commentAuthor = user(2L, "comment-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        Comment comment = comment(100L, post, commentAuthor, "댓글");
+
+        when(commentRepository.findByIdAndDeletedFalse(100L)).thenReturn(Optional.of(comment));
+
+        commentService.delete(100L, 2L);
+
+        assertThat(comment.isDeleted()).isTrue();
+    }
+
+    @Test
+    void deleteThrowsWhenRequesterDoesNotOwnComment() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User commentAuthor = user(2L, "comment-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        Comment comment = comment(100L, post, commentAuthor, "댓글");
+
+        when(commentRepository.findByIdAndDeletedFalse(100L)).thenReturn(Optional.of(comment));
+
+        assertThatThrownBy(() -> commentService.delete(100L, 3L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.COMMENT_FORBIDDEN);
+        assertThat(comment.isDeleted()).isFalse();
     }
 
     private User user(Long id, String nickname) {

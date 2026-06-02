@@ -58,7 +58,7 @@ public class RecordPostService {
     @Transactional
     public void delete(Long postId, Long requesterId) {
         RecordPost post = findActivePostOrThrow(postId);
-        if (!post.getAuthor().getId().equals(requesterId)) {
+        if (!post.isOwnedBy(requesterId)) {
             throw new GeneralException(ErrorStatus.POST_FORBIDDEN);
         }
         post.softDelete();
