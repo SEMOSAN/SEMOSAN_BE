@@ -12,10 +12,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,6 +30,9 @@ class CourseServiceTest {
     private CourseLikeRepository courseLikeRepository;
 
     @Mock
+    private CourseSlopeSegmentCalculator slopeSegmentCalculator;
+
+    @Mock
     private CourseDetailProjection projection;
 
     @InjectMocks
@@ -37,6 +42,7 @@ class CourseServiceTest {
     void getCourseDetailIncludesLikedByMe() {
         when(courseRepository.findCourseDetailById(10L)).thenReturn(Optional.of(projection));
         when(courseLikeRepository.existsByUser_IdAndCourse_Id(1L, 10L)).thenReturn(true);
+        when(slopeSegmentCalculator.calculate(any(), any())).thenReturn(List.of());
         stubProjection();
 
         CourseDetailResponse response = courseService.getCourseDetail(1L, 10L);
