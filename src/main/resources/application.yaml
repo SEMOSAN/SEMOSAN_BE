@@ -79,6 +79,9 @@ management:
       export:
         enabled: true
 
+weather:
+  api-key: ${WEATHER_API_KEY}
+
 discord:
   alert:
     enabled: ${DISCORD_ALERT_ENABLED}

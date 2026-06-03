@@ -77,6 +77,9 @@ public class HikingRecord extends BaseEntity {
     @Column(name = "ended_at")
     private LocalDateTime endedAt;
 
+    @Column(name = "temperature")
+    private Double temperature;
+
     @Column(name = "clive_image_url", length = 500)
     private String cliveImageUrl;
 
@@ -113,6 +116,10 @@ public class HikingRecord extends BaseEntity {
                 .startedAt(session.getStartedAt())
                 .endedAt(session.getEndedAt())
                 .build();
+    }
+
+    public void updateTemperature(Double temperature) {
+        this.temperature = temperature;
     }
 
     private static int computeDurationSeconds(TrackingSession session) {

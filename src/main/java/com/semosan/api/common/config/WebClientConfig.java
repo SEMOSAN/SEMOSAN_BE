@@ -21,4 +21,11 @@ public class WebClientConfig {
                 .build();
     }
 
+    @Bean
+    public WebClient weatherApiWebClient() {
+        return WebClient.builder()
+                .baseUrl("https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0")
+                .build();
+    }
+
 }

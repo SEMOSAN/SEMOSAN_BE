@@ -19,6 +19,7 @@ import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import com.semosan.api.common.exception.ConstraintViolationUtils;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
+import com.semosan.api.common.weather.WeatherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -45,6 +46,7 @@ public class TrackingSessionService {
     private final HikingMemberRepository hikingMemberRepository;
     private final TrackingMilestoneTriggerService milestoneTriggerService;
     private final ApplicationEventPublisher eventPublisher;
+    private final WeatherService weatherService;
 
     /**
      * 세션 생성. 유저당 진행 중 세션은 1개만 허용한다.
@@ -128,6 +130,12 @@ public class TrackingSessionService {
                 stats.ascentMeters(),
                 stats.descentMeters()
         );
+        Mountain mountain = session.getMountain();
+        if (mountain.getLatitude() != null && mountain.getLongitude() != null) {
+            weatherService.getTemperature(mountain.getLatitude(), mountain.getLongitude())
+                    .ifPresent(record::updateTemperature);
+        }
+
         HikingRecord savedRecord = hikingRecordRepository.save(record);
 
         HikingMember member = HikingMember.create(savedRecord, session.getUser());
