@@ -78,14 +78,7 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
                         m.latitude AS latitude,
                         m.longitude AS longitude,
                         COUNT(hm.user_id) AS visitCount,
-                        (
-                            SELECT COALESCE(hr2.photo_report_image_url, hr2.clive_image_url)
-                            FROM hiking_records hr2
-                            JOIN hiking_members hm2 ON hm2.hiking_record_id = hr2.id
-                            WHERE hr2.mountain_id = m.id AND hm2.user_id = :userId
-                            ORDER BY hr2.created_at DESC
-                            LIMIT 1
-                        ) AS imageUrl
+                        m.image_urls->>0 AS imageUrl
                     FROM mountains m
                     LEFT JOIN hiking_records hr ON hr.mountain_id = m.id
                     LEFT JOIN hiking_members hm ON hm.hiking_record_id = hr.id AND hm.user_id = :userId
