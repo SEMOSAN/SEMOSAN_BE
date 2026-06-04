@@ -89,8 +89,8 @@ public class TrackingMilestoneTriggerService {
             }
         }
 
-        // 코스 모드(마일스톤 4개)일 때만 정상(=코스 절반 지점) 알림 평가.
-        // 마지막 마일스톤(4/4)이 곧 코스 distance 이므로 그걸 courseDistance 로 사용.
+        // 코스 모드(마일스톤 4개)일 때만 정상 알림 평가.
+        // 마지막 마일스톤(4/4)이 곧 정상 지점(= course.distance / 2, 임시 정책) 이라 그걸 summitMark 로 전달한다.
         if (milestones.size() == COURSE_MILESTONE_COUNT) {
             evaluateSummit(sessionId, userId, distanceTotal, milestones.get(milestones.size() - 1));
         }
@@ -149,36 +149,37 @@ public class TrackingMilestoneTriggerService {
     }
 
     /**
-     * 코스 거리 50% 지점 도달 시 1회 정상 알림을 발송한다.
-     *  - 자유 기록(session.course == null) 인 경우 정상 개념이 없으니 호출자에서 courseDistance=0 으로 넘기면 skip.
+     * 정상 도달 시 1회 정상 알림을 발송한다.
+     *  - 호출자({@link #evaluate})가 마지막 사진 마일스톤 거리(= 정상 지점) 을 그대로 summitMark 로 전달한다.
+     *    현재 정책상 정상 = course.distance / 2 이지만, 향후 정상 좌표가 식별되면 그 거리로 바꿔주기만 하면 된다.
+     *  - 자유 기록(session.course == null) 인 경우 정상 개념이 없어 호출자에서 summitMark=0 으로 넘기면 skip.
      *  - Redis SADD 의 반환값으로 idempotent — 두 인스턴스가 동시 호출해도 한 인스턴스만 발송.
      *  - WebSocket /topic/tracking/{sessionId}/summit + FCM 둘 다 발송.
      */
-    public void evaluateSummit(Long sessionId, Long userId, double distanceTotal, double courseDistance) {
-        if (courseDistance <= 0) {
+    public void evaluateSummit(Long sessionId, Long userId, double distanceTotal, double summitMark) {
+        if (summitMark <= 0) {
             return;
         }
-        double halfwayMark = courseDistance / 2.0;
-        if (distanceTotal < halfwayMark) {
+        if (distanceTotal < summitMark) {
             return;
         }
         String key = summitNotifiedKey(sessionId);
         Long added = redisTemplate.opsForSet().add(key, "1");
         if (added == null || added == 0L) {
             // 이미 다른 호출에서 보낸 상태 — silent skip.
-            // EXPIRE 도 함께 skip 해야 50% 통과 후 매 GPS 점마다 TTL 이 리셋되는 핫패스 부하를 막을 수 있다.
+            // EXPIRE 도 함께 skip 해야 정상 통과 후 매 GPS 점마다 TTL 이 리셋되는 핫패스 부하를 막을 수 있다.
             return;
         }
         redisTemplate.expire(key, TTL);
-        sendSummit(sessionId, userId, halfwayMark);
+        sendSummit(sessionId, userId, summitMark);
     }
 
-    private void sendSummit(Long sessionId, Long userId, double halfwayMark) {
+    private void sendSummit(Long sessionId, Long userId, double summitMark) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("halfwayMark", halfwayMark);
+        payload.put("summitMark", summitMark);
         payload.put("reachedAt", LocalDateTime.now().toString());
         messagingTemplate.convertAndSend(summitTopic(sessionId), payload);
-        log.info("Summit reached: sessionId={} userId={} halfwayMark={}m", sessionId, userId, (int) Math.round(halfwayMark));
+        log.info("Summit reached: sessionId={} userId={} summitMark={}m", sessionId, userId, (int) Math.round(summitMark));
 
         try {
             notificationService.send(

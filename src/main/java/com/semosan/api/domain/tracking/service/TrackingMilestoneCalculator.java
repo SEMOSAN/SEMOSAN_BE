@@ -9,7 +9,9 @@ import java.util.List;
 
 /**
  * 트래킹 세션의 사진 촬영 마일스톤 거리 리스트를 계산한다.
- *  - 코스 따라가기: course.distance(미터) 의 1/4, 2/4, 3/4, 4/4 지점 (총 4컷)
+ *  - 코스 따라가기: 정상까지(=course.distance/2, 임시 정책) 를 1/4, 2/4, 3/4, 4/4 로 등분한 지점 (총 4컷).
+ *    즉 코스 전체 distance 기준으로는 12.5% / 25% / 37.5% / 50% 지점에 해당.
+ *    4/4 가 정상 도달 시점이며 {@link TrackingMilestoneTriggerService#evaluateSummit} 와 같은 임계가 된다.
  *  - 자유 기록: 500m 간격, 정책상 최대 6컷 (500/1000/1500/2000/2500/3000m)
  *
  * 단위 정책: 입력/출력 모두 미터(m). distanceTotal(Haversine 누적, m) 과 비교될 값이라 단위 일치 필수.
@@ -31,9 +33,11 @@ public class TrackingMilestoneCalculator {
 
     private List<Double> courseMilestones(Course course) {
         double totalMeters = course.getDistance() == null ? 0.0 : course.getDistance();
+        // 정상 = 코스 절반(임시 정책). 사진 4컷을 정상까지 거리에 균등 분배한다.
+        double summitMeters = totalMeters / 2.0;
         List<Double> result = new ArrayList<>(COURSE_MILESTONE_COUNT);
         for (int i = 1; i <= COURSE_MILESTONE_COUNT; i++) {
-            result.add(totalMeters * i / COURSE_MILESTONE_COUNT);
+            result.add(summitMeters * i / COURSE_MILESTONE_COUNT);
         }
         return result;
     }
