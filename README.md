@@ -11,20 +11,8 @@
 <br />
 
 ## Architecture
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/c9cf8220-1034-4263-a38f-a9e8f211a579" />
 
-```mermaid
-flowchart LR
-  APP[React Native App] --> API[Spring Boot API]
-
-  API --> DB[(PostgreSQL + PostGIS)]
-  API --> REDIS[(Redis Stream)]
-  API --> MINIO[(MinIO)]
-
-  API --> KAKAO[Kakao OAuth]
-  API --> FCM[Firebase FCM]
-
-  PROM[Prometheus] -->|Scrape /actuator/prometheus| API
-```
 
 <br />
 
