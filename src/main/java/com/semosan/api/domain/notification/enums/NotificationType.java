@@ -38,25 +38,28 @@ public enum NotificationType {
 
     /**
      * 트래킹 중 거리 마일스톤 도달 시 사진 촬영 유도.
-     * 포그라운드 즉시 표시를 위해 FCM data-only 로 발송하고, 앱에서 로컬 알림을 생성한다.
+     * iOS 백그라운드/잠금화면/앱 종료 상태에서도 시스템이 즉시 배너를 표시하도록 mixed payload
+     * (notification 키 + data 키) 로 발송한다. 포그라운드 자동 배너 차단은 클라(앱) 의
+     * setForegroundNotificationPresentationOptions 에서 처리한다.
      */
     TRACKING_PHOTO_MILESTONE(
             "SEMOSAN",
             "{distance}m 돌파! 인증 사진을 남겨보세요!",
             Set.of("distance"),
-            true
+            false
     ),
 
     /**
      * 코스 거리 50% 도달 시 정상 인증 유도.
      * 진짜 정상 좌표가 식별 불가해 코스 절반 지점을 "정상" 근처로 간주하는 임시 정책.
-     * 포그라운드 즉시 표시를 위해 FCM data-only 로 발송하고, 앱에서 로컬 알림을 생성한다.
+     * iOS 백그라운드/잠금화면/앱 종료 상태에서도 시스템이 즉시 배너를 표시하도록 mixed payload
+     * (notification 키 + data 키) 로 발송한다.
      */
     TRACKING_SUMMIT_REACHED(
             "SEMOSAN",
             "정상에 도착했나요? 정상 인증하기!",
             Set.of(),
-            true
+            false
     );
 
     private final String titleTemplate;
