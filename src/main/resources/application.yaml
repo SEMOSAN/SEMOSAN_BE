@@ -46,6 +46,9 @@ test:
 firebase:
   service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH}
 
+fcm:
+  apns-environment: ${FCM_APNS_ENVIRONMENT:production}
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

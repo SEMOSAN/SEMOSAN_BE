@@ -7,6 +7,7 @@ import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -14,6 +15,9 @@ import java.util.Map;
 @Slf4j
 @Service
 public class FcmService {
+
+    @Value("${fcm.apns-environment:production}")
+    private String apnsEnvironment;
 
     public String sendMessage(
             String token,
@@ -33,9 +37,7 @@ public class FcmService {
             builder.setNotification(notification);
         }
 
-        if (dataOnly) {
-            builder.setApnsConfig(silentPushApnsConfig());
-        }
+        builder.setApnsConfig(dataOnly ? silentPushApnsConfig() : normalPushApnsConfig());
 
         if (data != null && !data.isEmpty()) {
             builder.putAllData(data);
@@ -46,8 +48,15 @@ public class FcmService {
         return response;
     }
 
+    private ApnsConfig normalPushApnsConfig() {
+        return ApnsConfig.builder()
+                .putHeader("apns-environment", apnsEnvironment)
+                .build();
+    }
+
     private ApnsConfig silentPushApnsConfig() {
         return ApnsConfig.builder()
+                .putHeader("apns-environment", apnsEnvironment)
                 .setAps(Aps.builder()
                         .setContentAvailable(true)
                         .build())
