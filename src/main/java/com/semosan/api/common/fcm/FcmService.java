@@ -2,6 +2,7 @@ package com.semosan.api.common.fcm;
 
 import com.google.firebase.messaging.ApnsConfig;
 import com.google.firebase.messaging.Aps;
+import com.google.firebase.messaging.ApsAlert;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
@@ -37,7 +38,7 @@ public class FcmService {
             builder.setNotification(notification);
         }
 
-        builder.setApnsConfig(dataOnly ? silentPushApnsConfig() : normalPushApnsConfig());
+        builder.setApnsConfig(dataOnly ? silentPushApnsConfig() : normalPushApnsConfig(title, body));
 
         if (data != null && !data.isEmpty()) {
             builder.putAllData(data);
@@ -48,9 +49,18 @@ public class FcmService {
         return response;
     }
 
-    private ApnsConfig normalPushApnsConfig() {
+    private ApnsConfig normalPushApnsConfig(String title, String body) {
         return ApnsConfig.builder()
                 .putHeader("apns-environment", apnsEnvironment)
+                .putHeader("apns-priority", "10")
+                .setAps(Aps.builder()
+                        .setAlert(ApsAlert.builder()
+                                .setTitle(title)
+                                .setBody(body)
+                                .build())
+                        .setSound("default")
+                        .setContentAvailable(true)
+                        .build())
                 .build();
     }
 
