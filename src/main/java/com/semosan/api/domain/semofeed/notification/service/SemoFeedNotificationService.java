@@ -28,7 +28,7 @@ public class SemoFeedNotificationService {
                         "actorId", reactor.getId(),
                         "actorName", reactor.displayName(),
                         "semoFeedId", semoFeed.getId(),
-                        "emojiType", emojiType.name()
+                        "emojiType", emojiType.getEmoji()
                 )
         );
     }
