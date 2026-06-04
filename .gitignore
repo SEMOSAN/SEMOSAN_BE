@@ -66,3 +66,4 @@ scripts/
 ## 로컬 개발 전용
 docker-compose.local.yml
 work/
+outputs/
