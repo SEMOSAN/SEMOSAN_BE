@@ -39,6 +39,7 @@ kakao:
 tracking:
   stream-key: ${TRACKING_STREAM_KEY}
   consumer-group: ${TRACKING_CONSUMER_GROUP}
+  stream-max-len: ${TRACKING_STREAM_MAX_LEN:100000}
 
 test:
   secret-key: ${TEST_SECRET_KEY}

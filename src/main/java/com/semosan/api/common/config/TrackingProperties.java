@@ -13,4 +13,5 @@ public class TrackingProperties {
 
     private String streamKey;
     private String consumerGroup;
+    private long streamMaxLen = 100_000;
 }
