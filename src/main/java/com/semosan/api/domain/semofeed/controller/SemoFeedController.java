@@ -12,7 +12,6 @@ import com.semosan.api.domain.semofeed.service.SemoFeedEmojiService;
 import com.semosan.api.domain.semofeed.service.SemoFeedService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
@@ -47,9 +46,6 @@ public class SemoFeedController implements SemoFeedControllerDocs {
             @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 100) Pageable pageable
     ) {
-        if (pageable.getPageSize() > 100) {
-            pageable = PageRequest.of(pageable.getPageNumber(), 100, pageable.getSort());
-        }
         PageResponse<SemoFeedResponse> response = PageResponse.from(semoFeedService.listPublic(pageable, userId));
         return ApiResponse.success(SuccessStatus.SEMOFEED_LIST_SUCCESS, response);
     }
