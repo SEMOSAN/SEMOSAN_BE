@@ -24,9 +24,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // 모바일 STOMP 클라이언트를 가정. SockJS 비활성. CORS 는 보안 정책에 맞춰 추후 제한.
         registry.addEndpoint("/ws/tracking")
-                .setAllowedOriginPatterns("*");
+                .setAllowedOriginPatterns("http://localhost:*", "https://lgenius.site");
     }
 
     @Override
