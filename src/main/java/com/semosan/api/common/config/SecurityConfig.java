@@ -84,24 +84,21 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8081", "https://lgenius.site"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
+        CorsConfiguration restConfig = new CorsConfiguration();
+        restConfig.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8081", "https://lgenius.site"));
+        restConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
+        restConfig.setAllowedHeaders(List.of("*"));
+        restConfig.setAllowCredentials(true);
 
-        // WebSocket(STOMP) 핸드셰이크는 다양한 origin(모바일/로컬 테스트 페이지 등)에서 들어옴.
-        // /ws/** 만 별도 정책으로 풀어준다.
-        // TODO: production 에서는 모바일 앱 origin 만 명시적으로 허용하도록 좁힐 것.
         CorsConfiguration wsConfig = new CorsConfiguration();
-        wsConfig.setAllowedOriginPatterns(List.of("*"));
+        wsConfig.setAllowedOriginPatterns(List.of("http://localhost:*", "https://lgenius.site"));
         wsConfig.setAllowedMethods(List.of("GET"));
         wsConfig.setAllowedHeaders(List.of("*"));
         wsConfig.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/ws/**", wsConfig);
-        source.registerCorsConfiguration("/**", config);
+        source.registerCorsConfiguration("/**", restConfig);
         return source;
     }
 
