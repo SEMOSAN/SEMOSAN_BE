@@ -7,7 +7,7 @@ import com.semosan.api.domain.semofeed.repository.SemoFeedEmojiRepository;
 import com.semosan.api.domain.semofeed.repository.SemoFeedRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,7 +19,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,7 +35,7 @@ class SemoFeedServiceTest {
     private SemoFeedEmojiRepository semoFeedEmojiRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserReader userReader;
 
     @InjectMocks
     private SemoFeedService semoFeedService;
@@ -45,7 +44,7 @@ class SemoFeedServiceTest {
     void createReturnsDefaultEmojiFields() {
         User user = user(1L, "author", "https://example.com/profile.png");
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(semoFeedRepository.save(any(SemoFeed.class))).thenAnswer(invocation -> {
             SemoFeed semoFeed = invocation.getArgument(0);
             ReflectionTestUtils.setField(semoFeed, "id", 10L);
