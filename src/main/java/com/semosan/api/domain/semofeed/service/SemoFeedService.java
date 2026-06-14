@@ -8,7 +8,7 @@ import com.semosan.api.domain.semofeed.enums.SemoFeedEmojiType;
 import com.semosan.api.domain.semofeed.repository.SemoFeedEmojiRepository;
 import com.semosan.api.domain.semofeed.repository.SemoFeedRepository;
 import com.semosan.api.domain.user.entity.User;
-import com.semosan.api.domain.user.repository.UserRepository;
+import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,12 +28,11 @@ public class SemoFeedService {
 
     private final SemoFeedRepository semoFeedRepository;
     private final SemoFeedEmojiRepository semoFeedEmojiRepository;
-    private final UserRepository userRepository;
+    private final UserReader userReader;
 
     @Transactional
     public SemoFeedResponse create(Long userId, String imageUrl) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
+        User user = userReader.findActiveUserById(userId);
         SemoFeed semoFeed = SemoFeed.create(user, imageUrl);
         return SemoFeedResponse.from(semoFeedRepository.save(semoFeed));
     }
