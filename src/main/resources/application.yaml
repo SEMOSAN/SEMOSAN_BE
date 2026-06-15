@@ -39,6 +39,9 @@ kakao:
   client-secret: ${KAKAO_CLIENT_SECRET}
   admin-key: ${KAKAO_ADMIN_KEY}
 
+apple:
+  client-id: ${APPLE_CLIENT_ID}
+
 tracking:
   stream-key: ${TRACKING_STREAM_KEY}
   consumer-group: ${TRACKING_CONSUMER_GROUP}
