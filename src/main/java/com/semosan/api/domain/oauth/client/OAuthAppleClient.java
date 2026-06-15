@@ -7,6 +7,7 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -30,6 +31,9 @@ public class OAuthAppleClient {
     private final WebClient appleApiWebClient;
     private final ObjectMapper objectMapper;
 
+    @Value("${apple.client-id}")
+    private String appleClientId;
+
     // identity token 검증 후 Claims 반환
     public Claims getAppleClaims(String identityToken) {
         List<Map<String, String>> keys = getApplePublicKeys();
@@ -46,6 +50,7 @@ public class OAuthAppleClient {
             return Jwts.parser()
                     .verifyWith(publicKey)
                     .requireIssuer(APPLE_ISSUER)
+                    .requireAudience(appleClientId)
                     .build()
                     .parseSignedClaims(identityToken)
                     .getPayload();
