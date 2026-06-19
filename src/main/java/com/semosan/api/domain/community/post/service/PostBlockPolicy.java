@@ -7,19 +7,13 @@ import com.semosan.api.domain.user.repository.UserBlockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 @Component
 @RequiredArgsConstructor
 public class PostBlockPolicy {
 
     private final UserBlockRepository userBlockRepository;
 
-    // 게시글 조회 시 차단한 작성자의 콘텐츠를 숨기는 공통 정책.
-    public List<Long> findBlockedAuthorIds(Long viewerId) {
-        return userBlockRepository.findBlockedUserIdsByBlocker_Id(viewerId);
-    }
-
+    // 게시글 상세 조회 시 차단한 작성자의 콘텐츠 접근을 막는 공통 정책.
     public void validateReadable(Long viewerId, Post post) {
         if (userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(viewerId, post.getAuthor().getId())) {
             throw new GeneralException(ErrorStatus.POST_AUTHOR_BLOCKED);

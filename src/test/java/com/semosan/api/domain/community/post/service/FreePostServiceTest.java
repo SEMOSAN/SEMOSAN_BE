@@ -65,8 +65,7 @@ class FreePostServiceTest {
         FreePost post = freePost(10L, author, "제목", "본문");
         Page<FreePost> page = new PageImpl<>(List.of(post), PageRequest.of(0, 10), 1);
 
-        when(postBlockPolicy.findBlockedAuthorIds(1L)).thenReturn(List.of(2L));
-        when(freePostRepository.findVisibleExcludingAuthors(List.of(2L), PageRequest.of(0, 10))).thenReturn(page);
+        when(freePostRepository.findVisibleByViewerId(1L, PageRequest.of(0, 10))).thenReturn(page);
         when(postLikeRepository.countByPostIdsGrouped(anyList())).thenReturn(List.<Object[]>of(new Object[]{10L, 3L}));
         when(commentRepository.countByPostIdsGrouped(anyList())).thenReturn(List.<Object[]>of(new Object[]{10L, 2L}));
         when(postImageRepository.findMainImagesByPostIds(anyList())).thenReturn(List.of());
@@ -75,8 +74,7 @@ class FreePostServiceTest {
         Page<FreePostListResponse> result = freePostService.getList(1L, PageRequest.of(0, 10));
 
         assertThat(result).hasSize(1);
-        verify(postBlockPolicy).findBlockedAuthorIds(1L);
-        verify(freePostRepository).findVisibleExcludingAuthors(eq(List.of(2L)), eq(PageRequest.of(0, 10)));
+        verify(freePostRepository).findVisibleByViewerId(eq(1L), eq(PageRequest.of(0, 10)));
     }
 
     @Test

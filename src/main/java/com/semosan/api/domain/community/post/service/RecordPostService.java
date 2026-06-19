@@ -41,11 +41,7 @@ public class RecordPostService {
     }
 
     public Page<RecordPost> getList(Long viewerId, Pageable pageable) {
-        java.util.List<Long> blockedAuthorIds = postBlockPolicy.findBlockedAuthorIds(viewerId);
-        if (blockedAuthorIds.isEmpty()) {
-            return recordPostRepository.findAllByDeletedFalse(pageable);
-        }
-        return recordPostRepository.findVisibleExcludingAuthors(blockedAuthorIds, pageable);
+        return recordPostRepository.findVisibleByViewerId(viewerId, pageable);
     }
 
     public Page<RecordPost> getMyList(Long authorId, Pageable pageable) {

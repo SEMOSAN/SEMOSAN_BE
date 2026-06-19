@@ -57,11 +57,7 @@ public class FreePostService {
     }
 
     public Page<FreePostListResponse> getList(Long viewerId, Pageable pageable) {
-        List<Long> blockedAuthorIds = postBlockPolicy.findBlockedAuthorIds(viewerId);
-        Page<FreePost> posts = blockedAuthorIds.isEmpty()
-                ? freePostRepository.findAllByDeletedFalse(pageable)
-                : freePostRepository.findVisibleExcludingAuthors(blockedAuthorIds, pageable);
-        return enrichWithCounts(posts);
+        return enrichWithCounts(freePostRepository.findVisibleByViewerId(viewerId, pageable));
     }
 
     public Page<FreePostListResponse> search(Long viewerId, String keyword, Pageable pageable) {
@@ -69,11 +65,7 @@ public class FreePostService {
             return Page.empty(pageable);
         }
         Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-        List<Long> blockedAuthorIds = postBlockPolicy.findBlockedAuthorIds(viewerId);
-        Page<FreePost> posts = blockedAuthorIds.isEmpty()
-                ? freePostRepository.searchByKeyword(keyword.strip(), unsorted)
-                : freePostRepository.searchByKeywordExcludingAuthors(keyword.strip(), blockedAuthorIds, unsorted);
-        return enrichWithCounts(posts);
+        return enrichWithCounts(freePostRepository.searchByKeyword(viewerId, keyword.strip(), unsorted));
     }
 
     public Page<FreePostListResponse> getMyList(Long authorId, Pageable pageable) {

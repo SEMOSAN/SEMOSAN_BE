@@ -18,10 +18,13 @@ public interface RecordPostRepository extends JpaRepository<RecordPost, Long> {
             SELECT rp
             FROM RecordPost rp
             WHERE rp.deleted = false
-              AND rp.author.id NOT IN :blockedAuthorIds
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM UserBlock ub
+                  WHERE ub.blocker.id = :viewerId
+                    AND ub.blockedUser.id = rp.author.id
+              )
+            ORDER BY rp.createdAt DESC
             """)
-    Page<RecordPost> findVisibleExcludingAuthors(
-            @Param("blockedAuthorIds") java.util.List<Long> blockedAuthorIds,
-            Pageable pageable
-    );
+    Page<RecordPost> findVisibleByViewerId(@Param("viewerId") Long viewerId, Pageable pageable);
 }

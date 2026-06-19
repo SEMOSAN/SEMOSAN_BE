@@ -14,9 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
-import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
@@ -28,15 +26,6 @@ class PostBlockPolicyTest {
 
     @InjectMocks
     private PostBlockPolicy postBlockPolicy;
-
-    @Test
-    void findBlockedAuthorIdsDelegatesToRepository() {
-        when(userBlockRepository.findBlockedUserIdsByBlocker_Id(1L)).thenReturn(List.of(2L, 3L));
-
-        List<Long> result = postBlockPolicy.findBlockedAuthorIds(1L);
-
-        assertThat(result).containsExactly(2L, 3L);
-    }
 
     @Test
     void validateReadableThrowsWhenViewerBlockedAuthor() throws Exception {

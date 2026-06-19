@@ -25,7 +25,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,36 +51,18 @@ class RecordPostServiceTest {
     private RecordPostService recordPostService;
 
     @Test
-    void getListExcludesBlockedAuthorsWhenViewerHasBlocks() {
+    void getListUsesViewerSpecificVisibleQuery() {
         RecordPost post = recordPost(10L, user(2L, "author"));
         PageRequest pageable = PageRequest.of(0, 10);
         Page<RecordPost> page = new PageImpl<>(List.of(post), pageable, 1);
 
-        when(postBlockPolicy.findBlockedAuthorIds(1L)).thenReturn(List.of(3L));
-        when(recordPostRepository.findVisibleExcludingAuthors(List.of(3L), pageable)).thenReturn(page);
+        when(recordPostRepository.findVisibleByViewerId(1L, pageable)).thenReturn(page);
 
         Page<RecordPost> result = recordPostService.getList(1L, pageable);
 
         assertThat(result).hasSize(1);
-        verify(postBlockPolicy).findBlockedAuthorIds(1L);
-        verify(recordPostRepository).findVisibleExcludingAuthors(eq(List.of(3L)), eq(pageable));
+        verify(recordPostRepository).findVisibleByViewerId(eq(1L), eq(pageable));
         verify(recordPostRepository, never()).findAllByDeletedFalse(pageable);
-    }
-
-    @Test
-    void getListUsesDefaultQueryWhenViewerHasNoBlocks() {
-        RecordPost post = recordPost(10L, user(2L, "author"));
-        PageRequest pageable = PageRequest.of(0, 10);
-        Page<RecordPost> page = new PageImpl<>(List.of(post), pageable, 1);
-
-        when(postBlockPolicy.findBlockedAuthorIds(1L)).thenReturn(List.of());
-        when(recordPostRepository.findAllByDeletedFalse(pageable)).thenReturn(page);
-
-        Page<RecordPost> result = recordPostService.getList(1L, pageable);
-
-        assertThat(result).hasSize(1);
-        verify(recordPostRepository).findAllByDeletedFalse(pageable);
-        verify(recordPostRepository, never()).findVisibleExcludingAuthors(anyList(), eq(pageable));
     }
 
     @Test
