@@ -35,7 +35,7 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
             } catch (FirebaseMessagingException e) {
                 handleSendError(token, e);
             } catch (Exception e) {
-                log.error("FCM 발송 중 알 수 없는 에러 (token={}): {}", token, e.getMessage(), e);
+                log.error("FCM 발송 중 알 수 없는 에러 (token={}): {}", maskToken(token), e.getMessage(), e);
             }
         }
     }
@@ -59,10 +59,18 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
     private void handleSendError(String token, FirebaseMessagingException e) {
         MessagingErrorCode code = e.getMessagingErrorCode();
         if (code == MessagingErrorCode.UNREGISTERED || code == MessagingErrorCode.INVALID_ARGUMENT) {
-            log.warn("만료/잘못된 토큰 삭제 (token={}, code={})", token, code);
+            log.warn("만료/잘못된 토큰 삭제 (token={}, code={})", maskToken(token), code);
             fcmTokenService.deleteExpired(token);
         } else {
-            log.error("FCM 발송 실패 (token={}, code={}): {}", token, code, e.getMessage());
+            log.error("FCM 발송 실패 (token={}, code={}): {}", maskToken(token), code, e.getMessage());
         }
+    }
+
+    private String maskToken(String token) {
+        if (token == null || token.isBlank()) {
+            return "<empty>";
+        }
+        int visibleLength = Math.min(8, token.length());
+        return token.substring(0, visibleLength) + "***";
     }
 }
