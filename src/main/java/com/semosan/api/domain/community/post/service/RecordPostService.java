@@ -23,6 +23,7 @@ public class RecordPostService {
     private final RecordPostRepository recordPostRepository;
     private final HikingRecordRepository hikingRecordRepository;
     private final HikingMemberRepository hikingMemberRepository;
+    private final PostBlockPolicy postBlockPolicy;
     private final UserReader userReader;
 
     @Transactional
@@ -39,8 +40,8 @@ public class RecordPostService {
         return recordPostRepository.save(post);
     }
 
-    public Page<RecordPost> getList(Pageable pageable) {
-        return recordPostRepository.findAllByDeletedFalse(pageable);
+    public Page<RecordPost> getList(Long viewerId, Pageable pageable) {
+        return recordPostRepository.findVisibleByViewerId(viewerId, pageable);
     }
 
     public Page<RecordPost> getMyList(Long authorId, Pageable pageable) {
@@ -49,8 +50,9 @@ public class RecordPostService {
     }
 
     @Transactional
-    public RecordPost getDetail(Long postId) {
+    public RecordPost getDetail(Long viewerId, Long postId) {
         RecordPost post = findActivePostOrThrow(postId);
+        postBlockPolicy.validateReadable(viewerId, post);
         post.increaseViewCount();
         return post;
     }

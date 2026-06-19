@@ -36,9 +36,10 @@ public class RecordPostController implements RecordPostControllerDocs {
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<RecordPostResponse>>> getList(
+            @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Page<RecordPostResponse> page = recordPostService.getList(pageable).map(RecordPostResponse::from);
+        Page<RecordPostResponse> page = recordPostService.getList(userId, pageable).map(RecordPostResponse::from);
         return ApiResponse.success(SuccessStatus.RECORD_POST_LIST_SUCCESS, PageResponse.from(page));
     }
 
@@ -53,9 +54,10 @@ public class RecordPostController implements RecordPostControllerDocs {
 
     @GetMapping("/{postId}")
     public ResponseEntity<ApiResponse<RecordPostResponse>> getDetail(
+            @AuthenticationPrincipal Long userId,
             @PathVariable Long postId
     ) {
-        RecordPost post = recordPostService.getDetail(postId);
+        RecordPost post = recordPostService.getDetail(userId, postId);
         return ApiResponse.success(SuccessStatus.RECORD_POST_DETAIL_SUCCESS, RecordPostResponse.from(post));
     }
 

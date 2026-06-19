@@ -10,7 +10,6 @@ import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.entity.PostImage;
 import com.semosan.api.domain.community.post.repository.FreePostRepository;
 import com.semosan.api.domain.community.post.repository.PostImageRepository;
-import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +32,7 @@ public class FreePostService {
     private final PostImageRepository postImageRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
-    private final UserBlockRepository userBlockRepository;
+    private final PostBlockPolicy postBlockPolicy;
     private final UserReader userReader;
 
     @Transactional
@@ -77,9 +76,7 @@ public class FreePostService {
     @Transactional
     public FreePostDetailResponse getDetail(Long viewerId, Long postId) {
         FreePost post = findActivePostOrThrow(postId);
-        if (userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(viewerId, post.getAuthor().getId())) {
-            throw new GeneralException(ErrorStatus.POST_AUTHOR_BLOCKED);
-        }
+        postBlockPolicy.validateReadable(viewerId, post);
         post.increaseViewCount();
 
         List<PostImage> images = postImageRepository.findByPostOrderBySortOrderAsc(post);
