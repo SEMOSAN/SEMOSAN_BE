@@ -10,7 +10,6 @@ import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.entity.PostImage;
 import com.semosan.api.domain.community.post.repository.FreePostRepository;
 import com.semosan.api.domain.community.post.repository.PostImageRepository;
-import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +32,7 @@ public class FreePostService {
     private final PostImageRepository postImageRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
-    private final UserBlockRepository userBlockRepository;
+    private final PostBlockPolicy postBlockPolicy;
     private final UserReader userReader;
 
     @Transactional
@@ -58,7 +57,11 @@ public class FreePostService {
     }
 
     public Page<FreePostListResponse> getList(Long viewerId, Pageable pageable) {
-        return enrichWithCounts(freePostRepository.findVisibleByViewerId(viewerId, pageable));
+        List<Long> blockedAuthorIds = postBlockPolicy.findBlockedAuthorIds(viewerId);
+        Page<FreePost> posts = blockedAuthorIds.isEmpty()
+                ? freePostRepository.findAllByDeletedFalse(pageable)
+                : freePostRepository.findVisibleExcludingAuthors(blockedAuthorIds, pageable);
+        return enrichWithCounts(posts);
     }
 
     public Page<FreePostListResponse> search(Long viewerId, String keyword, Pageable pageable) {
@@ -66,7 +69,11 @@ public class FreePostService {
             return Page.empty(pageable);
         }
         Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
-        return enrichWithCounts(freePostRepository.searchByKeyword(viewerId, keyword.strip(), unsorted));
+        List<Long> blockedAuthorIds = postBlockPolicy.findBlockedAuthorIds(viewerId);
+        Page<FreePost> posts = blockedAuthorIds.isEmpty()
+                ? freePostRepository.searchByKeyword(keyword.strip(), unsorted)
+                : freePostRepository.searchByKeywordExcludingAuthors(keyword.strip(), blockedAuthorIds, unsorted);
+        return enrichWithCounts(posts);
     }
 
     public Page<FreePostListResponse> getMyList(Long authorId, Pageable pageable) {
@@ -77,9 +84,7 @@ public class FreePostService {
     @Transactional
     public FreePostDetailResponse getDetail(Long viewerId, Long postId) {
         FreePost post = findActivePostOrThrow(postId);
-        if (userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(viewerId, post.getAuthor().getId())) {
-            throw new GeneralException(ErrorStatus.POST_AUTHOR_BLOCKED);
-        }
+        postBlockPolicy.validateReadable(viewerId, post);
         post.increaseViewCount();
 
         List<PostImage> images = postImageRepository.findByPostOrderBySortOrderAsc(post);

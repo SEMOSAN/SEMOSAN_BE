@@ -12,7 +12,6 @@ import com.semosan.api.domain.community.post.repository.FreePostRepository;
 import com.semosan.api.domain.community.post.repository.PostImageRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
-import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,7 +51,7 @@ class FreePostServiceTest {
     private CommentRepository commentRepository;
 
     @Mock
-    private UserBlockRepository userBlockRepository;
+    private PostBlockPolicy postBlockPolicy;
 
     @Mock
     private UserReader userReader;
@@ -66,7 +65,8 @@ class FreePostServiceTest {
         FreePost post = freePost(10L, author, "제목", "본문");
         Page<FreePost> page = new PageImpl<>(List.of(post), PageRequest.of(0, 10), 1);
 
-        when(freePostRepository.findVisibleByViewerId(1L, PageRequest.of(0, 10))).thenReturn(page);
+        when(postBlockPolicy.findBlockedAuthorIds(1L)).thenReturn(List.of(2L));
+        when(freePostRepository.findVisibleExcludingAuthors(List.of(2L), PageRequest.of(0, 10))).thenReturn(page);
         when(postLikeRepository.countByPostIdsGrouped(anyList())).thenReturn(List.<Object[]>of(new Object[]{10L, 3L}));
         when(commentRepository.countByPostIdsGrouped(anyList())).thenReturn(List.<Object[]>of(new Object[]{10L, 2L}));
         when(postImageRepository.findMainImagesByPostIds(anyList())).thenReturn(List.of());
@@ -75,7 +75,8 @@ class FreePostServiceTest {
         Page<FreePostListResponse> result = freePostService.getList(1L, PageRequest.of(0, 10));
 
         assertThat(result).hasSize(1);
-        verify(freePostRepository).findVisibleByViewerId(eq(1L), eq(PageRequest.of(0, 10)));
+        verify(postBlockPolicy).findBlockedAuthorIds(1L);
+        verify(freePostRepository).findVisibleExcludingAuthors(eq(List.of(2L)), eq(PageRequest.of(0, 10)));
     }
 
     @Test
@@ -84,7 +85,6 @@ class FreePostServiceTest {
         FreePost post = freePost(10L, author, "제목", "본문");
 
         when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
-        when(userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(1L, 2L)).thenReturn(false);
         when(postImageRepository.findByPostOrderBySortOrderAsc(post)).thenReturn(List.of());
         when(postLikeRepository.countByPost(post)).thenReturn(3L);
         when(commentRepository.countByPostAndDeletedFalse(post)).thenReturn(2L);
@@ -95,6 +95,7 @@ class FreePostServiceTest {
         assertThat(result.likedByMe()).isTrue();
         assertThat(result.likeCount()).isEqualTo(3L);
         assertThat(result.commentCount()).isEqualTo(2L);
+        verify(postBlockPolicy).validateReadable(1L, post);
     }
 
     @Test
@@ -103,7 +104,8 @@ class FreePostServiceTest {
         FreePost post = freePost(10L, author, "제목", "본문");
 
         when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
-        when(userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(1L, 2L)).thenReturn(true);
+        org.mockito.Mockito.doThrow(new GeneralException(ErrorStatus.POST_AUTHOR_BLOCKED))
+                .when(postBlockPolicy).validateReadable(1L, post);
 
         assertThatThrownBy(() -> freePostService.getDetail(1L, 10L))
                 .isInstanceOf(GeneralException.class)
