@@ -2,6 +2,7 @@ package com.semosan.api.domain.community.comment.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.community.comment.dto.CommentResponse;
 import com.semosan.api.domain.community.comment.entity.Comment;
 import com.semosan.api.domain.community.comment.repository.CommentRepository;
 import com.semosan.api.domain.community.notification.service.CommunityNotificationService;
@@ -19,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -124,6 +126,27 @@ class CommentServiceTest {
         assertThat(comment.isDeleted()).isFalse();
     }
 
+    @Test
+    void getRepliesMasksBlockedAuthors() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User parentAuthor = user(2L, "parent-author");
+        User blockedAuthor = user(3L, "blocked-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        Comment parent = comment(100L, post, parentAuthor, "부모 댓글");
+        Comment reply = reply(101L, post, blockedAuthor, parent, "차단 유저 대댓글");
+
+        when(commentRepository.findById(100L)).thenReturn(Optional.of(parent));
+        when(userBlockRepository.findBlockedUserIdsByBlocker_Id(9L)).thenReturn(List.of(3L));
+        when(commentRepository.findByParentAndDeletedFalseOrderByCreatedAtAsc(parent)).thenReturn(List.of(reply));
+
+        List<CommentResponse> result = commentService.getReplies(100L, 9L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).isBlocked()).isTrue();
+        assertThat(result.get(0).content()).isEqualTo("차단한 사용자입니다.");
+        assertThat(result.get(0).author().id()).isEqualTo(3L);
+    }
+
     private User user(Long id, String nickname) {
         User user = User.createTestUser(nickname, DeviceType.IOS);
         ReflectionTestUtils.setField(user, "id", id);
@@ -141,6 +164,12 @@ class CommentServiceTest {
 
     private Comment comment(Long id, FreePost post, User author, String content) {
         Comment comment = Comment.create(post, author, content);
+        ReflectionTestUtils.setField(comment, "id", id);
+        return comment;
+    }
+
+    private Comment reply(Long id, FreePost post, User author, Comment parent, String content) {
+        Comment comment = Comment.reply(post, author, parent, null, content);
         ReflectionTestUtils.setField(comment, "id", id);
         return comment;
     }
