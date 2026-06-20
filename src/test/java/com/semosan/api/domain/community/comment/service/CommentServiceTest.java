@@ -143,7 +143,7 @@ class CommentServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).isBlocked()).isTrue();
-        assertThat(result.get(0).content()).isNotEqualTo("차단 유저 대댓글");
+        assertThat(result.get(0).content()).isEqualTo("차단한 사용자입니다.");
         assertThat(result.get(0).author().id()).isEqualTo(3L);
     }
 
