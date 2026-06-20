@@ -2,8 +2,8 @@ package com.semosan.api.domain.community.like.service;
 
 import com.semosan.api.domain.community.like.dto.PostLikeToggleResponse;
 import com.semosan.api.domain.community.like.entity.PostLike;
+import com.semosan.api.domain.community.like.event.PostLikedEvent;
 import com.semosan.api.domain.community.like.repository.PostLikeRepository;
-import com.semosan.api.domain.community.notification.service.CommunityNotificationService;
 import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
@@ -11,9 +11,11 @@ import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -39,13 +41,13 @@ class PostLikeServiceTest {
     private UserReader userReader;
 
     @Mock
-    private CommunityNotificationService communityNotificationService;
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private PostLikeService postLikeService;
 
     @Test
-    void toggleWithCountDelegatesNotificationWhenLikeCreated() throws Exception {
+    void toggleWithCountPublishesEventWhenLikeCreated() throws Exception {
         User postAuthor = user(1L, "post-author");
         User liker = user(2L, "liker");
         FreePost post = freePost(10L, postAuthor, "제목", "본문");
@@ -59,11 +61,14 @@ class PostLikeServiceTest {
 
         assertThat(result.liked()).isTrue();
         assertThat(result.count()).isEqualTo(1L);
-        verify(communityNotificationService).sendPostLikeNotification(post, liker);
+        ArgumentCaptor<PostLikedEvent> eventCaptor = ArgumentCaptor.forClass(PostLikedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().postId()).isEqualTo(10L);
+        assertThat(eventCaptor.getValue().actorId()).isEqualTo(2L);
     }
 
     @Test
-    void toggleWithCountDoesNotDelegateNotificationWhenUnlike() throws Exception {
+    void toggleWithCountDoesNotPublishEventWhenUnlike() throws Exception {
         User postAuthor = user(1L, "post-author");
         User liker = user(2L, "liker");
         FreePost post = freePost(10L, postAuthor, "제목", "본문");
@@ -78,11 +83,11 @@ class PostLikeServiceTest {
 
         assertThat(result.liked()).isFalse();
         assertThat(result.count()).isZero();
-        verify(communityNotificationService, never()).sendPostLikeNotification(any(), any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test
-    void toggleWithCountDoesNotDelegateNotificationWhenConcurrentDuplicateDetected() throws Exception {
+    void toggleWithCountDoesNotPublishEventWhenConcurrentDuplicateDetected() throws Exception {
         User postAuthor = user(1L, "post-author");
         User liker = user(2L, "liker");
         FreePost post = freePost(10L, postAuthor, "제목", "본문");
@@ -97,7 +102,7 @@ class PostLikeServiceTest {
 
         assertThat(result.liked()).isTrue();
         assertThat(result.count()).isEqualTo(1L);
-        verify(communityNotificationService, never()).sendPostLikeNotification(any(), any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     private User user(Long id, String nickname) {
