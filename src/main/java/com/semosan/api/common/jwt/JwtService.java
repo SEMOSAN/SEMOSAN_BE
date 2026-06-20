@@ -126,14 +126,10 @@ public class JwtService {
 
     public Long getUserIdFromClaims(Claims claims) {
         try {
-            return parseUserId(claims);
+            return Long.parseLong(claims.getSubject());
         } catch (Exception e) {
             throw new GeneralException(ErrorStatus.JWT_EXTRACT_ID_FAILED);
         }
-    }
-
-    private Long parseUserId(Claims claims) {
-        return Long.parseLong(claims.getSubject());
     }
 
     // 내부 Claims 파싱 로직
