@@ -143,7 +143,28 @@ class CommentServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).isBlocked()).isTrue();
-        assertThat(result.get(0).content()).isEqualTo("차단한 사용자입니다.");
+        assertThat(result.get(0).content()).isNotEqualTo("차단 유저 대댓글");
+        assertThat(result.get(0).author().id()).isEqualTo(3L);
+    }
+
+    @Test
+    void getRepliesReturnsFullContentForNonBlockedAuthor() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User parentAuthor = user(2L, "parent-author");
+        User replyAuthor = user(3L, "reply-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        Comment parent = comment(100L, post, parentAuthor, "부모 댓글");
+        Comment reply = reply(101L, post, replyAuthor, parent, "일반 대댓글");
+
+        when(commentRepository.findById(100L)).thenReturn(Optional.of(parent));
+        when(userBlockRepository.findBlockedUserIdsByBlocker_Id(9L)).thenReturn(List.of(4L));
+        when(commentRepository.findByParentAndDeletedFalseOrderByCreatedAtAsc(parent)).thenReturn(List.of(reply));
+
+        List<CommentResponse> result = commentService.getReplies(100L, 9L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).isBlocked()).isFalse();
+        assertThat(result.get(0).content()).isEqualTo("일반 대댓글");
         assertThat(result.get(0).author().id()).isEqualTo(3L);
     }
 
