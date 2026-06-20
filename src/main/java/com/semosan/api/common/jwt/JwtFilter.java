@@ -5,6 +5,7 @@ import com.semosan.api.common.config.SecurityConfig;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.ErrorStatus;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -64,11 +65,11 @@ public class JwtFilter extends OncePerRequestFilter {
             // 토큰이 없는 경우 인증 객체를 설정하지 않고 넘김
             // SecurityConfig의 .anyRequest().authenticated()에서 인가 처리됨
             if (accessToken != null) {
-                jwtService.validateAccessToken(accessToken);
+                Claims claims = jwtService.validateAccessTokenAndGetClaims(accessToken);
                 if (jwtService.isAccessTokenBlacklisted(accessToken)) {
                     throw new GeneralException(ErrorStatus.JWT_BLACKLISTED);
                 }
-                Long userId = jwtService.getUserIdFromJwtToken(accessToken);
+                Long userId = jwtService.getUserIdFromClaims(claims);
                 MDC.put("userId", String.valueOf(userId));
 
                 UsernamePasswordAuthenticationToken authentication =

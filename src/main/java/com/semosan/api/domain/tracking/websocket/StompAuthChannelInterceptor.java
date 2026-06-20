@@ -3,6 +3,7 @@ package com.semosan.api.domain.tracking.websocket;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.jwt.JwtService;
 import com.semosan.api.common.status.ErrorStatus;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.Message;
@@ -57,8 +58,9 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             throw new GeneralException(ErrorStatus.JWT_TOKEN_NOT_FOUND);
         }
         String token = authHeader.substring(BEARER_PREFIX.length());
+        Claims claims;
         try {
-            jwtService.validateAccessToken(token);
+            claims = jwtService.validateAccessTokenAndGetClaims(token);
         } catch (GeneralException e) {
             log.warn("STOMP CONNECT 인증 실패: 토큰 검증 실패. sessionId={} code={} msg={}",
                     sessionId, e.getErrorStatus().getCode(), e.getMessage());
@@ -70,7 +72,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         }
         Long userId;
         try {
-            userId = jwtService.getUserIdFromJwtToken(token);
+            userId = jwtService.getUserIdFromClaims(claims);
         } catch (GeneralException e) {
             log.warn("STOMP CONNECT 인증 실패: userId 추출 실패. sessionId={} code={} msg={}",
                     sessionId, e.getErrorStatus().getCode(), e.getMessage());
