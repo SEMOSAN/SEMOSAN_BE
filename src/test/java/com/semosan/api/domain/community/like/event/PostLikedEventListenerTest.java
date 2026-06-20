@@ -1,5 +1,7 @@
 package com.semosan.api.domain.community.like.event;
 
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.notification.service.CommunityNotificationService;
 import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.repository.PostRepository;
@@ -16,6 +18,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.lang.reflect.Constructor;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -57,6 +60,21 @@ class PostLikedEventListenerTest {
         listener.onPostLiked(new PostLikedEvent(10L, 2L));
 
         verify(userReader, never()).findActiveUserById(2L);
+        verify(communityNotificationService, never()).sendPostLikeNotification(any(), any());
+    }
+
+    @Test
+    void onPostLikedSkipsNotificationWhenActorNotFound() throws Exception {
+        User author = user(1L, "author");
+        FreePost post = freePost(10L, author);
+
+        when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
+        when(userReader.findActiveUserById(2L))
+                .thenThrow(new GeneralException(ErrorStatus.USER_NOT_FOUND));
+
+        assertThatCode(() -> listener.onPostLiked(new PostLikedEvent(10L, 2L)))
+                .doesNotThrowAnyException();
+
         verify(communityNotificationService, never()).sendPostLikeNotification(any(), any());
     }
 
