@@ -5,14 +5,15 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.common.util.LikeConflictHandler;
 import com.semosan.api.domain.community.like.dto.PostLikeToggleResponse;
 import com.semosan.api.domain.community.like.entity.PostLike;
+import com.semosan.api.domain.community.like.event.PostLikedEvent;
 import com.semosan.api.domain.community.like.repository.PostLikeRepository;
-import com.semosan.api.domain.community.notification.service.CommunityNotificationService;
 import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,7 @@ public class PostLikeService {
     private final PostLikeRepository postLikeRepository;
     private final PostRepository postRepository;
     private final UserReader userReader;
-    private final CommunityNotificationService communityNotificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * @return true = 좋아요 누름 / false = 좋아요 취소
@@ -45,7 +46,7 @@ public class PostLikeService {
 
         return LikeConflictHandler.handleConcurrentCreate(() -> {
             postLikeRepository.save(PostLike.create(post, user));
-            communityNotificationService.sendPostLikeNotification(post, user);
+            eventPublisher.publishEvent(new PostLikedEvent(post.getId(), user.getId()));
         }, () -> log.warn("PostLike 동시 요청 감지: postId={}, userId={}", postId, userId));
     }
 
