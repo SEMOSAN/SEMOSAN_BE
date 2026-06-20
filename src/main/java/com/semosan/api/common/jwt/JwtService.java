@@ -84,12 +84,12 @@ public class JwtService {
         }
     }
 
-    // Access Token 검증
-    public void validateAccessToken(String accessToken) {
+    // Access Token 검증 후 Claims를 반환해 호출부에서 같은 토큰을 다시 파싱하지 않도록 한다.
+    public Claims validateAccessTokenAndGetClaims(String accessToken) {
         if (accessToken == null || accessToken.isBlank()) {
             throw new GeneralException(ErrorStatus.JWT_TOKEN_NOT_FOUND);
         }
-        parseClaims(accessToken);
+        return parseClaims(accessToken);
     }
 
     // Refresh Token 서명/만료 검증 후 Claims 반환 — DB 비교 전 1차 검증용
@@ -124,14 +124,16 @@ public class JwtService {
         tokenRedisService.deleteRefreshToken(userId);
     }
 
-    // AccessToken에서 userId 추출
-    public Long getUserIdFromJwtToken(String token) {
+    public Long getUserIdFromClaims(Claims claims) {
         try {
-            Claims claims = parseClaims(token);
-            return Long.parseLong(claims.getSubject());
+            return parseUserId(claims);
         } catch (Exception e) {
             throw new GeneralException(ErrorStatus.JWT_EXTRACT_ID_FAILED);
         }
+    }
+
+    private Long parseUserId(Claims claims) {
+        return Long.parseLong(claims.getSubject());
     }
 
     // 내부 Claims 파싱 로직
