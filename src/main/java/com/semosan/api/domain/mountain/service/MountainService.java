@@ -18,7 +18,6 @@ import com.semosan.api.domain.review.service.ReviewService;
 import com.semosan.api.domain.mountain.service.recommendation.FitnessLevelCalculator;
 import com.semosan.api.domain.mountain.service.recommendation.TrackScorer;
 import com.semosan.api.domain.mountain.service.recommendation.TrackScorer.TrackEvaluation;
-import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserOnboarding;
 import com.semosan.api.domain.user.enums.user.OnboardingStatus;
 import com.semosan.api.domain.user.service.UserReader;
@@ -97,12 +96,16 @@ public class MountainService {
             Double lat,
             Double lng
     ) {
-        User user = userReader.findActiveUserById(userId);
-        if (user.getOnboardingStatus() != OnboardingStatus.COMPLETE) {
+        UserOnboarding onboarding = userReader.findOnboardingByUserId(userId)
+                .orElse(null);
+        if (onboarding == null) {
+            userReader.findActiveUserById(userId);
+            return getDefaultRecommendedMountains();
+        }
+        if (onboarding.getUser().getOnboardingStatus() != OnboardingStatus.COMPLETE) {
             return getDefaultRecommendedMountains();
         }
 
-        UserOnboarding onboarding = userReader.findCompletedOnboardingByUserId(userId);
         FitnessLevel fitnessLevel = fitnessLevelCalculator.calculate(onboarding.getUser(), onboarding);
 
         Map<Long, RecommendationCandidate> candidateByMountainId = new LinkedHashMap<>();

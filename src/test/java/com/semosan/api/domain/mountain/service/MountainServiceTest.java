@@ -89,8 +89,7 @@ class MountainServiceTest {
         Course thirdCourse = course(third);
         Course fourthCourse = course(fourth);
 
-        when(userReader.findActiveUserById(1L)).thenReturn(user);
-        when(userReader.findCompletedOnboardingByUserId(1L)).thenReturn(onboarding);
+        when(userReader.findOnboardingByUserId(1L)).thenReturn(Optional.of(onboarding));
         when(courseRepository.findAllWithMountainForRecommendation())
                 .thenReturn(List.of(fourthCourse, secondCourse, firstCourse, thirdCourse));
         when(fitnessLevelCalculator.calculate(user, onboarding))
@@ -125,6 +124,33 @@ class MountainServiceTest {
         Mountain second = mountain(5L, "아차산");
         Mountain third = mountain(8L, "관악산");
 
+        when(userReader.findOnboardingByUserId(1L)).thenReturn(Optional.of(onboarding(user)));
+        when(mountainRepository.findAllById(List.of(1L, 5L, 8L)))
+                .thenReturn(List.of(third, first, second));
+
+        List<MountainRecommendationResponse> result = mountainService.getRecommendedMountains(
+                1L,
+                37.0,
+                127.0
+        );
+
+        assertThat(result)
+                .extracting(MountainRecommendationResponse::mountainId)
+                .containsExactly(1L, 5L, 8L);
+        assertThat(result)
+                .extracting(MountainRecommendationResponse::name)
+                .containsExactly("북한산", "아차산", "관악산");
+        verifyNoInteractions(courseRepository, fitnessLevelCalculator, trackScorer);
+    }
+
+    @Test
+    void getRecommendedMountainsReturnsDefaultMountainsWhenOnboardingRowIsMissing() throws Exception {
+        User user = User.createTestUser("recommendation-no-onboarding-user", DeviceType.IOS);
+        Mountain first = mountain(1L, "북한산");
+        Mountain second = mountain(5L, "아차산");
+        Mountain third = mountain(8L, "관악산");
+
+        when(userReader.findOnboardingByUserId(1L)).thenReturn(Optional.empty());
         when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(mountainRepository.findAllById(List.of(1L, 5L, 8L)))
                 .thenReturn(List.of(third, first, second));

@@ -132,8 +132,8 @@ public class UserService {
                 .orElseGet(() -> userOnboardingRepository.save(UserOnboarding.create(
                         new CreateUserOnboardingCommand(
                                 user,
-                                request.hikingLevel(),
-                                request.exerciseType(),
+                                null,
+                                null,
                                 null,
                                 null
                         )
