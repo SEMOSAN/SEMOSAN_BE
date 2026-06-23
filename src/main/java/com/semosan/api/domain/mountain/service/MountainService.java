@@ -19,6 +19,7 @@ import com.semosan.api.domain.mountain.service.recommendation.FitnessLevelCalcul
 import com.semosan.api.domain.mountain.service.recommendation.TrackScorer;
 import com.semosan.api.domain.mountain.service.recommendation.TrackScorer.TrackEvaluation;
 import com.semosan.api.domain.user.entity.UserOnboarding;
+import com.semosan.api.domain.user.enums.user.OnboardingStatus;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -30,6 +31,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +44,7 @@ public class MountainService {
     private static final double DEFAULT_SEOUL_SW_LNG = 126.764;
     private static final double DEFAULT_SEOUL_NE_LAT = 37.715;
     private static final double DEFAULT_SEOUL_NE_LNG = 127.184;
+    private static final List<Long> DEFAULT_RECOMMENDED_MOUNTAIN_IDS = List.of(1L, 5L, 8L);
 
     private final MountainRepository mountainRepository;
     private final CourseRepository courseRepository;
@@ -54,7 +58,7 @@ public class MountainService {
     private final TrackScorer trackScorer;
 
     public Page<MountainListResponse> getMountains(Long userId, Pageable pageable) {
-        userReader.findCompletedOnboardingUserById(userId);
+        userReader.findActiveUserById(userId);
         return mountainRepository.findAll(pageable)
                 .map(MountainListResponse::from);
     }
@@ -92,7 +96,16 @@ public class MountainService {
             Double lat,
             Double lng
     ) {
-        UserOnboarding onboarding = userReader.findCompletedOnboardingByUserId(userId);
+        UserOnboarding onboarding = userReader.findOnboardingByUserId(userId)
+                .orElse(null);
+        if (onboarding == null) {
+            userReader.findActiveUserById(userId);
+            return getDefaultRecommendedMountains();
+        }
+        if (onboarding.getUser().getOnboardingStatus() != OnboardingStatus.COMPLETE) {
+            return getDefaultRecommendedMountains();
+        }
+
         FitnessLevel fitnessLevel = fitnessLevelCalculator.calculate(onboarding.getUser(), onboarding);
 
         Map<Long, RecommendationCandidate> candidateByMountainId = new LinkedHashMap<>();
@@ -125,6 +138,18 @@ public class MountainService {
         return next.rankingScore() > current.rankingScore() ? next : current;
     }
 
+    private List<MountainRecommendationResponse> getDefaultRecommendedMountains() {
+        Map<Long, Mountain> mountainById = mountainRepository.findAllById(DEFAULT_RECOMMENDED_MOUNTAIN_IDS)
+                .stream()
+                .collect(Collectors.toMap(Mountain::getId, mountain -> mountain));
+
+        return DEFAULT_RECOMMENDED_MOUNTAIN_IDS.stream()
+                .map(mountainById::get)
+                .filter(Objects::nonNull)
+                .map(MountainRecommendationResponse::fromDefaultMountain)
+                .toList();
+    }
+
     private record RecommendationCandidate(Mountain mountain, TrackEvaluation evaluation) {
 
         private double rankingScore() {
@@ -140,7 +165,7 @@ public class MountainService {
     }
 
     public Page<MountainListResponse> searchMountains(Long userId, String keyword, Pageable pageable) {
-        userReader.findCompletedOnboardingUserById(userId);
+        userReader.findActiveUserById(userId);
         if (keyword == null || keyword.isBlank()) {
             throw new GeneralException(ErrorStatus.BAD_REQUEST);
         }
@@ -149,7 +174,7 @@ public class MountainService {
     }
 
     public MountainDetailResponse getMountainDetail(Long userId, Long mountainId) {
-        userReader.findCompletedOnboardingUserById(userId);
+        userReader.findActiveUserById(userId);
         Mountain mountain = findMountainById(mountainId);
 
         return new MountainDetailResponse(

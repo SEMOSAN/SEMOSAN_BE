@@ -9,6 +9,7 @@ import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
 import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
 import com.semosan.api.domain.notification.repository.NotificationRepository;
 import com.semosan.api.domain.review.repository.ReviewRepository;
+import com.semosan.api.domain.user.dto.command.CreateUserOnboardingCommand;
 import com.semosan.api.domain.user.dto.command.UpdateUserProfileCommand;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.entity.User;
@@ -96,9 +97,9 @@ public class UserService {
     public void updateUserProfile(Long userId, UpdateUserProfileRequest request) {
         validateProfileUpdateRequest(request);
         validateNicknameIfPresent(request.nickname());
-        User user = userReader.findCompletedOnboardingUserById(userId);
+        User user = userReader.findActiveUserById(userId);
         user.updateProfile(toUpdateUserProfileCommand(request));
-        updateUserOnboardingProfile(userId, request);
+        updateUserOnboardingProfile(user, request);
     }
 
     // 프로필 수정 요청에 최소 하나 이상의 수정 값이 있는지 검증합니다.
@@ -123,12 +124,20 @@ public class UserService {
     }
 
     // 프로필 수정 요청에 포함된 온보딩 항목을 갱신합니다.
-    private void updateUserOnboardingProfile(Long userId, UpdateUserProfileRequest request) {
+    private void updateUserOnboardingProfile(User user, UpdateUserProfileRequest request) {
         if (request.hikingLevel() == null && request.exerciseType() == null) {
             return;
         }
-        UserOnboarding userOnboarding = userOnboardingRepository.findByUser_Id(userId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.ONBOARDING_NOT_FOUND));
+        UserOnboarding userOnboarding = userOnboardingRepository.findByUser_Id(user.getId())
+                .orElseGet(() -> userOnboardingRepository.save(UserOnboarding.create(
+                        new CreateUserOnboardingCommand(
+                                user,
+                                null,
+                                null,
+                                null,
+                                null
+                        )
+                )));
         if (request.hikingLevel() != null) {
             userOnboarding.updateHikingLevel(request.hikingLevel());
         }

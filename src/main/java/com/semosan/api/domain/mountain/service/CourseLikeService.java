@@ -32,7 +32,7 @@ public class CourseLikeService {
     }
 
     private boolean toggle(Long userId, Long courseId) {
-        User user = userReader.findCompletedOnboardingUserById(userId);
+        User user = userReader.findActiveUserById(userId);
         Course course = findCourseById(courseId);
 
         return courseLikeRepository.findByUser_IdAndCourse_Id(userId, courseId)

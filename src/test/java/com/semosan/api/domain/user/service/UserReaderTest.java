@@ -45,6 +45,18 @@ class UserReaderTest {
     }
 
     @Test
+    void findOnboardingByUserIdReturnsRepositoryResult() {
+        User user = user();
+        UserOnboarding onboarding = onboarding(user);
+        when(userOnboardingRepository.findByUserIdWithUser(1L)).thenReturn(Optional.of(onboarding));
+
+        Optional<UserOnboarding> result = new UserReader(userRepository, userOnboardingRepository)
+                .findOnboardingByUserId(1L);
+
+        assertThat(result).containsSame(onboarding);
+    }
+
+    @Test
     void findCompletedOnboardingByUserIdReturnsOnboardingWhenUserIsCompleted() {
         User user = user();
         UserOnboarding onboarding = onboarding(user);

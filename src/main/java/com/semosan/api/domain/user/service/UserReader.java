@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Component
 @RequiredArgsConstructor
 public class UserReader {
@@ -25,6 +27,11 @@ public class UserReader {
         }
         return userRepository.findByIdAndDeletedFalse(userId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<UserOnboarding> findOnboardingByUserId(Long userId) {
+        return userOnboardingRepository.findByUserIdWithUser(userId);
     }
 
     @Transactional(readOnly = true)

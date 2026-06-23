@@ -68,7 +68,7 @@ class HikingRecordServiceTest {
         CreateCourseDifficultyFeedbackRequest request =
                 new CreateCourseDifficultyFeedbackRequest(DifficultyFeedbackType.HARDER);
 
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(hikingRecordRepository.findById(10L)).thenReturn(Optional.of(hikingRecord));
         when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
         when(courseDifficultyFeedbackRepository.existsByHikingRecord_Id(10L)).thenReturn(false);
@@ -94,7 +94,7 @@ class HikingRecordServiceTest {
         User user = user(1L);
         HikingRecord hikingRecord = hikingRecord(10L, course(mountain(20L, "관악산"), 30L, "과천향교 출발 코스"));
 
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(hikingRecordRepository.findById(10L)).thenReturn(Optional.of(hikingRecord));
         when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(false);
 
@@ -114,7 +114,7 @@ class HikingRecordServiceTest {
         User user = user(1L);
         HikingRecord hikingRecord = hikingRecord(10L, null);
 
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(hikingRecordRepository.findById(10L)).thenReturn(Optional.of(hikingRecord));
         when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
 
@@ -134,7 +134,7 @@ class HikingRecordServiceTest {
         User user = user(1L);
         HikingRecord hikingRecord = hikingRecord(10L, course(mountain(20L, "관악산"), 30L, "과천향교 출발 코스"));
 
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(hikingRecordRepository.findById(10L)).thenReturn(Optional.of(hikingRecord));
         when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
         when(courseDifficultyFeedbackRepository.existsByHikingRecord_Id(10L)).thenReturn(true);
@@ -155,7 +155,7 @@ class HikingRecordServiceTest {
         User user = user(1L);
         HikingRecord hikingRecord = hikingRecord(10L, course(mountain(20L, "관악산"), 30L, "과천향교 출발 코스"));
 
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(hikingRecordRepository.findById(10L)).thenReturn(Optional.of(hikingRecord));
         when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
         when(courseDifficultyFeedbackRepository.existsByHikingRecord_Id(10L)).thenReturn(false);
@@ -178,7 +178,7 @@ class HikingRecordServiceTest {
         HikingRecord hikingRecord = hikingRecord(10L, course(mountain(20L, "관악산"), 30L, "과천향교 출발 코스"));
         DataIntegrityViolationException exception = new DataIntegrityViolationException("other constraint");
 
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(hikingRecordRepository.findById(10L)).thenReturn(Optional.of(hikingRecord));
         when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
         when(courseDifficultyFeedbackRepository.existsByHikingRecord_Id(10L)).thenReturn(false);

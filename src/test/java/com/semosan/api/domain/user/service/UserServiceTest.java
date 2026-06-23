@@ -7,7 +7,12 @@ import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
 import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
 import com.semosan.api.domain.notification.repository.NotificationRepository;
 import com.semosan.api.domain.review.repository.ReviewRepository;
+import com.semosan.api.domain.user.dto.command.CreateUserOnboardingCommand;
+import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.entity.User;
+import com.semosan.api.domain.user.entity.UserOnboarding;
+import com.semosan.api.domain.user.enums.onboarding.ExerciseType;
+import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import com.semosan.api.domain.user.enums.user.OnboardingStatus;
@@ -28,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
@@ -167,6 +173,64 @@ class UserServiceTest {
         assertThat(result.getOauthProvider()).isEqualTo(OAuthProvider.APPLE);
         assertThat(result.getName()).isEqualTo("apple-name");
         assertThat(result.getNickname()).isEqualTo("빠른하이커1204");
+    }
+
+    @Test
+    void updateUserProfileCreatesOnboardingWhenOneOnboardingFieldProvidedAndRowMissing() {
+        User user = User.createTestUser("profile-test-user", DeviceType.IOS);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                HikingLevel.BEGINNER,
+                null
+        );
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(userOnboardingRepository.findByUser_Id(1L)).thenReturn(Optional.empty());
+        when(userOnboardingRepository.save(any(UserOnboarding.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.updateUserProfile(1L, request);
+
+        var captor = forClass(UserOnboarding.class);
+        verify(userOnboardingRepository).save(captor.capture());
+        assertThat(captor.getValue().getUser()).isSameAs(user);
+        assertThat(captor.getValue().getHikingLevel()).isEqualTo(HikingLevel.BEGINNER);
+        assertThat(captor.getValue().getExerciseType()).isNull();
+    }
+
+    @Test
+    void updateUserProfileUpdatesExistingOnboardingWithProvidedFieldsOnly() {
+        User user = User.createTestUser("profile-test-user", DeviceType.IOS);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        UserOnboarding onboarding = UserOnboarding.create(new CreateUserOnboardingCommand(
+                user,
+                HikingLevel.EXPERIENCED,
+                ExerciseType.HIKING,
+                null,
+                null
+        ));
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                ExerciseType.NONE
+        );
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(userOnboardingRepository.findByUser_Id(1L)).thenReturn(Optional.of(onboarding));
+
+        userService.updateUserProfile(1L, request);
+
+        assertThat(onboarding.getHikingLevel()).isEqualTo(HikingLevel.EXPERIENCED);
+        assertThat(onboarding.getExerciseType()).isEqualTo(ExerciseType.NONE);
     }
 
     @Test

@@ -50,7 +50,7 @@ public class HikingRecordService {
     // 유저가 다녀온 산 목록을 산 단위로 묶어 조회합니다.
     @Transactional(readOnly = true)
     public Page<GetUserHikingMountainRecordResponse> getUserHikingMountainRecords(Long userId, Pageable pageable) {
-        userReader.findCompletedOnboardingUserById(userId);
+        userReader.findActiveUserById(userId);
         return hikingRecordRepository.findUserHikingMountainRecordsByUserId(userId, pageable)
                 .map(GetUserHikingMountainRecordResponse::from);
     }
@@ -58,7 +58,7 @@ public class HikingRecordService {
     // 유저의 등산 기록 목록을 기록 단위로 조회합니다.
     @Transactional(readOnly = true)
     public Page<GetUserHikingRecordResponse> getUserHikingRecords(Long userId, Pageable pageable) {
-        userReader.findCompletedOnboardingUserById(userId);
+        userReader.findActiveUserById(userId);
         return hikingRecordRepository.findUserHikingRecordsByUserId(userId, pageable)
                 .map(GetUserHikingRecordResponse::from);
     }
@@ -70,7 +70,7 @@ public class HikingRecordService {
             Long mountainId,
             Pageable pageable
     ) {
-        userReader.findCompletedOnboardingUserById(userId);
+        userReader.findActiveUserById(userId);
         if (!mountainRepository.existsById(mountainId)) {
             throw new GeneralException(ErrorStatus.MOUNTAIN_NOT_FOUND);
         }
@@ -81,7 +81,7 @@ public class HikingRecordService {
     // 등산 기록 단건 상세를 조회합니다. (이동 경로 + 마일스톤 사진 포함)
     @Transactional(readOnly = true)
     public HikingRecordDetailResponse getHikingRecordDetail(Long userId, Long hikingRecordId) {
-        User user = userReader.findCompletedOnboardingUserById(userId);
+        User user = userReader.findActiveUserById(userId);
         // Mountain / Course 를 fetch join 으로 함께 가져와 응답 조립 시 추가 SELECT 를 막는다.
         HikingRecord record = hikingRecordRepository.findWithMountainAndCourseById(hikingRecordId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.HIKING_RECORD_NOT_FOUND));
@@ -109,7 +109,7 @@ public class HikingRecordService {
     // 유저의 등산 기록 요약 정보를 조회합니다.
     @Transactional(readOnly = true)
     public GetUserHikingRecordSummaryResponse getUserHikingRecordSummary(Long userId) {
-        userReader.findCompletedOnboardingUserById(userId);
+        userReader.findActiveUserById(userId);
         UserHikingRecordSummaryProjection projection =
                 hikingRecordRepository.findUserHikingRecordSummaryByUserId(userId);
         if (projection == null) {
@@ -125,7 +125,7 @@ public class HikingRecordService {
             Long hikingRecordId,
             CreateCourseDifficultyFeedbackRequest request
     ) {
-        User user = userReader.findCompletedOnboardingUserById(userId);
+        User user = userReader.findActiveUserById(userId);
         HikingRecord hikingRecord = hikingRecordRepository.findById(hikingRecordId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.HIKING_RECORD_NOT_FOUND));
 

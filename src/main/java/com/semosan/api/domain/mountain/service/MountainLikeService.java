@@ -27,7 +27,7 @@ public class MountainLikeService {
     // 로그인한 사용자가 산에 좋아요를 등록합니다.
     @Transactional
     public void likeMountain(Long userId, Long mountainId) {
-        User user = userReader.findCompletedOnboardingUserById(userId);
+        User user = userReader.findActiveUserById(userId);
         Mountain mountain = findMountainById(mountainId);
         if (mountainLikeRepository.existsByUser_IdAndMountain_Id(userId, mountainId)) {
             throw new GeneralException(ErrorStatus.MOUNTAIN_LIKE_ALREADY_EXISTS);
@@ -44,7 +44,7 @@ public class MountainLikeService {
     @Transactional
     public void unlikeMountain(Long userId, Long mountainId) {
         // 탈퇴 후 남은 access token으로 조회되는 것을 방지합니다.
-        userReader.findCompletedOnboardingUserById(userId);
+        userReader.findActiveUserById(userId);
         MountainLike mountainLike = mountainLikeRepository.findByUser_IdAndMountain_Id(userId, mountainId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MOUNTAIN_LIKE_NOT_FOUND));
         mountainLikeRepository.delete(mountainLike);
@@ -54,7 +54,7 @@ public class MountainLikeService {
     @Transactional(readOnly = true)
     public Page<LikedMountainResponse> getLikedMountains(Long userId, Pageable pageable) {
         // 탈퇴 후 남은 access token으로 조회되는 것을 방지합니다.
-        userReader.findCompletedOnboardingUserById(userId);
+        userReader.findActiveUserById(userId);
         return mountainLikeRepository.findAllByUserId(userId, pageable)
                 .map(LikedMountainResponse::from);
     }
