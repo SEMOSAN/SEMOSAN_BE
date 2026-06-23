@@ -44,7 +44,7 @@ class CourseLikeServiceTest {
         User user = user(1L);
         Course course = course(10L);
 
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.empty());
 
@@ -60,7 +60,7 @@ class CourseLikeServiceTest {
         Course course = course(10L);
         CourseLike courseLike = CourseLike.create(user, course);
 
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.of(courseLike));
 
@@ -75,7 +75,7 @@ class CourseLikeServiceTest {
         User user = user(1L);
         Course course = course(10L);
 
-        when(userReader.findCompletedOnboardingUserById(1L)).thenReturn(user);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.empty());
         when(courseLikeRepository.save(any(CourseLike.class))).thenThrow(new DataIntegrityViolationException("duplicate"));

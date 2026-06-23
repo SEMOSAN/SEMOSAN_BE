@@ -40,13 +40,13 @@ public class UserNotificationSettingService {
     // 로그인한 사용자의 알림 설정을 조회합니다.
     @Transactional(readOnly = true)
     public GetNotificationSettingResponse getNotificationSetting(Long userId) {
-        userReader.findCompletedOnboardingUserById(userId);
+        userReader.findActiveUserById(userId);
         return GetNotificationSettingResponse.from(findSetting(userId));
     }
 
     // 사용자 알림 설정을 조회한 뒤 전달받은 변경 동작을 적용합니다.
     private void updateSetting(Long userId, Consumer<UserNotificationSetting> updater) {
-        userReader.findCompletedOnboardingUserById(userId);
+        userReader.findActiveUserById(userId);
         UserNotificationSetting setting = findSetting(userId);
         updater.accept(setting);
     }

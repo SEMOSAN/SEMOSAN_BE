@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -88,6 +89,7 @@ class MountainServiceTest {
         Course thirdCourse = course(third);
         Course fourthCourse = course(fourth);
 
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(userReader.findCompletedOnboardingByUserId(1L)).thenReturn(onboarding);
         when(courseRepository.findAllWithMountainForRecommendation())
                 .thenReturn(List.of(fourthCourse, secondCourse, firstCourse, thirdCourse));
@@ -114,6 +116,32 @@ class MountainServiceTest {
         assertThat(result).hasSize(3);
         assertThat(result.get(0).difficultyLabel()).isEqualTo("중");
         assertThat(result.get(0).mountainHeightM()).isEqualTo(123);
+    }
+
+    @Test
+    void getRecommendedMountainsReturnsDefaultMountainsWhenOnboardingIsIncomplete() throws Exception {
+        User user = User.createTestUser("recommendation-incomplete-user", DeviceType.IOS);
+        Mountain first = mountain(1L, "북한산");
+        Mountain second = mountain(5L, "아차산");
+        Mountain third = mountain(8L, "관악산");
+
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(mountainRepository.findAllById(List.of(1L, 5L, 8L)))
+                .thenReturn(List.of(third, first, second));
+
+        List<MountainRecommendationResponse> result = mountainService.getRecommendedMountains(
+                1L,
+                37.0,
+                127.0
+        );
+
+        assertThat(result)
+                .extracting(MountainRecommendationResponse::mountainId)
+                .containsExactly(1L, 5L, 8L);
+        assertThat(result)
+                .extracting(MountainRecommendationResponse::name)
+                .containsExactly("북한산", "아차산", "관악산");
+        verifyNoInteractions(courseRepository, fitnessLevelCalculator, trackScorer);
     }
 
     private User user() {

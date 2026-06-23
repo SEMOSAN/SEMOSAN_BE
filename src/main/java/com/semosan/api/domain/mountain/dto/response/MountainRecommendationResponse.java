@@ -27,6 +27,17 @@ public record MountainRecommendationResponse(
         );
     }
 
+    public static MountainRecommendationResponse fromDefaultMountain(Mountain mountain) {
+        return new MountainRecommendationResponse(
+                mountain.getId(),
+                mountain.getName(),
+                firstImageUrl(mountain),
+                difficultyLabel(mountain.getDifficulty()),
+                mountain.getAltitude().intValue(),
+                mountain.getAddress()
+        );
+    }
+
     private static String difficultyLabel(Difficulty difficulty) {
         return switch (difficulty) {
             case EASY -> "초";
