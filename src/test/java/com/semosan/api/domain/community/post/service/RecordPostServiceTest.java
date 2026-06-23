@@ -42,7 +42,7 @@ class RecordPostServiceTest {
     private HikingMemberRepository hikingMemberRepository;
 
     @Mock
-    private PostBlockPolicy postBlockPolicy;
+    private PostAccessPolicy postAccessPolicy;
 
     @Mock
     private UserReader userReader;
@@ -74,7 +74,7 @@ class RecordPostServiceTest {
         RecordPost result = recordPostService.getDetail(1L, 10L);
 
         assertThat(result.getViewCount()).isEqualTo(1);
-        verify(postBlockPolicy).validateReadable(1L, post);
+        verify(postAccessPolicy).validateReadable(1L, post);
     }
 
     @Test
@@ -83,7 +83,7 @@ class RecordPostServiceTest {
 
         when(recordPostRepository.findById(10L)).thenReturn(Optional.of(post));
         org.mockito.Mockito.doThrow(new GeneralException(ErrorStatus.POST_AUTHOR_BLOCKED))
-                .when(postBlockPolicy).validateReadable(1L, post);
+                .when(postAccessPolicy).validateReadable(1L, post);
 
         assertThatThrownBy(() -> recordPostService.getDetail(1L, 10L))
                 .isInstanceOf(GeneralException.class)

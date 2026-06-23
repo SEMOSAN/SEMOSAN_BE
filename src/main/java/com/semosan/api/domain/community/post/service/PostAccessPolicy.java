@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class PostBlockPolicy {
+public class PostAccessPolicy {
 
     private final UserBlockRepository userBlockRepository;
 

@@ -32,7 +32,7 @@ public class FreePostService {
     private final PostImageRepository postImageRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
-    private final PostBlockPolicy postBlockPolicy;
+    private final PostAccessPolicy postAccessPolicy;
     private final UserReader userReader;
 
     @Transactional
@@ -76,7 +76,7 @@ public class FreePostService {
     @Transactional
     public FreePostDetailResponse getDetail(Long viewerId, Long postId) {
         FreePost post = findActivePostOrThrow(postId);
-        postBlockPolicy.validateReadable(viewerId, post);
+        postAccessPolicy.validateReadable(viewerId, post);
         post.increaseViewCount();
 
         List<PostImage> images = postImageRepository.findByPostOrderBySortOrderAsc(post);
