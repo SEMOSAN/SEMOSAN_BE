@@ -51,7 +51,7 @@ class FreePostServiceTest {
     private CommentRepository commentRepository;
 
     @Mock
-    private PostBlockPolicy postBlockPolicy;
+    private PostAccessPolicy postAccessPolicy;
 
     @Mock
     private UserReader userReader;
@@ -93,7 +93,7 @@ class FreePostServiceTest {
         assertThat(result.likedByMe()).isTrue();
         assertThat(result.likeCount()).isEqualTo(3L);
         assertThat(result.commentCount()).isEqualTo(2L);
-        verify(postBlockPolicy).validateReadable(1L, post);
+        verify(postAccessPolicy).validateReadable(1L, post);
     }
 
     @Test
@@ -103,7 +103,7 @@ class FreePostServiceTest {
 
         when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
         org.mockito.Mockito.doThrow(new GeneralException(ErrorStatus.POST_AUTHOR_BLOCKED))
-                .when(postBlockPolicy).validateReadable(1L, post);
+                .when(postAccessPolicy).validateReadable(1L, post);
 
         assertThatThrownBy(() -> freePostService.getDetail(1L, 10L))
                 .isInstanceOf(GeneralException.class)

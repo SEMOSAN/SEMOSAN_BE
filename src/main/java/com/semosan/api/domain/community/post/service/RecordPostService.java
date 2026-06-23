@@ -23,7 +23,7 @@ public class RecordPostService {
     private final RecordPostRepository recordPostRepository;
     private final HikingRecordRepository hikingRecordRepository;
     private final HikingMemberRepository hikingMemberRepository;
-    private final PostBlockPolicy postBlockPolicy;
+    private final PostAccessPolicy postAccessPolicy;
     private final UserReader userReader;
 
     @Transactional
@@ -52,7 +52,7 @@ public class RecordPostService {
     @Transactional
     public RecordPost getDetail(Long viewerId, Long postId) {
         RecordPost post = findActivePostOrThrow(postId);
-        postBlockPolicy.validateReadable(viewerId, post);
+        postAccessPolicy.validateReadable(viewerId, post);
         post.increaseViewCount();
         return post;
     }

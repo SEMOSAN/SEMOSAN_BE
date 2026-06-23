@@ -19,13 +19,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PostBlockPolicyTest {
+class PostAccessPolicyTest {
 
     @Mock
     private UserBlockRepository userBlockRepository;
 
     @InjectMocks
-    private PostBlockPolicy postBlockPolicy;
+    private PostAccessPolicy postAccessPolicy;
 
     @Test
     void validateReadableThrowsWhenViewerBlockedAuthor() throws Exception {
@@ -33,7 +33,7 @@ class PostBlockPolicyTest {
 
         when(userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(1L, 2L)).thenReturn(true);
 
-        assertThatThrownBy(() -> postBlockPolicy.validateReadable(1L, post))
+        assertThatThrownBy(() -> postAccessPolicy.validateReadable(1L, post))
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_AUTHOR_BLOCKED);
