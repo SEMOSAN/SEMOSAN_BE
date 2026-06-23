@@ -40,11 +40,11 @@ public class UserOnboarding extends BaseEntity {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "hiking_level", nullable = false, length = 20)
+    @Column(name = "hiking_level", length = 20)
     private HikingLevel hikingLevel;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "exercise_type", nullable = false, length = 30)
+    @Column(name = "exercise_type", length = 30)
     private ExerciseType exerciseType;
 
     @Enumerated(EnumType.STRING)
