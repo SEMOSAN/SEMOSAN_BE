@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -87,18 +88,17 @@ class MountainLikeServiceTest {
                 .isEqualTo(ErrorStatus.MOUNTAIN_LIKE_ALREADY_EXISTS);
     }
 
+    // LikeConflictHandler 도입으로 동시 요청 충돌은 예외 대신 성공(이미 좋아요한 것으로 간주)으로 흡수한다.
     @Test
-    void likeMountainConvertsDuplicateConstraintToAlreadyExists() {
+    void likeMountainTreatsConcurrentDuplicateAsLiked() {
         when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
         when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain(10L)));
         when(mountainLikeRepository.existsByUser_IdAndMountain_Id(1L, 10L)).thenReturn(false);
         when(mountainLikeRepository.save(any(MountainLike.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate"));
 
-        assertThatThrownBy(() -> mountainLikeService.likeMountain(1L, 10L))
-                .isInstanceOf(GeneralException.class)
-                .extracting("errorStatus")
-                .isEqualTo(ErrorStatus.MOUNTAIN_LIKE_ALREADY_EXISTS);
+        assertThatCode(() -> mountainLikeService.likeMountain(1L, 10L))
+                .doesNotThrowAnyException();
     }
 
     @Test
