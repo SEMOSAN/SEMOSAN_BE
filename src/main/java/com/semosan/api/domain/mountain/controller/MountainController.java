@@ -6,6 +6,7 @@ import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.mountain.controller.docs.MountainControllerDocs;
 import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainLikeToggleResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainRecommendationResponse;
@@ -107,21 +108,13 @@ public class MountainController implements MountainControllerDocs {
 
     @PostMapping("/{mountainId}/like")
     @Override
-    public ResponseEntity<ApiResponse<Void>> likeMountain(
+    public ResponseEntity<ApiResponse<MountainLikeToggleResponse>> toggleMountainLike(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long mountainId
     ) {
-        mountainLikeService.likeMountain(userId, mountainId);
-        return ApiResponse.success(SuccessStatus.MOUNTAIN_LIKE_SUCCESS);
-    }
-
-    @DeleteMapping("/{mountainId}/like")
-    @Override
-    public ResponseEntity<ApiResponse<Void>> unlikeMountain(
-            @AuthenticationPrincipal Long userId,
-            @PathVariable Long mountainId
-    ) {
-        mountainLikeService.unlikeMountain(userId, mountainId);
-        return ApiResponse.success(SuccessStatus.MOUNTAIN_UNLIKE_SUCCESS);
+        return ApiResponse.success(
+                SuccessStatus.MOUNTAIN_LIKE_TOGGLE_SUCCESS,
+                mountainLikeService.toggleMountainLike(userId, mountainId)
+        );
     }
 }

@@ -4,6 +4,7 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainLikeToggleResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainRecommendationResponse;
@@ -147,13 +148,13 @@ public interface MountainControllerDocs {
     );
 
     @Operation(
-            summary = "산 좋아요 등록",
-            description = "로그인한 사용자가 산에 좋아요를 등록합니다. 이미 좋아요한 산이면 성공 처리합니다."
+            summary = "산 좋아요 토글",
+            description = "로그인한 사용자가 산 좋아요를 누르거나 취소합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "산 좋아요 등록 성공"
+                    description = "산 좋아요 토글 성공"
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
@@ -161,28 +162,7 @@ public interface MountainControllerDocs {
                     content = @Content(schema = @Schema(implementation = ApiResponse.class))
             )
     })
-    ResponseEntity<ApiResponse<Void>> likeMountain(
-            @AuthenticationPrincipal Long userId,
-            @Parameter(description = "산 ID", required = true)
-            @PathVariable Long mountainId
-    );
-
-    @Operation(
-            summary = "산 좋아요 취소",
-            description = "로그인한 사용자가 산 좋아요를 취소합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "산 좋아요 취소 성공"
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "404",
-                    description = "좋아요한 산이 아니거나 산을 찾을 수 없음",
-                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
-            )
-    })
-    ResponseEntity<ApiResponse<Void>> unlikeMountain(
+    ResponseEntity<ApiResponse<MountainLikeToggleResponse>> toggleMountainLike(
             @AuthenticationPrincipal Long userId,
             @Parameter(description = "산 ID", required = true)
             @PathVariable Long mountainId

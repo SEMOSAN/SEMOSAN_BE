@@ -3,6 +3,7 @@ package com.semosan.api.domain.mountain.service;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainLikeToggleResponse;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.entity.MountainLike;
 import com.semosan.api.domain.mountain.enums.Difficulty;
@@ -13,7 +14,6 @@ import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -50,77 +49,62 @@ class MountainLikeServiceTest {
     private MountainLikeService mountainLikeService;
 
     @Test
-    void likeMountainSavesLikeWhenNotLiked() {
+    void toggleMountainLikeCreatesLikeWhenNotLiked() {
         User user = user(1L);
         Mountain mountain = mountain(10L);
+
         when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain));
-        when(mountainLikeRepository.existsByUser_IdAndMountain_Id(1L, 10L)).thenReturn(false);
+        when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L)).thenReturn(Optional.empty());
 
-        mountainLikeService.likeMountain(1L, 10L);
+        MountainLikeToggleResponse response = mountainLikeService.toggleMountainLike(1L, 10L);
 
-        ArgumentCaptor<MountainLike> captor = ArgumentCaptor.forClass(MountainLike.class);
-        verify(mountainLikeRepository).save(captor.capture());
-        assertThat(captor.getValue().getUser()).isSameAs(user);
-        assertThat(captor.getValue().getMountain()).isSameAs(mountain);
+        assertThat(response.liked()).isTrue();
+        verify(mountainLikeRepository).save(any(MountainLike.class));
     }
 
     @Test
-    void likeMountainThrowsWhenMountainMissing() {
+    void toggleMountainLikeThrowsWhenMountainMissing() {
         when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
         when(mountainRepository.findById(10L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> mountainLikeService.likeMountain(1L, 10L))
+        assertThatThrownBy(() -> mountainLikeService.toggleMountainLike(1L, 10L))
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.MOUNTAIN_NOT_FOUND);
     }
 
     @Test
-    void likeMountainThrowsWhenAlreadyLiked() {
-        when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
-        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain(10L)));
-        when(mountainLikeRepository.existsByUser_IdAndMountain_Id(1L, 10L)).thenReturn(true);
+    void toggleMountainLikeDeletesLikeWhenAlreadyLiked() {
+        User user = user(1L);
+        Mountain mountain = mountain(10L);
+        MountainLike mountainLike = MountainLike.create(user, mountain);
 
-        assertThatThrownBy(() -> mountainLikeService.likeMountain(1L, 10L))
-                .isInstanceOf(GeneralException.class)
-                .extracting("errorStatus")
-                .isEqualTo(ErrorStatus.MOUNTAIN_LIKE_ALREADY_EXISTS);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain));
+        when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L)).thenReturn(Optional.of(mountainLike));
+
+        MountainLikeToggleResponse response = mountainLikeService.toggleMountainLike(1L, 10L);
+
+        assertThat(response.liked()).isFalse();
+        verify(mountainLikeRepository).delete(mountainLike);
     }
 
     // LikeConflictHandler 도입으로 동시 요청 충돌은 예외 대신 성공(이미 좋아요한 것으로 간주)으로 흡수한다.
     @Test
-    void likeMountainTreatsConcurrentDuplicateAsLiked() {
-        when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
-        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain(10L)));
-        when(mountainLikeRepository.existsByUser_IdAndMountain_Id(1L, 10L)).thenReturn(false);
+    void toggleMountainLikeReturnsLikedWhenConcurrentDuplicateDetected() {
+        User user = user(1L);
+        Mountain mountain = mountain(10L);
+
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain));
+        when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L)).thenReturn(Optional.empty());
         when(mountainLikeRepository.save(any(MountainLike.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate"));
 
-        assertThatCode(() -> mountainLikeService.likeMountain(1L, 10L))
-                .doesNotThrowAnyException();
-    }
+        MountainLikeToggleResponse response = mountainLikeService.toggleMountainLike(1L, 10L);
 
-    @Test
-    void unlikeMountainDeletesExistingLike() {
-        MountainLike mountainLike = MountainLike.create(user(1L), mountain(10L));
-        when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L))
-                .thenReturn(Optional.of(mountainLike));
-
-        mountainLikeService.unlikeMountain(1L, 10L);
-
-        verify(userReader).findActiveUserById(1L);
-        verify(mountainLikeRepository).delete(mountainLike);
-    }
-
-    @Test
-    void unlikeMountainThrowsWhenLikeMissing() {
-        when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> mountainLikeService.unlikeMountain(1L, 10L))
-                .isInstanceOf(GeneralException.class)
-                .extracting("errorStatus")
-                .isEqualTo(ErrorStatus.MOUNTAIN_LIKE_NOT_FOUND);
+        assertThat(response.liked()).isTrue();
     }
 
     @Test
