@@ -6,11 +6,9 @@ import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.community.post.controller.docs.RecordPostControllerDocs;
 import com.semosan.api.domain.community.post.dto.RecordPostCreateRequest;
 import com.semosan.api.domain.community.post.dto.RecordPostResponse;
-import com.semosan.api.domain.community.post.entity.RecordPost;
 import com.semosan.api.domain.community.post.service.RecordPostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -30,8 +28,11 @@ public class RecordPostController implements RecordPostControllerDocs {
             @AuthenticationPrincipal Long userId,
             @Valid @RequestBody RecordPostCreateRequest request
     ) {
-        RecordPost post = recordPostService.create(userId, request.hikingRecordId(), request.content());
-        return ApiResponse.success(SuccessStatus.RECORD_POST_CREATE_SUCCESS, RecordPostResponse.from(post));
+        return ApiResponse.success(SuccessStatus.RECORD_POST_CREATE_SUCCESS, recordPostService.create(
+                userId,
+                request.hikingRecordId(),
+                request.content()
+        ));
     }
 
     @GetMapping
@@ -39,8 +40,10 @@ public class RecordPostController implements RecordPostControllerDocs {
             @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Page<RecordPostResponse> page = recordPostService.getList(userId, pageable).map(RecordPostResponse::from);
-        return ApiResponse.success(SuccessStatus.RECORD_POST_LIST_SUCCESS, PageResponse.from(page));
+        return ApiResponse.success(
+                SuccessStatus.RECORD_POST_LIST_SUCCESS,
+                PageResponse.from(recordPostService.getList(userId, pageable))
+        );
     }
 
     @GetMapping("/me")
@@ -48,8 +51,10 @@ public class RecordPostController implements RecordPostControllerDocs {
             @AuthenticationPrincipal Long userId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        Page<RecordPostResponse> page = recordPostService.getMyList(userId, pageable).map(RecordPostResponse::from);
-        return ApiResponse.success(SuccessStatus.RECORD_POST_MY_LIST_SUCCESS, PageResponse.from(page));
+        return ApiResponse.success(
+                SuccessStatus.RECORD_POST_MY_LIST_SUCCESS,
+                PageResponse.from(recordPostService.getMyList(userId, pageable))
+        );
     }
 
     @GetMapping("/{postId}")
@@ -57,8 +62,10 @@ public class RecordPostController implements RecordPostControllerDocs {
             @AuthenticationPrincipal Long userId,
             @PathVariable Long postId
     ) {
-        RecordPost post = recordPostService.getDetail(userId, postId);
-        return ApiResponse.success(SuccessStatus.RECORD_POST_DETAIL_SUCCESS, RecordPostResponse.from(post));
+        return ApiResponse.success(
+                SuccessStatus.RECORD_POST_DETAIL_SUCCESS,
+                recordPostService.getDetail(userId, postId)
+        );
     }
 
     @DeleteMapping("/{postId}")
