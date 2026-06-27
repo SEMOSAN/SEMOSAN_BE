@@ -2,6 +2,7 @@ package com.semosan.api.domain.community.post.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.community.post.dto.RecordPostResponse;
 import com.semosan.api.domain.community.post.entity.RecordPost;
 import com.semosan.api.domain.community.post.repository.RecordPostRepository;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
@@ -27,7 +28,7 @@ public class RecordPostService {
     private final UserReader userReader;
 
     @Transactional
-    public RecordPost create(Long authorId, Long hikingRecordId, String content) {
+    public RecordPostResponse create(Long authorId, Long hikingRecordId, String content) {
         User author = userReader.findActiveUserById(authorId);
         HikingRecord hikingRecord = hikingRecordRepository.findById(hikingRecordId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.HIKING_RECORD_NOT_FOUND));
@@ -37,24 +38,26 @@ public class RecordPostService {
         }
 
         RecordPost post = RecordPost.create(author, content, hikingRecord);
-        return recordPostRepository.save(post);
+        return RecordPostResponse.from(recordPostRepository.save(post));
     }
 
-    public Page<RecordPost> getList(Long viewerId, Pageable pageable) {
-        return recordPostRepository.findVisibleByViewerId(viewerId, pageable);
+    public Page<RecordPostResponse> getList(Long viewerId, Pageable pageable) {
+        return recordPostRepository.findVisibleByViewerId(viewerId, pageable)
+                .map(RecordPostResponse::from);
     }
 
-    public Page<RecordPost> getMyList(Long authorId, Pageable pageable) {
+    public Page<RecordPostResponse> getMyList(Long authorId, Pageable pageable) {
         User author = userReader.findActiveUserById(authorId);
-        return recordPostRepository.findByAuthorAndDeletedFalse(author, pageable);
+        return recordPostRepository.findByAuthorAndDeletedFalseWithSummary(author, pageable)
+                .map(RecordPostResponse::from);
     }
 
     @Transactional
-    public RecordPost getDetail(Long viewerId, Long postId) {
+    public RecordPostResponse getDetail(Long viewerId, Long postId) {
         RecordPost post = findActivePostOrThrow(postId);
         postAccessPolicy.validateReadable(viewerId, post);
         post.increaseViewCount();
-        return post;
+        return RecordPostResponse.from(post);
     }
 
     @Transactional

@@ -2,10 +2,14 @@ package com.semosan.api.domain.community.post.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.community.post.dto.RecordPostResponse;
 import com.semosan.api.domain.community.post.entity.RecordPost;
 import com.semosan.api.domain.community.post.repository.RecordPostRepository;
+import com.semosan.api.domain.hiking.entity.HikingRecord;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
+import com.semosan.api.domain.mountain.entity.Course;
+import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.service.UserReader;
@@ -19,11 +23,13 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,34 +57,73 @@ class RecordPostServiceTest {
     private RecordPostService recordPostService;
 
     @Test
-    void getListUsesViewerSpecificVisibleQuery() {
+    void createReturnsResponse() throws Exception {
+        User author = user(1L, "author");
+        HikingRecord hikingRecord = hikingRecord(100L, course(mountain(20L, "관악산"), 30L, "과천향교 출발 코스"));
+        RecordPost savedPost = RecordPost.create(author, "본문", hikingRecord);
+        ReflectionTestUtils.setField(savedPost, "id", 10L);
+
+        when(userReader.findActiveUserById(1L)).thenReturn(author);
+        when(hikingRecordRepository.findById(100L)).thenReturn(Optional.of(hikingRecord));
+        when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, author)).thenReturn(true);
+        when(recordPostRepository.save(any(RecordPost.class))).thenReturn(savedPost);
+
+        RecordPostResponse result = recordPostService.create(1L, 100L, "본문");
+
+        assertThat(result.id()).isEqualTo(10L);
+        assertThat(result.content()).isEqualTo("본문");
+        assertThat(result.hikingRecord().courseName()).isEqualTo("과천향교 출발 코스");
+    }
+
+    @Test
+    void getListUsesViewerSpecificVisibleQuery() throws Exception {
         RecordPost post = recordPost(10L, user(2L, "author"));
         PageRequest pageable = PageRequest.of(0, 10);
         Page<RecordPost> page = new PageImpl<>(List.of(post), pageable, 1);
 
         when(recordPostRepository.findVisibleByViewerId(1L, pageable)).thenReturn(page);
 
-        Page<RecordPost> result = recordPostService.getList(1L, pageable);
+        Page<RecordPostResponse> result = recordPostService.getList(1L, pageable);
 
         assertThat(result).hasSize(1);
+        assertThat(result.getContent().get(0).id()).isEqualTo(10L);
+        assertThat(result.getContent().get(0).hikingRecord().mountainName()).isEqualTo("관악산");
         verify(recordPostRepository).findVisibleByViewerId(eq(1L), eq(pageable));
         verify(recordPostRepository, never()).findAllByDeletedFalse(pageable);
     }
 
     @Test
-    void getDetailValidatesBlockPolicyBeforeIncreasingViewCount() {
+    void getMyListUsesSummaryFetchQuery() throws Exception {
+        User author = user(1L, "author");
+        RecordPost post = recordPost(10L, author);
+        PageRequest pageable = PageRequest.of(0, 10);
+        Page<RecordPost> page = new PageImpl<>(List.of(post), pageable, 1);
+
+        when(userReader.findActiveUserById(1L)).thenReturn(author);
+        when(recordPostRepository.findByAuthorAndDeletedFalseWithSummary(author, pageable)).thenReturn(page);
+
+        Page<RecordPostResponse> result = recordPostService.getMyList(1L, pageable);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getContent().get(0).author().id()).isEqualTo(1L);
+        verify(recordPostRepository).findByAuthorAndDeletedFalseWithSummary(eq(author), eq(pageable));
+    }
+
+    @Test
+    void getDetailValidatesBlockPolicyBeforeIncreasingViewCount() throws Exception {
         RecordPost post = recordPost(10L, user(2L, "author"));
 
         when(recordPostRepository.findById(10L)).thenReturn(Optional.of(post));
 
-        RecordPost result = recordPostService.getDetail(1L, 10L);
+        RecordPostResponse result = recordPostService.getDetail(1L, 10L);
 
-        assertThat(result.getViewCount()).isEqualTo(1);
+        assertThat(result.viewCount()).isEqualTo(1);
+        assertThat(post.getViewCount()).isEqualTo(1);
         verify(postAccessPolicy).validateReadable(1L, post);
     }
 
     @Test
-    void getDetailThrowsWhenViewerBlockedAuthor() {
+    void getDetailThrowsWhenViewerBlockedAuthor() throws Exception {
         RecordPost post = recordPost(10L, user(2L, "author"));
 
         when(recordPostRepository.findById(10L)).thenReturn(Optional.of(post));
@@ -93,7 +138,7 @@ class RecordPostServiceTest {
     }
 
     @Test
-    void deleteSoftDeletesWhenRequesterOwnsPost() {
+    void deleteSoftDeletesWhenRequesterOwnsPost() throws Exception {
         RecordPost post = recordPost(10L, user(2L, "author"));
 
         when(recordPostRepository.findById(10L)).thenReturn(Optional.of(post));
@@ -104,7 +149,7 @@ class RecordPostServiceTest {
     }
 
     @Test
-    void deleteThrowsWhenRequesterDoesNotOwnPost() {
+    void deleteThrowsWhenRequesterDoesNotOwnPost() throws Exception {
         RecordPost post = recordPost(10L, user(2L, "author"));
 
         when(recordPostRepository.findById(10L)).thenReturn(Optional.of(post));
@@ -123,9 +168,41 @@ class RecordPostServiceTest {
         return user;
     }
 
-    private RecordPost recordPost(Long id, User author) {
-        RecordPost post = RecordPost.create(author, "본문", null);
+    private RecordPost recordPost(Long id, User author) throws Exception {
+        RecordPost post = RecordPost.create(author, "본문", hikingRecord(100L, course(mountain(20L, "관악산"), 30L, "과천향교 출발 코스")));
         ReflectionTestUtils.setField(post, "id", id);
         return post;
+    }
+
+    private Mountain mountain(Long id, String name) throws Exception {
+        Constructor<Mountain> constructor = Mountain.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        Mountain mountain = constructor.newInstance();
+        ReflectionTestUtils.setField(mountain, "id", id);
+        ReflectionTestUtils.setField(mountain, "name", name);
+        return mountain;
+    }
+
+    private Course course(Mountain mountain, Long id, String name) throws Exception {
+        Constructor<Course> constructor = Course.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        Course course = constructor.newInstance();
+        ReflectionTestUtils.setField(course, "id", id);
+        ReflectionTestUtils.setField(course, "mountain", mountain);
+        ReflectionTestUtils.setField(course, "name", name);
+        return course;
+    }
+
+    private HikingRecord hikingRecord(Long id, Course course) throws Exception {
+        Constructor<HikingRecord> constructor = HikingRecord.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        HikingRecord hikingRecord = constructor.newInstance();
+        ReflectionTestUtils.setField(hikingRecord, "id", id);
+        ReflectionTestUtils.setField(hikingRecord, "mountain", course.getMountain());
+        ReflectionTestUtils.setField(hikingRecord, "course", course);
+        ReflectionTestUtils.setField(hikingRecord, "duration", 3600);
+        ReflectionTestUtils.setField(hikingRecord, "maxAltitude", 629.0);
+        ReflectionTestUtils.setField(hikingRecord, "calories", 500);
+        return hikingRecord;
     }
 }
