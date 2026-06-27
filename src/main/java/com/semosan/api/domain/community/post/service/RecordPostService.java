@@ -48,7 +48,7 @@ public class RecordPostService {
 
     public Page<RecordPostResponse> getMyList(Long authorId, Pageable pageable) {
         User author = userReader.findActiveUserById(authorId);
-        return recordPostRepository.findByAuthorAndDeletedFalse(author, pageable)
+        return recordPostRepository.findByAuthorAndDeletedFalseWithSummary(author, pageable)
                 .map(RecordPostResponse::from);
     }
 

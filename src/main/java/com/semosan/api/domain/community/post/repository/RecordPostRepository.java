@@ -12,19 +12,55 @@ public interface RecordPostRepository extends JpaRepository<RecordPost, Long> {
 
     Page<RecordPost> findAllByDeletedFalse(Pageable pageable);
 
-    Page<RecordPost> findByAuthorAndDeletedFalse(User author, Pageable pageable);
+    @Query(
+            value = """
+                    SELECT rp
+                    FROM RecordPost rp
+                    JOIN FETCH rp.author
+                    JOIN FETCH rp.hikingRecord hr
+                    JOIN FETCH hr.mountain
+                    LEFT JOIN FETCH hr.course
+                    WHERE rp.author = :author
+                      AND rp.deleted = false
+                    ORDER BY rp.createdAt DESC
+                    """,
+            countQuery = """
+                    SELECT COUNT(rp)
+                    FROM RecordPost rp
+                    WHERE rp.author = :author
+                      AND rp.deleted = false
+                    """
+    )
+    Page<RecordPost> findByAuthorAndDeletedFalseWithSummary(@Param("author") User author, Pageable pageable);
 
-    @Query("""
-            SELECT rp
-            FROM RecordPost rp
-            WHERE rp.deleted = false
-              AND NOT EXISTS (
-                  SELECT 1
-                  FROM UserBlock ub
-                  WHERE ub.blocker.id = :viewerId
-                    AND ub.blockedUser.id = rp.author.id
-              )
-            ORDER BY rp.createdAt DESC
-            """)
+    @Query(
+            value = """
+                    SELECT rp
+                    FROM RecordPost rp
+                    JOIN FETCH rp.author
+                    JOIN FETCH rp.hikingRecord hr
+                    JOIN FETCH hr.mountain
+                    LEFT JOIN FETCH hr.course
+                    WHERE rp.deleted = false
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM UserBlock ub
+                          WHERE ub.blocker.id = :viewerId
+                            AND ub.blockedUser.id = rp.author.id
+                      )
+                    ORDER BY rp.createdAt DESC
+                    """,
+            countQuery = """
+                    SELECT COUNT(rp)
+                    FROM RecordPost rp
+                    WHERE rp.deleted = false
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM UserBlock ub
+                          WHERE ub.blocker.id = :viewerId
+                            AND ub.blockedUser.id = rp.author.id
+                      )
+                    """
+    )
     Page<RecordPost> findVisibleByViewerId(@Param("viewerId") Long viewerId, Pageable pageable);
 }

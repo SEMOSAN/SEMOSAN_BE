@@ -93,6 +93,23 @@ class RecordPostServiceTest {
     }
 
     @Test
+    void getMyListUsesSummaryFetchQuery() throws Exception {
+        User author = user(1L, "author");
+        RecordPost post = recordPost(10L, author);
+        PageRequest pageable = PageRequest.of(0, 10);
+        Page<RecordPost> page = new PageImpl<>(List.of(post), pageable, 1);
+
+        when(userReader.findActiveUserById(1L)).thenReturn(author);
+        when(recordPostRepository.findByAuthorAndDeletedFalseWithSummary(author, pageable)).thenReturn(page);
+
+        Page<RecordPostResponse> result = recordPostService.getMyList(1L, pageable);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getContent().get(0).author().id()).isEqualTo(1L);
+        verify(recordPostRepository).findByAuthorAndDeletedFalseWithSummary(eq(author), eq(pageable));
+    }
+
+    @Test
     void getDetailValidatesBlockPolicyBeforeIncreasingViewCount() throws Exception {
         RecordPost post = recordPost(10L, user(2L, "author"));
 
