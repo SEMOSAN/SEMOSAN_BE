@@ -49,6 +49,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
     private static final String F_RECORDED_AT = "recordedAt";
 
     private final Map<Long, Queue<TrackingPointFlushService.PendingPoint>> buffers = new ConcurrentHashMap<>();
+    private final Map<Long, TrackingSessionStatsService.LastPosition> lastPositions = new ConcurrentHashMap<>();
 
     private final TrackingSessionStatsService statsService;
     private final TrackingPointFlushService flushService;
@@ -77,6 +78,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
             }
 
             double distanceTotal = statsService.recordPoint(sessionId, lat, lng, altitude, recordedAt);
+            lastPositions.put(sessionId, new TrackingSessionStatsService.LastPosition(lat, lng, altitude));
             milestoneTriggerService.evaluate(sessionId, userId, distanceTotal);
 
             Queue<TrackingPointFlushService.PendingPoint> queue =
@@ -139,6 +141,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSessionTerminated(TrackingSessionTerminatedEvent event) {
         Long sessionId = event.sessionId();
+        lastPositions.remove(sessionId);
         Queue<TrackingPointFlushService.PendingPoint> queue = buffers.remove(sessionId);
         if (queue == null || queue.isEmpty()) {
             return;
@@ -158,9 +161,13 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
     }
 
     private boolean shouldAcceptPoint(Long sessionId, double lat, double lng, Double altitude) {
-        TrackingSessionStatsService.LastPosition last = statsService.getLastPosition(sessionId);
-        if (last.isEmpty()) {
-            return true;
+        TrackingSessionStatsService.LastPosition last = lastPositions.get(sessionId);
+        if (last == null) {
+            last = statsService.getLastPosition(sessionId);
+            if (last.isEmpty()) {
+                return true;
+            }
+            lastPositions.put(sessionId, last);
         }
 
         double horizontalDistance = haversineMeters(last.lat(), last.lng(), lat, lng);

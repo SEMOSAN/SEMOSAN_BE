@@ -100,6 +100,9 @@ public class TrackingSessionStatsService {
         HashOperations<String, String, String> hash = redisTemplate.opsForHash();
         String key = statsKey(sessionId);
         List<String> values = hash.multiGet(key, List.of("last_lat", "last_lng", "last_altitude"));
+        if (values == null || values.size() < 3) {
+            return new LastPosition(null, null, null);
+        }
         return new LastPosition(
                 parseNullableDouble(values.get(0)),
                 parseNullableDouble(values.get(1)),
