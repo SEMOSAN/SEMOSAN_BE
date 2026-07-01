@@ -38,6 +38,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class TrackingStreamConsumer implements StreamListener<String, MapRecord<String, String, String>> {
 
     private static final int FLUSH_THRESHOLD = 100;
+    private static final double MIN_HORIZONTAL_DISTANCE_METERS = 10.0;
+    private static final double MIN_ALTITUDE_CHANGE_METERS = 3.0;
 
     private static final String F_SESSION_ID = "sessionId";
     private static final String F_USER_ID = "userId";
@@ -67,8 +69,14 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
             Double altitude = parseNullableDouble(body.get(F_ALTITUDE));
             LocalDateTime recordedAt = LocalDateTime.parse(body.get(F_RECORDED_AT));
 
-            double distanceTotal = statsService.recordPoint(sessionId, lat, lng, altitude, recordedAt);
             activityService.markActive(sessionId);
+
+            if (!shouldAcceptPoint(sessionId, lat, lng, altitude)) {
+                log.debug("[GPS] 노이즈 필터링 | sessionId={}", sessionId);
+                return;
+            }
+
+            double distanceTotal = statsService.recordPoint(sessionId, lat, lng, altitude, recordedAt);
             milestoneTriggerService.evaluate(sessionId, userId, distanceTotal);
 
             Queue<TrackingPointFlushService.PendingPoint> queue =
@@ -147,6 +155,37 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
             }
         }
         log.info("[FLUSH] 세션 종료 버퍼 정리 | {}건 | sessionId={}", remaining.size(), sessionId);
+    }
+
+    private boolean shouldAcceptPoint(Long sessionId, double lat, double lng, Double altitude) {
+        TrackingSessionStatsService.LastPosition last = statsService.getLastPosition(sessionId);
+        if (last.isEmpty()) {
+            return true;
+        }
+
+        double horizontalDistance = haversineMeters(last.lat(), last.lng(), lat, lng);
+        if (horizontalDistance >= MIN_HORIZONTAL_DISTANCE_METERS) {
+            return true;
+        }
+
+        if (altitude != null && last.altitude() != null) {
+            if (Math.abs(altitude - last.altitude()) >= MIN_ALTITUDE_CHANGE_METERS) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static double haversineMeters(double lat1, double lng1, double lat2, double lng2) {
+        double rad = Math.PI / 180;
+        double dLat = (lat2 - lat1) * rad;
+        double dLng = (lng2 - lng1) * rad;
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(lat1 * rad) * Math.cos(lat2 * rad)
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return 6_371_000.0 * c;
     }
 
     private static Double parseNullableDouble(String value) {
