@@ -22,14 +22,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/community")
 @RequiredArgsConstructor
 public class CommentController implements CommentControllerDocs {
 
     private final CommentService commentService;
     private final UserBlockService userBlockService;
 
-    @PostMapping("/community/posts/{postId}/comments")
+    @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<CommentResponse>> create(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long postId,
@@ -39,7 +39,7 @@ public class CommentController implements CommentControllerDocs {
                 CommentResponse.from(commentService.create(postId, userId, request.content())));
     }
 
-    @PostMapping("/community/posts/{postId}/comments/replies")
+    @PostMapping("/posts/{postId}/comments/replies")
     public ResponseEntity<ApiResponse<CommentResponse>> reply(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long postId,
@@ -51,7 +51,7 @@ public class CommentController implements CommentControllerDocs {
                 )));
     }
 
-    @GetMapping("/community/posts/{postId}/comments")
+    @GetMapping("/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<PageResponse<CommentResponse>>> getComments(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long postId,
@@ -63,7 +63,7 @@ public class CommentController implements CommentControllerDocs {
         );
     }
 
-    @GetMapping("/community/comments/{commentId}/replies")
+    @GetMapping("/comments/{commentId}/replies")
     public ResponseEntity<ApiResponse<List<CommentResponse>>> getReplies(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long commentId
@@ -74,7 +74,7 @@ public class CommentController implements CommentControllerDocs {
         );
     }
 
-    @DeleteMapping("/community/comments/{commentId}")
+    @DeleteMapping("/comments/{commentId}")
     public ResponseEntity<ApiResponse<Void>> delete(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long commentId
@@ -83,7 +83,7 @@ public class CommentController implements CommentControllerDocs {
         return ApiResponse.success(SuccessStatus.COMMENT_DELETE_SUCCESS);
     }
 
-    @PostMapping("/community/comments/{commentId}/blocks")
+    @PostMapping("/comments/{commentId}/blocks")
     public ResponseEntity<ApiResponse<Void>> block(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long commentId
