@@ -8,6 +8,7 @@ import com.semosan.api.domain.community.comment.dto.CommentCreateRequest;
 import com.semosan.api.domain.community.comment.dto.CommentReplyRequest;
 import com.semosan.api.domain.community.comment.dto.CommentResponse;
 import com.semosan.api.domain.community.comment.service.CommentService;
+import com.semosan.api.domain.user.service.UserBlockService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,13 +22,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/community")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class CommentController implements CommentControllerDocs {
 
     private final CommentService commentService;
+    private final UserBlockService userBlockService;
 
-    @PostMapping("/posts/{postId}/comments")
+    @PostMapping("/community/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<CommentResponse>> create(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long postId,
@@ -37,7 +39,7 @@ public class CommentController implements CommentControllerDocs {
                 CommentResponse.from(commentService.create(postId, userId, request.content())));
     }
 
-    @PostMapping("/posts/{postId}/comments/replies")
+    @PostMapping("/community/posts/{postId}/comments/replies")
     public ResponseEntity<ApiResponse<CommentResponse>> reply(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long postId,
@@ -49,7 +51,7 @@ public class CommentController implements CommentControllerDocs {
                 )));
     }
 
-    @GetMapping("/posts/{postId}/comments")
+    @GetMapping("/community/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<PageResponse<CommentResponse>>> getComments(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long postId,
@@ -61,7 +63,7 @@ public class CommentController implements CommentControllerDocs {
         );
     }
 
-    @GetMapping("/comments/{commentId}/replies")
+    @GetMapping("/community/comments/{commentId}/replies")
     public ResponseEntity<ApiResponse<List<CommentResponse>>> getReplies(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long commentId
@@ -72,12 +74,21 @@ public class CommentController implements CommentControllerDocs {
         );
     }
 
-    @DeleteMapping("/comments/{commentId}")
+    @DeleteMapping("/community/comments/{commentId}")
     public ResponseEntity<ApiResponse<Void>> delete(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long commentId
     ) {
         commentService.delete(commentId, userId);
         return ApiResponse.success(SuccessStatus.COMMENT_DELETE_SUCCESS);
+    }
+
+    @PostMapping("/comments/{commentId}/block")
+    public ResponseEntity<ApiResponse<Void>> block(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long commentId
+    ) {
+        userBlockService.blockByComment(userId, commentId);
+        return ApiResponse.success(SuccessStatus.COMMENT_BLOCK_SUCCESS);
     }
 }
