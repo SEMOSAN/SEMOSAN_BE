@@ -83,7 +83,7 @@ public class CommentController implements CommentControllerDocs {
         return ApiResponse.success(SuccessStatus.COMMENT_DELETE_SUCCESS);
     }
 
-    @PostMapping("/comments/{commentId}/block")
+    @PostMapping("/community/comments/{commentId}/blocks")
     public ResponseEntity<ApiResponse<Void>> block(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long commentId
