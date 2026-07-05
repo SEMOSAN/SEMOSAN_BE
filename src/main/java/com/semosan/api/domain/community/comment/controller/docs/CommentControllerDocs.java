@@ -75,4 +75,15 @@ public interface CommentControllerDocs {
             @AuthenticationPrincipal Long userId,
             @PathVariable Long commentId
     );
+
+    @Operation(summary = "댓글 작성자 차단", description = "댓글 작성자를 차단합니다. 차단 후 해당 사용자의 댓글은 목록 조회 시 마스킹됩니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "차단 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "자기 자신 차단 불가"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "댓글 또는 유저 없음")
+    })
+    ResponseEntity<ApiResponse<Void>> block(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long commentId
+    );
 }

@@ -2,6 +2,8 @@ package com.semosan.api.domain.user.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.community.comment.entity.Comment;
+import com.semosan.api.domain.community.comment.repository.CommentRepository;
 import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.repository.FreePostRepository;
 import com.semosan.api.domain.user.entity.User;
@@ -37,6 +39,9 @@ class UserBlockServiceTest {
     @Mock
     private FreePostRepository freePostRepository;
 
+    @Mock
+    private CommentRepository commentRepository;
+
     @InjectMocks
     private UserBlockService userBlockService;
 
@@ -63,9 +68,39 @@ class UserBlockServiceTest {
         FreePost post = freePost(10L, user);
 
         when(freePostRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
-        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userBlockService.blockByPost(1L, 10L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_BLOCK_SELF_NOT_ALLOWED);
+        verify(userBlockRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void blockByCommentBlocksCommentAuthor() throws Exception {
+        User blocker = user(1L, "blocker");
+        User blockedUser = user(2L, "blocked");
+        Comment comment = comment(20L, blockedUser);
+
+        when(commentRepository.findByIdAndDeletedFalse(20L)).thenReturn(Optional.of(comment));
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(blocker));
+        when(userRepository.findByIdAndDeletedFalse(2L)).thenReturn(Optional.of(blockedUser));
+        when(userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(1L, 2L)).thenReturn(false);
+        when(userBlockRepository.saveAndFlush(any(UserBlock.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        userBlockService.blockByComment(1L, 20L);
+
+        verify(userBlockRepository).saveAndFlush(any(UserBlock.class));
+    }
+
+    @Test
+    void blockByCommentThrowsWhenBlockingSelf() throws Exception {
+        User user = user(1L, "user");
+        Comment comment = comment(20L, user);
+
+        when(commentRepository.findByIdAndDeletedFalse(20L)).thenReturn(Optional.of(comment));
+
+        assertThatThrownBy(() -> userBlockService.blockByComment(1L, 20L))
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.USER_BLOCK_SELF_NOT_ALLOWED);
@@ -85,5 +120,11 @@ class UserBlockServiceTest {
         FreePost post = constructor.newInstance(author, "title", "content");
         ReflectionTestUtils.setField(post, "id", id);
         return post;
+    }
+
+    private Comment comment(Long id, User author) throws Exception {
+        Comment comment = Comment.create(freePost(10L, author), author, "content");
+        ReflectionTestUtils.setField(comment, "id", id);
+        return comment;
     }
 }

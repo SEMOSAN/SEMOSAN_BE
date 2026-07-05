@@ -8,6 +8,7 @@ import com.semosan.api.domain.community.comment.dto.CommentCreateRequest;
 import com.semosan.api.domain.community.comment.dto.CommentReplyRequest;
 import com.semosan.api.domain.community.comment.dto.CommentResponse;
 import com.semosan.api.domain.community.comment.service.CommentService;
+import com.semosan.api.domain.user.service.UserBlockService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +27,7 @@ import java.util.List;
 public class CommentController implements CommentControllerDocs {
 
     private final CommentService commentService;
+    private final UserBlockService userBlockService;
 
     @PostMapping("/posts/{postId}/comments")
     public ResponseEntity<ApiResponse<CommentResponse>> create(
@@ -79,5 +81,14 @@ public class CommentController implements CommentControllerDocs {
     ) {
         commentService.delete(commentId, userId);
         return ApiResponse.success(SuccessStatus.COMMENT_DELETE_SUCCESS);
+    }
+
+    @PostMapping("/comments/{commentId}/blocks")
+    public ResponseEntity<ApiResponse<Void>> block(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long commentId
+    ) {
+        userBlockService.blockByComment(userId, commentId);
+        return ApiResponse.success(SuccessStatus.COMMENT_BLOCK_SUCCESS);
     }
 }

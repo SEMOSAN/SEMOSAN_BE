@@ -109,6 +109,7 @@ public enum SuccessStatus implements BaseStatus {
     COMMENT_DELETE_SUCCESS(HttpStatus.OK, "CMT_200_3", "댓글이 삭제되었습니다."),
     COMMENT_CREATE_SUCCESS(HttpStatus.CREATED, "CMT_201_1", "댓글이 작성되었습니다."),
     COMMENT_REPLY_SUCCESS(HttpStatus.CREATED, "CMT_201_2", "대댓글이 작성되었습니다."),
+    COMMENT_BLOCK_SUCCESS(HttpStatus.CREATED, "CMT_201_3", "사용자를 차단했습니다."),
 
     /**
      * Post Like (좋아요)
