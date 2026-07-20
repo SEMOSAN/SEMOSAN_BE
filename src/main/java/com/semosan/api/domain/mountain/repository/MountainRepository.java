@@ -14,8 +14,10 @@ import java.util.Optional;
 
 public interface MountainRepository extends JpaRepository<Mountain, Long> {
 
-    @Query("SELECT m FROM Mountain m WHERE m.name LIKE CONCAT('%', :keyword, '%') OR m.address LIKE CONCAT('%', :keyword, '%')")
+    @Query("SELECT m FROM Mountain m WHERE m.isPublic = true AND (m.name LIKE CONCAT('%', :keyword, '%') OR m.address LIKE CONCAT('%', :keyword, '%'))")
     Page<Mountain> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
+
+    Page<Mountain> findByIsPublicTrue(Pageable pageable);
 
     /**
      * 주어진 좌표(lat, lng)에서 가장 가까운 산 1개를 PostGIS 거리 연산자로 조회한다.
@@ -27,6 +29,7 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
             value = """
                     SELECT * FROM mountains
                     WHERE location IS NOT NULL
+                      AND is_public = true
                     ORDER BY location <-> ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography
                     LIMIT 1
                     """,
@@ -53,6 +56,7 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
                     WHERE difficulty IN (:difficulties)
                       AND latitude IS NOT NULL
                       AND longitude IS NOT NULL
+                      AND is_public = true
                     ORDER BY (POWER(latitude - :lat, 2) + POWER((longitude - :lng) * COS(RADIANS(:lat)), 2)) ASC, id ASC
                     """,
             countQuery = """
@@ -60,6 +64,7 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
                     WHERE difficulty IN (:difficulties)
                       AND latitude IS NOT NULL
                       AND longitude IS NOT NULL
+                      AND is_public = true
                     """,
             nativeQuery = true
     )
@@ -84,6 +89,7 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
                     LEFT JOIN hiking_members hm ON hm.hiking_record_id = hr.id AND hm.user_id = :userId
                     WHERE m.latitude BETWEEN :swLat AND :neLat
                       AND m.longitude BETWEEN :swLng AND :neLng
+                      AND m.is_public = true
                     GROUP BY m.id
                     ORDER BY m.id
                     """,

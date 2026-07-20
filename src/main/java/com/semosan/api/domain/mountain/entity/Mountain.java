@@ -60,6 +60,10 @@ public class Mountain extends BaseEntity {
     @Column(name = "location", columnDefinition = "geography(Point, 4326)")
     private Point location;
 
+    @Builder.Default
+    @Column(name = "is_public", nullable = false)
+    private boolean isPublic = true;
+
     public void updateCoordinates(Double latitude, Double longitude) {
         this.latitude = latitude;
         this.longitude = longitude;
