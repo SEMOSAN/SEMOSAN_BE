@@ -59,7 +59,7 @@ public class MountainService {
 
     public Page<MountainListResponse> getMountains(Long userId, Pageable pageable) {
         userReader.findActiveUserById(userId);
-        return mountainRepository.findAll(pageable)
+         return mountainRepository.findByIsPublicTrue(pageable)
                 .map(MountainListResponse::from);
     }
 

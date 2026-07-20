@@ -16,8 +16,9 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("""
             SELECT c
             FROM Course c
-            JOIN FETCH c.mountain
-            ORDER BY c.mountain.id ASC, c.id ASC
+            JOIN FETCH c.mountain m
+            WHERE m.isPublic = true
+            ORDER BY m.id ASC, c.id ASC
             """)
     List<Course> findAllWithMountainForRecommendation();
 
