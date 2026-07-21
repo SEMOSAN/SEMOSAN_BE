@@ -26,6 +26,18 @@ public class Restaurant extends BaseEntity {
     @Column(name = "category", length = 50)
     private String category;
 
+    @Column(name = "menu", length = 100)
+    private String menu;
+
+    @Column(name = "description", length = 255)
+    private String description;
+
     @Column(name = "image_url", length = 500)
     private String imageUrl;
+
+    @Column(name = "map_url", columnDefinition = "TEXT")
+    private String mapUrl;
+
+    @Column(name = "blog_url", columnDefinition = "TEXT")
+    private String blogUrl;
 }
