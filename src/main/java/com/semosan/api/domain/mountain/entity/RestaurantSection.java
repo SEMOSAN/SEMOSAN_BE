@@ -26,18 +26,6 @@ public class RestaurantSection extends BaseEntity {
     @Column(name = "title", nullable = false, length = 100)
     private String title;
 
-    @Column(name = "menu", length = 100)
-    private String menu;
-
-    @Column(name = "description", length = 255)
-    private String description;
-
-    @Column(name = "map_url", columnDefinition = "TEXT")
-    private String mapUrl;
-
-    @Column(name = "blog_url", columnDefinition = "TEXT")
-    private String blogUrl;
-
     @OneToMany(mappedBy = "section", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Restaurant> restaurants = new ArrayList<>();
