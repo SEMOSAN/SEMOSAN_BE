@@ -132,14 +132,16 @@ public record MountainDetailResponse(
             Long restaurantId,
             String name,
             String category,
-            String imageUrl
+            String imageUrl,
+            String mapUrl
     ) {
         public static RestaurantInfo from(Restaurant restaurant) {
             return new RestaurantInfo(
                     restaurant.getId(),
                     restaurant.getName(),
                     restaurant.getCategory(),
-                    restaurant.getImageUrl()
+                    restaurant.getImageUrl(),
+                    restaurant.getMapUrl()
             );
         }
     }
