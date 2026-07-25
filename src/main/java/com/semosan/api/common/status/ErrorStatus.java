@@ -158,7 +158,12 @@ public enum ErrorStatus implements BaseStatus {
      */
     APP_VERSION_NOT_FOUND(HttpStatus.NOT_FOUND, "APPV_404_1", "앱 버전 정보를 찾을 수 없습니다."),
     APP_VERSION_READ_FAILED(HttpStatus.BAD_GATEWAY, "APPV_502_1", "앱 버전 정보 조회에 실패했습니다."),
-    APP_VERSION_UPDATE_FAILED(HttpStatus.BAD_GATEWAY, "APPV_502_2", "앱 버전 정보 저장에 실패했습니다.");
+    APP_VERSION_UPDATE_FAILED(HttpStatus.BAD_GATEWAY, "APPV_502_2", "앱 버전 정보 저장에 실패했습니다."),
+
+    /**
+     * Admin
+     */
+    ADMIN_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "ADM_401_1", "아이디 또는 비밀번호가 올바르지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
