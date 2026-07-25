@@ -43,7 +43,8 @@ public class JwtFilter extends OncePerRequestFilter {
                             SecurityConfig.SWAGGER_URIS,
                             SecurityConfig.OAUTH_URIS,
                             SecurityConfig.AUTH_URIS,
-                            SecurityConfig.WEBSOCKET_URIS
+                            SecurityConfig.WEBSOCKET_URIS,
+                            SecurityConfig.ADMIN_PUBLIC_URIS
                     )
                     .flatMap(Arrays::stream)
                     .map(PathPatternRequestMatcher.withDefaults()::matcher)

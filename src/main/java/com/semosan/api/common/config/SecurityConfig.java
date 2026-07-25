@@ -59,6 +59,10 @@ public class SecurityConfig {
             "/ws/tracking/**"
     };
 
+    public static final String[] ADMIN_PUBLIC_URIS = {
+            "/api/admin/login"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -75,7 +79,7 @@ public class SecurityConfig {
                         .requestMatchers(AUTH_URIS).permitAll()
                         .requestMatchers(WEBSOCKET_URIS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/app-version").permitAll()
-                        .requestMatchers("/api/admin/login").permitAll()
+                        .requestMatchers(ADMIN_PUBLIC_URIS).permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/app-version").hasRole("ADMIN")
                         .anyRequest().authenticated()
