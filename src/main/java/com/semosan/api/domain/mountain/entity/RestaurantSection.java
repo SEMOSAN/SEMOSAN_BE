@@ -26,7 +26,18 @@ public class RestaurantSection extends BaseEntity {
     @Column(name = "title", nullable = false, length = 100)
     private String title;
 
-    @OneToMany(mappedBy = "section", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "section", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE, orphanRemoval = true)
     @Builder.Default
     private List<Restaurant> restaurants = new ArrayList<>();
+
+    public static RestaurantSection create(Mountain mountain, String title) {
+        return RestaurantSection.builder()
+                .mountain(mountain)
+                .title(title)
+                .build();
+    }
+
+    public void updateTitle(String title) {
+        this.title = title;
+    }
 }
