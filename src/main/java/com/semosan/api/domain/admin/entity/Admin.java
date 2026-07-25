@@ -25,15 +25,11 @@ public class Admin extends BaseEntity {
     @Column(name = "name", nullable = false, length = 50)
     private String name;
 
-    @Column(name = "enabled", nullable = false)
-    private boolean enabled = true;
-
     public static Admin create(String username, String password, String name) {
         return Admin.builder()
                 .username(username)
                 .password(password)
                 .name(name)
-                .enabled(true)
                 .build();
     }
 }

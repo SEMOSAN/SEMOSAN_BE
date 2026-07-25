@@ -2,6 +2,7 @@ package com.semosan.api.common.jwt;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.admin.entity.Admin;
 import com.semosan.api.domain.user.entity.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -82,6 +83,19 @@ public class JwtService {
         } catch (NoSuchAlgorithmException e) {
             throw new GeneralException(ErrorStatus.JWT_GENERAL_ERROR);
         }
+    }
+
+    public String generateAdminAccessToken(Admin admin) {
+        Date now = new Date();
+        Date expiration = new Date(now.getTime() + accessTokenExpiration);
+
+        return Jwts.builder()
+                .subject(admin.getId().toString())
+                .claim("tokenType", "ADMIN")
+                .issuedAt(now)
+                .expiration(expiration)
+                .signWith(secretKey, Jwts.SIG.HS256)
+                .compact();
     }
 
     // Access Token 검증 후 Claims를 반환해 호출부에서 같은 토큰을 다시 파싱하지 않도록 한다.

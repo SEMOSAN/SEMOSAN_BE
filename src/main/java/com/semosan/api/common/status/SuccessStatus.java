@@ -133,7 +133,12 @@ public enum SuccessStatus implements BaseStatus {
      * App Version
      */
     APP_VERSION_GET_SUCCESS(HttpStatus.OK, "APPV_200_1", "앱 버전 정보 조회에 성공했습니다."),
-    APP_VERSION_UPDATE_SUCCESS(HttpStatus.OK, "APPV_200_2", "앱 버전 정보 수정에 성공했습니다.");
+    APP_VERSION_UPDATE_SUCCESS(HttpStatus.OK, "APPV_200_2", "앱 버전 정보 수정에 성공했습니다."),
+
+    /**
+     * Admin
+     */
+    ADMIN_LOGIN_SUCCESS(HttpStatus.OK, "ADM_200_1", "관리자 로그인에 성공했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

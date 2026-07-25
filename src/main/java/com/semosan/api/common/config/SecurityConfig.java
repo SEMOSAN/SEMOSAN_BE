@@ -75,6 +75,9 @@ public class SecurityConfig {
                         .requestMatchers(AUTH_URIS).permitAll()
                         .requestMatchers(WEBSOCKET_URIS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/app-version").permitAll()
+                        .requestMatchers("/api/admin/login").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/app-version").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.stereotype.Component;
@@ -72,8 +73,14 @@ public class JwtFilter extends OncePerRequestFilter {
                 Long userId = jwtService.getUserIdFromClaims(claims);
                 MDC.put("userId", String.valueOf(userId));
 
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                String tokenType = claims.get("tokenType", String.class);
+                if ("ADMIN".equals(tokenType)) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                }
+
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(userId, null, new ArrayList<>());
+                        new UsernamePasswordAuthenticationToken(userId, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
             filterChain.doFilter(request, response);
