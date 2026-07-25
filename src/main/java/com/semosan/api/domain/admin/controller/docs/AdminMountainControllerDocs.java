@@ -1,0 +1,92 @@
+package com.semosan.api.domain.admin.controller.docs;
+
+import com.semosan.api.common.response.ApiResponse;
+import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
+import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
+import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
+import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+
+@Tag(name = "Admin Mountain", description = "관리자 산 정보 관리 API")
+public interface AdminMountainControllerDocs {
+
+    @Operation(summary = "산 정보 수정", description = "산의 이름, 주소, 고도, 난이도, 소요시간, 이미지를 수정합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "산 정보 수정 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "산을 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<Void>> updateMountain(
+            @PathVariable Long mountainId,
+            @Valid @RequestBody AdminMountainUpdateRequest request
+    );
+
+    @Operation(summary = "산 공개/비공개 처리", description = "산의 공개 상태를 변경합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "공개 상태 변경 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "산을 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<Void>> updateVisibility(
+            @PathVariable Long mountainId,
+            @Valid @RequestBody AdminMountainVisibilityRequest request
+    );
+
+    @Operation(summary = "맛집 섹션 생성", description = "산에 맛집 섹션을 추가합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "맛집 섹션 생성 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "산을 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<Long>> createRestaurantSection(
+            @PathVariable Long mountainId,
+            @Valid @RequestBody AdminRestaurantSectionRequest request
+    );
+
+    @Operation(summary = "맛집 섹션 수정", description = "맛집 섹션의 제목을 수정합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "맛집 섹션 수정 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "맛집 섹션을 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<Void>> updateRestaurantSection(
+            @PathVariable Long sectionId,
+            @Valid @RequestBody AdminRestaurantSectionRequest request
+    );
+
+    @Operation(summary = "맛집 섹션 삭제", description = "맛집 섹션과 소속 맛집을 모두 삭제합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "맛집 섹션 삭제 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "맛집 섹션을 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<Void>> deleteRestaurantSection(@PathVariable Long sectionId);
+
+    @Operation(summary = "맛집 추가", description = "맛집 섹션에 맛집을 추가합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "맛집 생성 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "맛집 섹션을 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<Long>> createRestaurant(
+            @PathVariable Long sectionId,
+            @Valid @RequestBody AdminRestaurantRequest request
+    );
+
+    @Operation(summary = "맛집 수정", description = "맛집 정보를 수정합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "맛집 수정 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "맛집을 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<Void>> updateRestaurant(
+            @PathVariable Long restaurantId,
+            @Valid @RequestBody AdminRestaurantRequest request
+    );
+
+    @Operation(summary = "맛집 삭제", description = "맛집을 삭제합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "맛집 삭제 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "맛집을 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<Void>> deleteRestaurant(@PathVariable Long restaurantId);
+}

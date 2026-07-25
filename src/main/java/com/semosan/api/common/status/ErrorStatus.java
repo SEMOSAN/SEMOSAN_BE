@@ -163,7 +163,9 @@ public enum ErrorStatus implements BaseStatus {
     /**
      * Admin
      */
-    ADMIN_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "ADM_401_1", "아이디 또는 비밀번호가 올바르지 않습니다.");
+    ADMIN_LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "ADM_401_1", "아이디 또는 비밀번호가 올바르지 않습니다."),
+    RESTAURANT_SECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "ADM_404_1", "맛집 섹션을 찾을 수 없습니다."),
+    RESTAURANT_NOT_FOUND(HttpStatus.NOT_FOUND, "ADM_404_2", "맛집을 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

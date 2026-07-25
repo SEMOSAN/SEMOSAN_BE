@@ -64,6 +64,22 @@ public class Mountain extends BaseEntity {
     @Column(name = "is_public", nullable = false)
     private boolean isPublic = true;
 
+    public void updateInfo(String name, String address, Double altitude, Difficulty difficulty, Integer duration) {
+        this.name = name;
+        this.address = address;
+        this.altitude = altitude;
+        this.difficulty = difficulty;
+        this.duration = duration;
+    }
+
+    public void updateImageUrls(List<String> imageUrls) {
+        this.imageUrls = imageUrls;
+    }
+
+    public void updateVisibility(boolean isPublic) {
+        this.isPublic = isPublic;
+    }
+
     public void updateCoordinates(Double latitude, Double longitude) {
         this.latitude = latitude;
         this.longitude = longitude;

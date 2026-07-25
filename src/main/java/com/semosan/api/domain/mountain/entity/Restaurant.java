@@ -40,4 +40,30 @@ public class Restaurant extends BaseEntity {
 
     @Column(name = "blog_url", columnDefinition = "TEXT")
     private String blogUrl;
+
+    public static Restaurant create(RestaurantSection section, String name, String category,
+                                     String menu, String description, String imageUrl,
+                                     String mapUrl, String blogUrl) {
+        return Restaurant.builder()
+                .section(section)
+                .name(name)
+                .category(category)
+                .menu(menu)
+                .description(description)
+                .imageUrl(imageUrl)
+                .mapUrl(mapUrl)
+                .blogUrl(blogUrl)
+                .build();
+    }
+
+    public void update(String name, String category, String menu, String description,
+                       String imageUrl, String mapUrl, String blogUrl) {
+        this.name = name;
+        this.category = category;
+        this.menu = menu;
+        this.description = description;
+        this.imageUrl = imageUrl;
+        this.mapUrl = mapUrl;
+        this.blogUrl = blogUrl;
+    }
 }
