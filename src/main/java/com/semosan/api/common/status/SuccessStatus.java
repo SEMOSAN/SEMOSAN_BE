@@ -146,7 +146,12 @@ public enum SuccessStatus implements BaseStatus {
     ADMIN_RESTAURANT_UPDATE_SUCCESS(HttpStatus.OK, "ADM_200_6", "맛집 수정에 성공했습니다."),
     ADMIN_RESTAURANT_DELETE_SUCCESS(HttpStatus.OK, "ADM_200_7", "맛집 삭제에 성공했습니다."),
     ADMIN_RESTAURANT_SECTION_CREATE_SUCCESS(HttpStatus.CREATED, "ADM_201_1", "맛집 섹션 생성에 성공했습니다."),
-    ADMIN_RESTAURANT_CREATE_SUCCESS(HttpStatus.CREATED, "ADM_201_2", "맛집 생성에 성공했습니다.");
+    ADMIN_RESTAURANT_CREATE_SUCCESS(HttpStatus.CREATED, "ADM_201_2", "맛집 생성에 성공했습니다."),
+    ADMIN_REPORTED_POST_LIST_SUCCESS(HttpStatus.OK, "ADM_200_8", "신고된 게시글 목록 조회에 성공했습니다."),
+    ADMIN_POST_DELETE_SUCCESS(HttpStatus.OK, "ADM_200_9", "게시글 강제 삭제에 성공했습니다."),
+    ADMIN_COMMENT_DELETE_SUCCESS(HttpStatus.OK, "ADM_200_10", "댓글 강제 삭제에 성공했습니다."),
+    ADMIN_USER_SUSPEND_SUCCESS(HttpStatus.OK, "ADM_200_11", "사용자 정지 처리에 성공했습니다."),
+    ADMIN_USER_UNSUSPEND_SUCCESS(HttpStatus.OK, "ADM_200_12", "사용자 정지 해제에 성공했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

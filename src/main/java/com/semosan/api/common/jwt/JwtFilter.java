@@ -5,6 +5,8 @@ import com.semosan.api.common.config.SecurityConfig;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.user.entity.User;
+import com.semosan.api.domain.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -34,6 +36,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
 
     // SecurityConfig의 permitAll 경로와 동일하게 맞춰줍니다.
     // WebSocket 핸드셰이크(/ws/tracking)는 HTTP JWT 필터 우회 — STOMP CONNECT 프레임의
@@ -78,6 +81,11 @@ public class JwtFilter extends OncePerRequestFilter {
                 String tokenType = claims.get("tokenType", String.class);
                 if ("ADMIN".equals(tokenType)) {
                     authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                } else {
+                    User user = userRepository.findById(userId).orElse(null);
+                    if (user != null && user.isSuspended()) {
+                        throw new GeneralException(ErrorStatus.USER_SUSPENDED);
+                    }
                 }
 
                 UsernamePasswordAuthenticationToken authentication =

@@ -60,6 +60,7 @@ public enum ErrorStatus implements BaseStatus {
     EXERCISE_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "USER_400_9", "운동 빈도와 운동 시간을 입력해야 합니다."),
     EXERCISE_DETAIL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "USER_400_10", "운동 안함 선택 시 운동 빈도와 운동 시간을 입력할 수 없습니다."),
     ONBOARDING_NOT_COMPLETED(HttpStatus.FORBIDDEN, "USER_403_1", "온보딩을 완료해야 이용할 수 있습니다."),
+    USER_SUSPENDED(HttpStatus.FORBIDDEN, "USER_403_2", "정지된 사용자입니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_1", "사용자를 찾을 수 없습니다."),
     NOTIFICATION_SETTING_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_2", "알림 설정을 찾을 수 없습니다."),
     ONBOARDING_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_404_3", "온보딩 정보를 찾을 수 없습니다."),
