@@ -25,6 +25,13 @@ public interface TrackingSessionRepository extends JpaRepository<TrackingSession
     @Query("""
             SELECT ts FROM TrackingSession ts
             JOIN FETCH ts.user
+            WHERE ts.id = :id
+            """)
+    Optional<TrackingSession> findByIdWithUser(@Param("id") Long id);
+
+    @Query("""
+            SELECT ts FROM TrackingSession ts
+            JOIN FETCH ts.user
             JOIN FETCH ts.mountain
             LEFT JOIN FETCH ts.course
             WHERE ts.id = :id

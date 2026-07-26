@@ -44,7 +44,7 @@ public class TrackingGpsPublisher {
         MDC.put("sessionId", String.valueOf(sessionId));
         MDC.put("userId", String.valueOf(userId));
         try {
-            TrackingSession session = trackingSessionRepository.findById(sessionId)
+            TrackingSession session = trackingSessionRepository.findByIdWithUser(sessionId)
                     .orElseThrow(() -> new GeneralException(ErrorStatus.TRACKING_SESSION_NOT_FOUND));
             if (!session.isOwnedBy(userId)) {
                 throw new GeneralException(ErrorStatus.TRACKING_SESSION_FORBIDDEN);
