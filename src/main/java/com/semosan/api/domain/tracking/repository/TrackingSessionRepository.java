@@ -22,6 +22,29 @@ public interface TrackingSessionRepository extends JpaRepository<TrackingSession
             Collection<TrackingSessionStatus> statuses
     );
 
+    @Query("""
+            SELECT ts FROM TrackingSession ts
+            JOIN FETCH ts.user
+            JOIN FETCH ts.mountain
+            LEFT JOIN FETCH ts.course
+            WHERE ts.id = :id
+            """)
+    Optional<TrackingSession> findByIdWithRelations(@Param("id") Long id);
+
+    @Query("""
+            SELECT ts FROM TrackingSession ts
+            JOIN FETCH ts.user
+            JOIN FETCH ts.mountain
+            LEFT JOIN FETCH ts.course
+            WHERE ts.user.id = :userId AND ts.status IN :statuses
+            ORDER BY ts.startedAt DESC
+            LIMIT 1
+            """)
+    Optional<TrackingSession> findFirstActiveWithRelations(
+            @Param("userId") Long userId,
+            @Param("statuses") Collection<TrackingSessionStatus> statuses
+    );
+
     /**
      * 24h 자동 만료 스케줄러용.
      * 활성 상태(IN_PROGRESS/PAUSED) 이면서 마지막 업데이트가 cutoff 이전인 세션을 찾는다.
