@@ -29,13 +29,14 @@ public record TrackingSessionResponse(
     }
 
     public static TrackingSessionResponse from(TrackingSession session, Long hikingRecordId) {
+        var course = session.getCourse();
         return new TrackingSessionResponse(
                 session.getId(),
                 session.getUser().getId(),
                 session.getMountain().getId(),
                 session.getMountain().getName(),
-                session.getCourse() != null ? session.getCourse().getId() : null,
-                session.getCourse() != null ? session.getCourse().getName() : null,
+                course != null ? course.getId() : null,
+                course != null ? course.getName() : null,
                 session.getIsFreeRecording(),
                 session.getStatus(),
                 session.getStartedAt(),

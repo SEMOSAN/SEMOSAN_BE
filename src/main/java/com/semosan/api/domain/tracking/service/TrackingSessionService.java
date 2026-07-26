@@ -82,7 +82,7 @@ public class TrackingSessionService {
 
     public Optional<TrackingSessionResponse> getActive(Long userId) {
         return trackingSessionRepository
-                .findFirstByUser_IdAndStatusInOrderByStartedAtDesc(userId, TrackingSessionStatus.ACTIVE_STATES)
+                .findFirstActiveWithRelations(userId, TrackingSessionStatus.ACTIVE_STATES)
                 .map(TrackingSessionResponse::from);
     }
 
@@ -158,7 +158,7 @@ public class TrackingSessionService {
     }
 
     private TrackingSession findOwnedSession(Long userId, Long sessionId) {
-        TrackingSession session = trackingSessionRepository.findById(sessionId)
+        TrackingSession session = trackingSessionRepository.findByIdWithRelations(sessionId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.TRACKING_SESSION_NOT_FOUND));
         if (!session.isOwnedBy(userId)) {
             throw new GeneralException(ErrorStatus.TRACKING_SESSION_FORBIDDEN);
