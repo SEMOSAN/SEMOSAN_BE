@@ -13,6 +13,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 
 @Table(name = "users")
@@ -76,6 +77,9 @@ public class User extends BaseEntity {
 
     @Column(name = "is_deleted", nullable = false)
     private boolean deleted = false;
+
+    @Column(name = "suspended_until")
+    private LocalDateTime suspendedUntil;
 
     public static User createKakaoUser(
             String oauthId,
@@ -179,7 +183,18 @@ public class User extends BaseEntity {
         if (command.weight() != null) this.weight = command.weight();
     }
 
-    // 생년월일을 기준으로 만 나이를 계산합니다.
+    public void suspend(LocalDateTime until) {
+        this.suspendedUntil = until;
+    }
+
+    public void unsuspend() {
+        this.suspendedUntil = null;
+    }
+
+    public boolean isSuspended() {
+        return suspendedUntil != null && LocalDateTime.now().isBefore(suspendedUntil);
+    }
+
     private Integer calculateAge(LocalDate birthDate) {
         return Period.between(birthDate, LocalDate.now()).getYears();
     }
