@@ -5,6 +5,7 @@ import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
+import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -89,4 +90,31 @@ public interface AdminMountainControllerDocs {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "맛집을 찾을 수 없음")
     })
     ResponseEntity<ApiResponse<Void>> deleteRestaurant(@PathVariable Long restaurantId);
+
+    @Operation(summary = "교통정보 추가", description = "산에 교통정보를 추가합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "교통정보 생성 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "산을 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<Long>> createTransportation(
+            @PathVariable Long mountainId,
+            @Valid @RequestBody AdminTransportationRequest request
+    );
+
+    @Operation(summary = "교통정보 수정", description = "교통정보를 수정합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "교통정보 수정 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "교통정보를 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<Void>> updateTransportation(
+            @PathVariable Long transportationId,
+            @Valid @RequestBody AdminTransportationRequest request
+    );
+
+    @Operation(summary = "교통정보 삭제", description = "교통정보를 삭제합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "교통정보 삭제 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "교통정보를 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<Void>> deleteTransportation(@PathVariable Long transportationId);
 }

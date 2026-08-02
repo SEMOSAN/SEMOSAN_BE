@@ -6,12 +6,15 @@ import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
+import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.entity.Restaurant;
 import com.semosan.api.domain.mountain.entity.RestaurantSection;
+import com.semosan.api.domain.mountain.entity.Transportation;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.mountain.repository.RestaurantRepository;
 import com.semosan.api.domain.mountain.repository.RestaurantSectionRepository;
+import com.semosan.api.domain.mountain.repository.TransportationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +26,7 @@ public class AdminMountainService {
     private final MountainRepository mountainRepository;
     private final RestaurantSectionRepository restaurantSectionRepository;
     private final RestaurantRepository restaurantRepository;
+    private final TransportationRepository transportationRepository;
 
     @Transactional
     public void updateMountain(Long mountainId, AdminMountainUpdateRequest request) {
@@ -82,6 +86,28 @@ public class AdminMountainService {
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.RESTAURANT_NOT_FOUND));
         restaurantRepository.delete(restaurant);
+    }
+
+    @Transactional
+    public Long createTransportation(Long mountainId, AdminTransportationRequest request) {
+        Mountain mountain = findMountainById(mountainId);
+        Transportation transportation = Transportation.create(mountain, request.type(),
+                request.direction(), request.name(), request.description());
+        return transportationRepository.save(transportation).getId();
+    }
+
+    @Transactional
+    public void updateTransportation(Long transportationId, AdminTransportationRequest request) {
+        Transportation transportation = transportationRepository.findById(transportationId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.TRANSPORTATION_NOT_FOUND));
+        transportation.update(request.type(), request.direction(), request.name(), request.description());
+    }
+
+    @Transactional
+    public void deleteTransportation(Long transportationId) {
+        Transportation transportation = transportationRepository.findById(transportationId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.TRANSPORTATION_NOT_FOUND));
+        transportationRepository.delete(transportation);
     }
 
     private Mountain findMountainById(Long mountainId) {

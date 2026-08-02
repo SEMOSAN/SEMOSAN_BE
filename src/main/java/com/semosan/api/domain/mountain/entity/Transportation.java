@@ -33,4 +33,22 @@ public class Transportation extends BaseEntity {
 
     @Column(name = "description", length = 500)
     private String description;
+
+    public static Transportation create(Mountain mountain, TransportationType type,
+                                        String direction, String name, String description) {
+        return Transportation.builder()
+                .mountain(mountain)
+                .type(type)
+                .direction(direction)
+                .name(name)
+                .description(description)
+                .build();
+    }
+
+    public void update(TransportationType type, String direction, String name, String description) {
+        this.type = type;
+        this.direction = direction;
+        this.name = name;
+        this.description = description;
+    }
 }
