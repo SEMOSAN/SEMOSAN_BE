@@ -92,7 +92,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration restConfig = new CorsConfiguration();
-        restConfig.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8081", "https://lgenius.site"));
+        restConfig.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8081", "https://lgenius.site", "https://semosan-admin.vercel.app"));
         restConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
         restConfig.setAllowedHeaders(List.of("*"));
         restConfig.setAllowCredentials(true);
