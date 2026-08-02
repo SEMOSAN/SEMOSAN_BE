@@ -102,4 +102,10 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
             @Param("neLat") Double neLat,
             @Param("neLng") Double neLng
     );
+
+    /**
+     * 관리자용 — isPublic 필터 없이 이름 또는 주소로 검색한다.
+     */
+    @Query("SELECT m FROM Mountain m WHERE m.name LIKE CONCAT('%', :keyword, '%') OR m.address LIKE CONCAT('%', :keyword, '%')")
+    Page<Mountain> searchByKeywordAll(@Param("keyword") String keyword, Pageable pageable);
 }

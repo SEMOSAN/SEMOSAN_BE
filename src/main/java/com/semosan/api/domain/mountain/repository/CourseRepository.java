@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,4 +49,11 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
             nativeQuery = true
     )
     Optional<CourseDetailProjection> findCourseDetailById(@Param("courseId") Long courseId);
+
+    /**
+     * 주어진 산 ID 목록에 대해 각 산별 코스 수를 일괄 조회한다.
+     * 결과는 Object[] 배열로 반환되며, [0] = mountainId (Long), [1] = count (Long).
+     */
+    @Query("SELECT c.mountain.id, COUNT(c) FROM Course c WHERE c.mountain.id IN :mountainIds GROUP BY c.mountain.id")
+    List<Object[]> countByMountainIds(@Param("mountainIds") Collection<Long> mountainIds);
 }
