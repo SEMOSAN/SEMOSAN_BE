@@ -1,21 +1,35 @@
 package com.semosan.api.domain.admin.controller.docs;
 
 import com.semosan.api.common.response.ApiResponse;
+import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
 import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
+import com.semosan.api.domain.admin.dto.response.AdminMountainListResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "Admin Mountain", description = "관리자 산 정보 관리 API")
 public interface AdminMountainControllerDocs {
+
+    @Operation(summary = "산 목록 조회", description = "공개/비공개 포함 전체 산 목록을 조회합니다. keyword 파라미터로 이름 또는 주소 검색이 가능합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "산 목록 조회 성공")
+    })
+    ResponseEntity<ApiResponse<PageResponse<AdminMountainListResponse>>> getMountains(
+            @Parameter(description = "검색 키워드 (이름 또는 주소)") @RequestParam(required = false) String keyword,
+            Pageable pageable
+    );
 
     @Operation(summary = "산 정보 수정", description = "산의 이름, 주소, 고도, 난이도, 소요시간, 이미지를 수정합니다.")
     @ApiResponses({

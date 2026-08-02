@@ -7,26 +7,64 @@ import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
 import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
+import com.semosan.api.domain.admin.dto.response.AdminMountainListResponse;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.entity.Restaurant;
 import com.semosan.api.domain.mountain.entity.RestaurantSection;
 import com.semosan.api.domain.mountain.entity.Transportation;
+import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.mountain.repository.RestaurantRepository;
 import com.semosan.api.domain.mountain.repository.RestaurantSectionRepository;
 import com.semosan.api.domain.mountain.repository.TransportationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class AdminMountainService {
 
     private final MountainRepository mountainRepository;
+    private final CourseRepository courseRepository;
     private final RestaurantSectionRepository restaurantSectionRepository;
     private final RestaurantRepository restaurantRepository;
     private final TransportationRepository transportationRepository;
+
+    @Transactional(readOnly = true)
+    public Page<AdminMountainListResponse> getMountains(String keyword, Pageable pageable) {
+        Page<Mountain> mountains = (keyword != null && !keyword.isBlank())
+                ? mountainRepository.searchByKeywordAll(keyword.trim(), pageable)
+                : mountainRepository.findAll(pageable);
+
+        Map<Long, Long> courseCountMap = getCourseCountMap(mountains.getContent());
+
+        return mountains.map(mountain -> AdminMountainListResponse.from(
+                mountain,
+                courseCountMap.getOrDefault(mountain.getId(), 0L)
+        ));
+    }
+
+    private Map<Long, Long> getCourseCountMap(List<Mountain> mountains) {
+        if (mountains.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<Long> mountainIds = mountains.stream()
+                .map(Mountain::getId)
+                .toList();
+        return courseRepository.countByMountainIds(mountainIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+    }
 
     @Transactional
     public void updateMountain(Long mountainId, AdminMountainUpdateRequest request) {

@@ -1,6 +1,7 @@
 package com.semosan.api.domain.admin.controller;
 
 import com.semosan.api.common.response.ApiResponse;
+import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.admin.controller.docs.AdminMountainControllerDocs;
 import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
@@ -8,9 +9,12 @@ import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
 import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
+import com.semosan.api.domain.admin.dto.response.AdminMountainListResponse;
 import com.semosan.api.domain.admin.service.AdminMountainService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +24,18 @@ import org.springframework.web.bind.annotation.*;
 public class AdminMountainController implements AdminMountainControllerDocs {
 
     private final AdminMountainService adminMountainService;
+
+    @GetMapping("/mountains")
+    @Override
+    public ResponseEntity<ApiResponse<PageResponse<AdminMountainListResponse>>> getMountains(
+            @RequestParam(required = false) String keyword,
+            @PageableDefault(size = 20, sort = "name") Pageable pageable
+    ) {
+        PageResponse<AdminMountainListResponse> response = PageResponse.from(
+                adminMountainService.getMountains(keyword, pageable)
+        );
+        return ApiResponse.success(SuccessStatus.ADMIN_MOUNTAIN_LIST_SUCCESS, response);
+    }
 
     @PutMapping("/mountains/{mountainId}")
     @Override
