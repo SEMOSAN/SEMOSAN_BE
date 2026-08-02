@@ -7,6 +7,7 @@ import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
+import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
 import com.semosan.api.domain.admin.service.AdminMountainService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -92,5 +93,32 @@ public class AdminMountainController implements AdminMountainControllerDocs {
     public ResponseEntity<ApiResponse<Void>> deleteRestaurant(@PathVariable Long restaurantId) {
         adminMountainService.deleteRestaurant(restaurantId);
         return ApiResponse.success(SuccessStatus.ADMIN_RESTAURANT_DELETE_SUCCESS);
+    }
+
+    @PostMapping("/mountains/{mountainId}/transportations")
+    @Override
+    public ResponseEntity<ApiResponse<Long>> createTransportation(
+            @PathVariable Long mountainId,
+            @Valid @RequestBody AdminTransportationRequest request
+    ) {
+        Long transportationId = adminMountainService.createTransportation(mountainId, request);
+        return ApiResponse.success(SuccessStatus.ADMIN_TRANSPORTATION_CREATE_SUCCESS, transportationId);
+    }
+
+    @PutMapping("/transportations/{transportationId}")
+    @Override
+    public ResponseEntity<ApiResponse<Void>> updateTransportation(
+            @PathVariable Long transportationId,
+            @Valid @RequestBody AdminTransportationRequest request
+    ) {
+        adminMountainService.updateTransportation(transportationId, request);
+        return ApiResponse.success(SuccessStatus.ADMIN_TRANSPORTATION_UPDATE_SUCCESS);
+    }
+
+    @DeleteMapping("/transportations/{transportationId}")
+    @Override
+    public ResponseEntity<ApiResponse<Void>> deleteTransportation(@PathVariable Long transportationId) {
+        adminMountainService.deleteTransportation(transportationId);
+        return ApiResponse.success(SuccessStatus.ADMIN_TRANSPORTATION_DELETE_SUCCESS);
     }
 }
