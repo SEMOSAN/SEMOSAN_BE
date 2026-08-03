@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -134,11 +135,11 @@ public class FreePostService {
         if (main < 0 || main >= imageUrls.size()) {
             throw new GeneralException(ErrorStatus.POST_IMAGE_INDEX_INVALID);
         }
-        List<PostImage> saved = new java.util.ArrayList<>();
+        List<PostImage> images = new ArrayList<>();
         for (int i = 0; i < imageUrls.size(); i++) {
-            saved.add(postImageRepository.save(PostImage.create(post, imageUrls.get(i), i, i == main)));
+            images.add(PostImage.create(post, imageUrls.get(i), i, i == main));
         }
-        return saved;
+        return postImageRepository.saveAll(images);
     }
 
     private Page<FreePostListResponse> enrichWithCounts(Page<FreePost> posts) {

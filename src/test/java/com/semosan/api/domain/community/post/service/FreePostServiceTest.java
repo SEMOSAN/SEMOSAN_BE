@@ -29,7 +29,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -103,7 +102,7 @@ class FreePostServiceTest {
         FreePost post = freePost(10L, author, "기존 제목", "기존 본문");
 
         when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
-        when(postImageRepository.save(any(PostImage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(postImageRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
         when(postLikeRepository.countByPost(post)).thenReturn(3L);
         when(commentRepository.countByPostAndDeletedFalse(post)).thenReturn(2L);
         when(postLikeRepository.existsByPostIdAndUserId(10L, 2L)).thenReturn(true);
@@ -175,7 +174,7 @@ class FreePostServiceTest {
         FreePost post = freePost(10L, author, "제목", "본문");
 
         when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
-        when(postImageRepository.save(any(PostImage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(postImageRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
         when(postLikeRepository.countByPost(post)).thenReturn(0L);
         when(commentRepository.countByPostAndDeletedFalse(post)).thenReturn(0L);
         when(postLikeRepository.existsByPostIdAndUserId(10L, 2L)).thenReturn(false);
@@ -183,7 +182,7 @@ class FreePostServiceTest {
         FreePostDetailResponse result = updatePost(2L, List.of("https://example.com/new.png"), 0);
 
         verify(postImageRepository).deleteByPost(post);
-        verify(postImageRepository).save(any(PostImage.class));
+        verify(postImageRepository).saveAll(anyList());
         assertThat(result.images()).singleElement()
                 .satisfies(image -> {
                     assertThat(image.imageUrl()).isEqualTo("https://example.com/new.png");
