@@ -29,6 +29,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -97,6 +98,101 @@ class FreePostServiceTest {
     }
 
     @Test
+    void updateChangesTitleContentAndImagesWhenRequesterOwnsPost() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "기존 제목", "기존 본문");
+
+        when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(postImageRepository.save(any(PostImage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(postLikeRepository.countByPost(post)).thenReturn(3L);
+        when(commentRepository.countByPostAndDeletedFalse(post)).thenReturn(2L);
+        when(postLikeRepository.existsByPostIdAndUserId(10L, 2L)).thenReturn(true);
+
+        FreePostDetailResponse result = updatePost(
+                2L,
+                List.of("https://example.com/1.png", "https://example.com/2.png"),
+                1
+        );
+
+        assertThat(post.getTitle()).isEqualTo("수정 제목");
+        assertThat(post.getContent()).isEqualTo("수정 본문");
+        assertThat(result.title()).isEqualTo("수정 제목");
+        assertThat(result.content()).isEqualTo("수정 본문");
+        assertThat(result.likeCount()).isEqualTo(3L);
+        assertThat(result.commentCount()).isEqualTo(2L);
+        assertThat(result.likedByMe()).isTrue();
+        assertThat(result.images()).hasSize(2);
+        assertThat(result.images().get(0).imageUrl()).isEqualTo("https://example.com/1.png");
+        assertThat(result.images().get(0).main()).isFalse();
+        assertThat(result.images().get(1).imageUrl()).isEqualTo("https://example.com/2.png");
+        assertThat(result.images().get(1).main()).isTrue();
+        verify(postImageRepository).deleteByPost(post);
+    }
+
+    @Test
+    void updateThrowsWhenRequesterDoesNotOwnPost() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+
+        when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
+
+        assertThatThrownBy(() -> updatePost(3L, List.of(), null))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_FORBIDDEN);
+        assertThat(post.getTitle()).isEqualTo("제목");
+        assertThat(post.getContent()).isEqualTo("본문");
+        verify(postImageRepository, never()).deleteByPost(post);
+    }
+
+    @Test
+    void updateThrowsWhenPostDoesNotExist() {
+        when(freePostRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> updatePost(2L, List.of(), null))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_NOT_FOUND);
+    }
+
+    @Test
+    void updateThrowsWhenPostIsDeleted() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+        post.softDelete();
+
+        when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
+
+        assertThatThrownBy(() -> updatePost(2L, List.of(), null))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_DELETED);
+    }
+
+    @Test
+    void updateReplacesImagesAfterDeletingExistingImages() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+
+        when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(postImageRepository.save(any(PostImage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(postLikeRepository.countByPost(post)).thenReturn(0L);
+        when(commentRepository.countByPostAndDeletedFalse(post)).thenReturn(0L);
+        when(postLikeRepository.existsByPostIdAndUserId(10L, 2L)).thenReturn(false);
+
+        FreePostDetailResponse result = updatePost(2L, List.of("https://example.com/new.png"), 0);
+
+        verify(postImageRepository).deleteByPost(post);
+        verify(postImageRepository).save(any(PostImage.class));
+        assertThat(result.images()).singleElement()
+                .satisfies(image -> {
+                    assertThat(image.imageUrl()).isEqualTo("https://example.com/new.png");
+                    assertThat(image.sortOrder()).isZero();
+                    assertThat(image.main()).isTrue();
+                });
+    }
+
+    @Test
     void getDetailThrowsWhenViewerBlockedAuthor() throws Exception {
         User author = user(2L, "author");
         FreePost post = freePost(10L, author, "제목", "본문");
@@ -151,5 +247,16 @@ class FreePostServiceTest {
         FreePost post = constructor.newInstance(author, title, content);
         ReflectionTestUtils.setField(post, "id", id);
         return post;
+    }
+
+    private FreePostDetailResponse updatePost(Long requesterId, List<String> imageUrls, Integer mainImageIndex) {
+        return freePostService.update(
+                requesterId,
+                10L,
+                "수정 제목",
+                "수정 본문",
+                imageUrls,
+                mainImageIndex
+        );
     }
 }

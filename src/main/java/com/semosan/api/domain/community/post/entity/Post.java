@@ -45,6 +45,10 @@ public abstract class Post extends BaseEntity {
         this.deleted = true;
     }
 
+    protected void updateContent(String content) {
+        this.content = content;
+    }
+
     public boolean isOwnedBy(Long userId) {
         return author != null && userId != null && userId.equals(author.getId());
     }

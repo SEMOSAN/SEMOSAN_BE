@@ -125,6 +125,7 @@ public enum SuccessStatus implements BaseStatus {
     FREE_POST_DETAIL_SUCCESS(HttpStatus.OK, "FPOST_200_3", "자유게시판 게시글 상세 조회에 성공했습니다."),
     FREE_POST_DELETE_SUCCESS(HttpStatus.OK, "FPOST_200_4", "자유게시판 게시글이 삭제되었습니다."),
     FREE_POST_SEARCH_SUCCESS(HttpStatus.OK, "FPOST_200_5", "자유게시판 게시글 검색에 성공했습니다."),
+    FREE_POST_UPDATE_SUCCESS(HttpStatus.OK, "FPOST_200_6", "자유게시판 게시글이 수정되었습니다."),
     FREE_POST_CREATE_SUCCESS(HttpStatus.CREATED, "FPOST_201_1", "자유게시판 게시글이 작성되었습니다."),
     FREE_POST_REPORT_SUCCESS(HttpStatus.CREATED, "FPOST_201_2", "자유게시판 게시글 신고가 접수되었습니다."),
     FREE_POST_BLOCK_SUCCESS(HttpStatus.CREATED, "FPOST_201_3", "사용자를 차단했습니다."),

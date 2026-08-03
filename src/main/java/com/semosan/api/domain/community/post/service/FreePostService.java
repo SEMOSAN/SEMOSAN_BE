@@ -43,9 +43,7 @@ public class FreePostService {
             List<String> imageUrls,
             Integer mainImageIndex
     ) {
-        if (content == null || content.isBlank()) {
-            throw new GeneralException(ErrorStatus.POST_CONTENT_REQUIRED);
-        }
+        validateContent(content);
         User author = userReader.findActiveUserById(authorId);
 
         FreePost post = FreePost.create(author, title, content);
@@ -74,17 +72,35 @@ public class FreePostService {
     }
 
     @Transactional
+    public FreePostDetailResponse update(
+            Long requesterId,
+            Long postId,
+            String title,
+            String content,
+            List<String> imageUrls,
+            Integer mainImageIndex
+    ) {
+        validateContent(content);
+        FreePost post = findActivePostOrThrow(postId);
+        if (!post.isOwnedBy(requesterId)) {
+            throw new GeneralException(ErrorStatus.POST_FORBIDDEN);
+        }
+
+        post.update(title, content);
+        postImageRepository.deleteByPost(post);
+        List<PostImage> images = saveImages(post, imageUrls, mainImageIndex);
+
+        return toDetailResponse(post, images, requesterId);
+    }
+
+    @Transactional
     public FreePostDetailResponse getDetail(Long viewerId, Long postId) {
         FreePost post = findActivePostOrThrow(postId);
         postAccessPolicy.validateReadable(viewerId, post);
         post.increaseViewCount();
 
         List<PostImage> images = postImageRepository.findByPostOrderBySortOrderAsc(post);
-        long likeCount = postLikeRepository.countByPost(post);
-        long commentCount = commentRepository.countByPostAndDeletedFalse(post);
-        boolean likedByMe = postLikeRepository.existsByPostIdAndUserId(post.getId(), viewerId);
-
-        return FreePostDetailResponse.of(post, images, likeCount, commentCount, likedByMe);
+        return toDetailResponse(post, images, viewerId);
     }
 
     @Transactional
@@ -94,6 +110,20 @@ public class FreePostService {
             throw new GeneralException(ErrorStatus.POST_FORBIDDEN);
         }
         post.softDelete();
+    }
+
+    private void validateContent(String content) {
+        if (content == null || content.isBlank()) {
+            throw new GeneralException(ErrorStatus.POST_CONTENT_REQUIRED);
+        }
+    }
+
+    private FreePostDetailResponse toDetailResponse(FreePost post, List<PostImage> images, Long viewerId) {
+        long likeCount = postLikeRepository.countByPost(post);
+        long commentCount = commentRepository.countByPostAndDeletedFalse(post);
+        boolean likedByMe = postLikeRepository.existsByPostIdAndUserId(post.getId(), viewerId);
+
+        return FreePostDetailResponse.of(post, images, likeCount, commentCount, likedByMe);
     }
 
     private List<PostImage> saveImages(FreePost post, List<String> imageUrls, Integer mainImageIndex) {

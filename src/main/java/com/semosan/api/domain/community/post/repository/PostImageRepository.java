@@ -12,6 +12,8 @@ public interface PostImageRepository extends JpaRepository<PostImage, Long> {
 
     List<PostImage> findByPostOrderBySortOrderAsc(Post post);
 
+    void deleteByPost(Post post);
+
     @Query("SELECT pi FROM PostImage pi WHERE pi.post.id IN :postIds AND pi.main = true")
     List<PostImage> findMainImagesByPostIds(@Param("postIds") List<Long> postIds);
 
