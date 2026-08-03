@@ -8,13 +8,15 @@ import com.semosan.api.domain.oauth.dto.KakaoUserInfoResponse;
 import com.semosan.api.domain.oauth.dto.request.OAuthAppleLoginRequest;
 import com.semosan.api.domain.oauth.dto.request.OAuthKakaoLoginRequest;
 import com.semosan.api.domain.oauth.dto.response.OAuthLoginResponse;
+import com.semosan.api.domain.user.dto.command.OAuthUserProfile;
 import com.semosan.api.domain.user.entity.User;
+import com.semosan.api.domain.user.enums.user.DeviceType;
+import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import com.semosan.api.domain.user.service.UserService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -26,34 +28,43 @@ public class OAuthService {
     private final OAuthKakaoClient oAuthKakaoClient;
     private final OAuthAppleClient oAuthAppleClient;
 
-    @Transactional
     public OAuthLoginResponse kakaoLogin(OAuthKakaoLoginRequest request) {
         KakaoUserInfoResponse userInfo = oAuthKakaoClient.getKakaoUserInfo(request.accessToken());
+        OAuthUserProfile profile = toKakaoOAuthUserProfile(userInfo);
 
-        // DTO 파싱은 oauth 레이어에서 처리 후 순수 값만 UserService로 전달
-        KakaoUserInfoResponse.KakaoAccount account = userInfo.kakaoAccount();
-        String kakaoId = userInfo.id().toString();
-        String email = account != null ? account.email() : null;
-        String name = account != null && account.profile() != null ? account.profile().nickname() : null;
-        String profileUrl = account != null && account.profile() != null ? account.profile().profileImageUrl() : null;
+        return login(profile, OAuthProvider.KAKAO, request.deviceType());
+    }
 
-        User user = userService.findOrRegisterKakaoUser(kakaoId, email, name, profileUrl, request.deviceType());
+    public OAuthLoginResponse appleLogin(OAuthAppleLoginRequest request) {
+        Claims claims = oAuthAppleClient.getAppleClaims(request.identityToken());
+        OAuthUserProfile profile = toAppleOAuthUserProfile(claims, request);
 
+        return login(profile, OAuthProvider.APPLE, request.deviceType());
+    }
+
+    private OAuthLoginResponse login(OAuthUserProfile profile, OAuthProvider provider, DeviceType deviceType) {
+        User user = userService.findOrRegisterOAuthUser(profile, provider, deviceType);
         TokenIssuance tokens = jwtService.issueTokens(user);
         return OAuthLoginResponse.from(user, tokens);
     }
 
-    @Transactional
-    public OAuthLoginResponse appleLogin(OAuthAppleLoginRequest request) {
-        Claims claims = oAuthAppleClient.getAppleClaims(request.identityToken());
+    private OAuthUserProfile toKakaoOAuthUserProfile(KakaoUserInfoResponse userInfo) {
+        KakaoUserInfoResponse.KakaoAccount account = userInfo.kakaoAccount();
+        KakaoUserInfoResponse.KakaoAccount.Profile profile = account != null ? account.profile() : null;
 
-        String appleId = claims.getSubject();
-        String email = claims.get("email", String.class);
+        return new OAuthUserProfile(
+                userInfo.id().toString(),
+                account != null ? account.email() : null,
+                profile != null ? profile.nickname() : null
+        );
+    }
 
-        User user = userService.findOrRegisterAppleUser(appleId, email, request.name(), request.deviceType());
-
-        TokenIssuance tokens = jwtService.issueTokens(user);
-        return OAuthLoginResponse.from(user, tokens);
+    private OAuthUserProfile toAppleOAuthUserProfile(Claims claims, OAuthAppleLoginRequest request) {
+        return new OAuthUserProfile(
+                claims.getSubject(),
+                claims.get("email", String.class),
+                request.name()
+        );
     }
 
 }

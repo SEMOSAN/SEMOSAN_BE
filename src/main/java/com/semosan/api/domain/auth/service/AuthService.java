@@ -33,7 +33,6 @@ public class AuthService {
     @Value("${test.secret-key}")
     private String testSecretKey;
 
-    @Transactional
     public LoginResponse login(LoginRequest request) {
         if (!MessageDigest.isEqual(
                 testSecretKey.getBytes(StandardCharsets.UTF_8),
@@ -47,7 +46,6 @@ public class AuthService {
         return LoginResponse.from(user, tokens);
     }
 
-    @Transactional
     public ReissueResponse reissue(String refreshToken) {
         Claims claims = jwtService.validateRefreshTokenSignature(refreshToken);
         Long userId = Long.parseLong(claims.getSubject());

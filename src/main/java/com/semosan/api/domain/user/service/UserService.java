@@ -10,6 +10,7 @@ import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
 import com.semosan.api.domain.notification.repository.NotificationRepository;
 import com.semosan.api.domain.review.repository.ReviewRepository;
 import com.semosan.api.domain.user.dto.command.CreateUserOnboardingCommand;
+import com.semosan.api.domain.user.dto.command.OAuthUserProfile;
 import com.semosan.api.domain.user.dto.command.UpdateUserProfileCommand;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.entity.User;
@@ -46,25 +47,21 @@ public class UserService {
     private final NicknamePolicy nicknamePolicy;
     private final UserReader userReader;
 
-    // 카카오 유저 조회 후 없으면 신규 생성합니다.
+    // OAuth 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
-    public User findOrRegisterKakaoUser(
-            String kakaoId, String email, String name, String profileUrl, DeviceType deviceType
+    public User findOrRegisterOAuthUser(
+            OAuthUserProfile profile, OAuthProvider provider, DeviceType deviceType
     ) {
-        return userRepository.findByOauthIdAndOauthProvider(kakaoId, OAuthProvider.KAKAO)
+        return userRepository.findByOauthIdAndOauthProvider(profile.oauthId(), provider)
                 .filter(user -> !user.isDeleted())
                 .orElseGet(() -> saveNewUserWithNotificationSetting(
-                        User.createKakaoUser(kakaoId, email, name, profileUrl, deviceType)
-                ));
-    }
-
-    // 애플 유저 조회 후 없으면 신규 생성합니다.
-    @Transactional
-    public User findOrRegisterAppleUser(String appleId, String email, String name, DeviceType deviceType) {
-        return userRepository.findByOauthIdAndOauthProvider(appleId, OAuthProvider.APPLE)
-                .filter(user -> !user.isDeleted())
-                .orElseGet(() -> saveNewUserWithNotificationSetting(
-                        User.createAppleUser(appleId, email, name, deviceType)
+                        User.createOAuthUser(
+                                profile.oauthId(),
+                                profile.email(),
+                                profile.name(),
+                                deviceType,
+                                provider
+                        )
                 ));
     }
 

@@ -8,6 +8,7 @@ import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
 import com.semosan.api.domain.notification.repository.NotificationRepository;
 import com.semosan.api.domain.review.repository.ReviewRepository;
 import com.semosan.api.domain.user.dto.command.CreateUserOnboardingCommand;
+import com.semosan.api.domain.user.dto.command.OAuthUserProfile;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.entity.UserOnboarding;
@@ -85,16 +86,14 @@ class UserServiceTest {
     private UserService userService;
 
     @Test
-    void findOrRegisterKakaoUserReturnsActiveUserWhenExists() {
-        User user = User.createKakaoUser("kakao-id", "user@example.com", "name", "profile", DeviceType.IOS);
+    void findOrRegisterOAuthUserReturnsActiveUserWhenExists() {
+        User user = User.createOAuthUser("kakao-id", "user@example.com", "name", DeviceType.IOS, OAuthProvider.KAKAO);
         when(userRepository.findByOauthIdAndOauthProvider("kakao-id", OAuthProvider.KAKAO))
                 .thenReturn(Optional.of(user));
 
-        User result = userService.findOrRegisterKakaoUser(
-                "kakao-id",
-                "new@example.com",
-                "new-name",
-                "new-profile",
+        User result = userService.findOrRegisterOAuthUser(
+                new OAuthUserProfile("kakao-id", "new@example.com", "new-name"),
+                OAuthProvider.KAKAO,
                 DeviceType.ANDROID
         );
 
@@ -102,17 +101,15 @@ class UserServiceTest {
     }
 
     @Test
-    void findOrRegisterKakaoUserCreatesNewUserWhenActiveUserDoesNotExist() {
+    void findOrRegisterOAuthUserCreatesNewUserWhenActiveUserDoesNotExist() {
         when(userRepository.findByOauthIdAndOauthProvider("kakao-id", OAuthProvider.KAKAO))
                 .thenReturn(Optional.empty());
         when(defaultNicknameGenerator.generate()).thenReturn("용감한등산러1234");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = userService.findOrRegisterKakaoUser(
-                "kakao-id",
-                "user@example.com",
-                "name",
-                "profile",
+        User result = userService.findOrRegisterOAuthUser(
+                new OAuthUserProfile("kakao-id", "user@example.com", "name"),
+                OAuthProvider.KAKAO,
                 DeviceType.IOS
         );
 
@@ -126,8 +123,8 @@ class UserServiceTest {
     }
 
     @Test
-    void findOrRegisterKakaoUserCreatesNewUserWhenMatchedUserIsDeleted() {
-        User deletedUser = User.createKakaoUser("kakao-id", "old@example.com", "old-name", "old-profile", DeviceType.IOS);
+    void findOrRegisterOAuthUserCreatesNewUserWhenMatchedUserIsDeleted() {
+        User deletedUser = User.createOAuthUser("kakao-id", "old@example.com", "old-name", DeviceType.IOS, OAuthProvider.KAKAO);
         ReflectionTestUtils.setField(deletedUser, "id", 1L);
         deletedUser.withdraw();
         ReflectionTestUtils.setField(deletedUser, "oauthId", "kakao-id");
@@ -137,11 +134,9 @@ class UserServiceTest {
         when(defaultNicknameGenerator.generate()).thenReturn("씩씩한산악인5391");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = userService.findOrRegisterKakaoUser(
-                "kakao-id",
-                "user@example.com",
-                "name",
-                "profile",
+        User result = userService.findOrRegisterOAuthUser(
+                new OAuthUserProfile("kakao-id", "user@example.com", "name"),
+                OAuthProvider.KAKAO,
                 DeviceType.IOS
         );
 
@@ -154,16 +149,15 @@ class UserServiceTest {
     }
 
     @Test
-    void findOrRegisterAppleUserCreatesNewUserWithGeneratedNickname() {
+    void findOrRegisterOAuthUserCreatesAppleUserWithGeneratedNickname() {
         when(userRepository.findByOauthIdAndOauthProvider("apple-id", OAuthProvider.APPLE))
                 .thenReturn(Optional.empty());
         when(defaultNicknameGenerator.generate()).thenReturn("빠른하이커1204");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User result = userService.findOrRegisterAppleUser(
-                "apple-id",
-                "user@example.com",
-                "apple-name",
+        User result = userService.findOrRegisterOAuthUser(
+                new OAuthUserProfile("apple-id", "user@example.com", "apple-name"),
+                OAuthProvider.APPLE,
                 DeviceType.IOS
         );
 
