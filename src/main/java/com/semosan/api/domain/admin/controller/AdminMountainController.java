@@ -11,6 +11,7 @@ import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
 import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
 import com.semosan.api.domain.admin.dto.response.AdminMountainListResponse;
 import com.semosan.api.domain.admin.service.AdminMountainService;
+import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -36,6 +37,15 @@ public class AdminMountainController implements AdminMountainControllerDocs {
                 adminMountainService.getMountains(keyword, visibility, pageable)
         );
         return ApiResponse.success(SuccessStatus.ADMIN_MOUNTAIN_LIST_SUCCESS, response);
+    }
+
+    @GetMapping("/mountains/{mountainId}")
+    @Override
+    public ResponseEntity<ApiResponse<MountainDetailResponse>> getMountainDetail(
+            @PathVariable Long mountainId
+    ) {
+        MountainDetailResponse response = adminMountainService.getMountainDetail(mountainId);
+        return ApiResponse.success(SuccessStatus.ADMIN_MOUNTAIN_DETAIL_SUCCESS, response);
     }
 
     @PutMapping("/mountains/{mountainId}")

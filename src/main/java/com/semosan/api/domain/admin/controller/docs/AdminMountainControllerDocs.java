@@ -8,6 +8,7 @@ import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
 import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
 import com.semosan.api.domain.admin.dto.response.AdminMountainListResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,6 +32,13 @@ public interface AdminMountainControllerDocs {
             @Parameter(description = "공개 상태 필터 (ALL, PUBLIC, PRIVATE)") @RequestParam(required = false) String visibility,
             Pageable pageable
     );
+
+    @Operation(summary = "산 상세 조회", description = "공개/비공개 관계없이 산의 상세 정보를 조회합니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "산 상세 조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "산을 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<MountainDetailResponse>> getMountainDetail(@PathVariable Long mountainId);
 
     @Operation(summary = "산 정보 수정", description = "산의 이름, 주소, 고도, 난이도, 소요시간, 이미지를 수정합니다.")
     @ApiResponses({

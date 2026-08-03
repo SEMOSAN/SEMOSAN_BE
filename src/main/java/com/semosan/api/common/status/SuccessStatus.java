@@ -140,6 +140,7 @@ public enum SuccessStatus implements BaseStatus {
      */
     ADMIN_LOGIN_SUCCESS(HttpStatus.OK, "ADM_200_1", "관리자 로그인에 성공했습니다."),
     ADMIN_MOUNTAIN_LIST_SUCCESS(HttpStatus.OK, "ADM_200_15", "관리자 산 목록 조회에 성공했습니다."),
+    ADMIN_MOUNTAIN_DETAIL_SUCCESS(HttpStatus.OK, "ADM_200_16", "관리자 산 상세 조회에 성공했습니다."),
     ADMIN_MOUNTAIN_UPDATE_SUCCESS(HttpStatus.OK, "ADM_200_2", "산 정보 수정에 성공했습니다."),
     ADMIN_MOUNTAIN_VISIBILITY_UPDATE_SUCCESS(HttpStatus.OK, "ADM_200_3", "산 공개 상태 변경에 성공했습니다."),
     ADMIN_RESTAURANT_SECTION_UPDATE_SUCCESS(HttpStatus.OK, "ADM_200_4", "맛집 섹션 수정에 성공했습니다."),

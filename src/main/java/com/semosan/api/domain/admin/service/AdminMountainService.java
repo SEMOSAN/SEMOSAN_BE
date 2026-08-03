@@ -16,7 +16,11 @@ import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.mountain.repository.RestaurantRepository;
 import com.semosan.api.domain.mountain.repository.RestaurantSectionRepository;
+import com.semosan.api.domain.mountain.repository.AmenityRepository;
 import com.semosan.api.domain.mountain.repository.TransportationRepository;
+import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse.*;
+import com.semosan.api.domain.review.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +41,8 @@ public class AdminMountainService {
     private final RestaurantSectionRepository restaurantSectionRepository;
     private final RestaurantRepository restaurantRepository;
     private final TransportationRepository transportationRepository;
+    private final AmenityRepository amenityRepository;
+    private final ReviewService reviewService;
 
     @Transactional(readOnly = true)
     public Page<AdminMountainListResponse> getMountains(String keyword, String visibility, Pageable pageable) {
@@ -78,6 +84,19 @@ public class AdminMountainService {
                         row -> (Long) row[0],
                         row -> (Long) row[1]
                 ));
+    }
+
+    @Transactional(readOnly = true)
+    public MountainDetailResponse getMountainDetail(Long mountainId) {
+        Mountain mountain = findMountainById(mountainId);
+        return new MountainDetailResponse(
+                MountainInfo.from(mountain),
+                courseRepository.findByMountainId(mountainId).stream().map(CourseInfo::from).toList(),
+                TransportationGroup.from(transportationRepository.findByMountainId(mountainId)),
+                MountainDetailResponse.groupAmenities(amenityRepository.findByMountainId(mountainId)),
+                restaurantSectionRepository.findByMountainIdWithRestaurants(mountainId).stream().map(RestaurantSectionInfo::from).toList(),
+                reviewService.getReviewsByMountainId(mountainId).stream().map(ReviewInfo::from).toList()
+        );
     }
 
     @Transactional
