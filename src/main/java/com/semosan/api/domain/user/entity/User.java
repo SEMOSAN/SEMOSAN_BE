@@ -81,34 +81,16 @@ public class User extends BaseEntity {
     @Column(name = "suspended_until")
     private LocalDateTime suspendedUntil;
 
-    public static User createKakaoUser(
+    public static User createOAuthUser(
             String oauthId,
             String email,
             String name,
-            String profileUrl,
-            DeviceType deviceType
+            DeviceType deviceType,
+            OAuthProvider oauthProvider
     ) {
         return User.builder()
                 .oauthId(oauthId)
-                .oauthProvider(OAuthProvider.KAKAO)
-                .email(email)
-                .name(name)
-                .profileUrl(profileUrl)
-                .deviceType(deviceType)
-                .onboardingStatus(OnboardingStatus.INCOMPLETE)
-                .deleted(false)
-                .build();
-    }
-
-    public static User createAppleUser(
-            String oauthId,
-            String email,
-            String name,
-            DeviceType deviceType
-    ) {
-        return User.builder()
-                .oauthId(oauthId)
-                .oauthProvider(OAuthProvider.APPLE)
+                .oauthProvider(oauthProvider)
                 .email(email)
                 .name(name)
                 .deviceType(deviceType)

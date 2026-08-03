@@ -47,7 +47,6 @@ public class AuthService {
         return LoginResponse.from(user, tokens);
     }
 
-    @Transactional
     public ReissueResponse reissue(String refreshToken) {
         Claims claims = jwtService.validateRefreshTokenSignature(refreshToken);
         Long userId = Long.parseLong(claims.getSubject());
