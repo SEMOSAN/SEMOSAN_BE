@@ -8,6 +8,7 @@ import com.semosan.api.domain.community.post.dto.FreePostCreateRequest;
 import com.semosan.api.domain.community.post.dto.FreePostDetailResponse;
 import com.semosan.api.domain.community.post.dto.FreePostListResponse;
 import com.semosan.api.domain.community.post.dto.FreePostReportRequest;
+import com.semosan.api.domain.community.post.dto.FreePostUpdateRequest;
 import com.semosan.api.domain.community.post.service.FreePostReportService;
 import com.semosan.api.domain.community.post.service.FreePostService;
 import com.semosan.api.domain.user.service.UserBlockService;
@@ -87,6 +88,22 @@ public class FreePostController implements FreePostControllerDocs {
                 SuccessStatus.FREE_POST_DETAIL_SUCCESS,
                 freePostService.getDetail(userId, postId)
         );
+    }
+
+    @PutMapping("/{postId}")
+    public ResponseEntity<ApiResponse<FreePostDetailResponse>> update(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody FreePostUpdateRequest request
+    ) {
+        return ApiResponse.success(SuccessStatus.FREE_POST_UPDATE_SUCCESS, freePostService.update(
+                userId,
+                postId,
+                request.title(),
+                request.content(),
+                request.imageUrls(),
+                request.mainImageIndex()
+        ));
     }
 
     @DeleteMapping("/{postId}")

@@ -24,4 +24,9 @@ public class FreePost extends Post {
     public static FreePost create(User author, String title, String content) {
         return new FreePost(author, title, content);
     }
+
+    public void update(String title, String content) {
+        this.title = title;
+        updateContent(content);
+    }
 }

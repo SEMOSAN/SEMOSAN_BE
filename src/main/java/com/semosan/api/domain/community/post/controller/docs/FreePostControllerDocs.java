@@ -6,6 +6,7 @@ import com.semosan.api.domain.community.post.dto.FreePostCreateRequest;
 import com.semosan.api.domain.community.post.dto.FreePostDetailResponse;
 import com.semosan.api.domain.community.post.dto.FreePostListResponse;
 import com.semosan.api.domain.community.post.dto.FreePostReportRequest;
+import com.semosan.api.domain.community.post.dto.FreePostUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -67,6 +68,19 @@ public interface FreePostControllerDocs {
     ResponseEntity<ApiResponse<FreePostDetailResponse>> getDetail(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long postId
+    );
+
+    @Operation(summary = "자유게시판 수정", description = "본인의 자유게시판 게시글 제목/본문/이미지를 수정합니다. 이미지는 요청값으로 전체 교체됩니다.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "수정 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "본문 누락 또는 대표 이미지 인덱스 오류"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "본인 게시글 아님"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "게시글 없음 또는 삭제됨")
+    })
+    ResponseEntity<ApiResponse<FreePostDetailResponse>> update(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long postId,
+            @Valid @RequestBody FreePostUpdateRequest request
     );
 
     @Operation(summary = "자유게시판 삭제", description = "본인의 게시글을 soft delete 합니다.")

@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,9 +44,7 @@ public class FreePostService {
             List<String> imageUrls,
             Integer mainImageIndex
     ) {
-        if (content == null || content.isBlank()) {
-            throw new GeneralException(ErrorStatus.POST_CONTENT_REQUIRED);
-        }
+        validateContent(content);
         User author = userReader.findActiveUserById(authorId);
 
         FreePost post = FreePost.create(author, title, content);
@@ -74,17 +73,35 @@ public class FreePostService {
     }
 
     @Transactional
+    public FreePostDetailResponse update(
+            Long requesterId,
+            Long postId,
+            String title,
+            String content,
+            List<String> imageUrls,
+            Integer mainImageIndex
+    ) {
+        validateContent(content);
+        FreePost post = findActivePostOrThrow(postId);
+        if (!post.isOwnedBy(requesterId)) {
+            throw new GeneralException(ErrorStatus.POST_FORBIDDEN);
+        }
+
+        post.update(title, content);
+        postImageRepository.deleteByPost(post);
+        List<PostImage> images = saveImages(post, imageUrls, mainImageIndex);
+
+        return toDetailResponse(post, images, requesterId);
+    }
+
+    @Transactional
     public FreePostDetailResponse getDetail(Long viewerId, Long postId) {
         FreePost post = findActivePostOrThrow(postId);
         postAccessPolicy.validateReadable(viewerId, post);
         post.increaseViewCount();
 
         List<PostImage> images = postImageRepository.findByPostOrderBySortOrderAsc(post);
-        long likeCount = postLikeRepository.countByPost(post);
-        long commentCount = commentRepository.countByPostAndDeletedFalse(post);
-        boolean likedByMe = postLikeRepository.existsByPostIdAndUserId(post.getId(), viewerId);
-
-        return FreePostDetailResponse.of(post, images, likeCount, commentCount, likedByMe);
+        return toDetailResponse(post, images, viewerId);
     }
 
     @Transactional
@@ -96,6 +113,20 @@ public class FreePostService {
         post.softDelete();
     }
 
+    private void validateContent(String content) {
+        if (content == null || content.isBlank()) {
+            throw new GeneralException(ErrorStatus.POST_CONTENT_REQUIRED);
+        }
+    }
+
+    private FreePostDetailResponse toDetailResponse(FreePost post, List<PostImage> images, Long viewerId) {
+        long likeCount = postLikeRepository.countByPost(post);
+        long commentCount = commentRepository.countByPostAndDeletedFalse(post);
+        boolean likedByMe = postLikeRepository.existsByPostIdAndUserId(post.getId(), viewerId);
+
+        return FreePostDetailResponse.of(post, images, likeCount, commentCount, likedByMe);
+    }
+
     private List<PostImage> saveImages(FreePost post, List<String> imageUrls, Integer mainImageIndex) {
         if (imageUrls == null || imageUrls.isEmpty()) {
             return List.of();
@@ -104,11 +135,11 @@ public class FreePostService {
         if (main < 0 || main >= imageUrls.size()) {
             throw new GeneralException(ErrorStatus.POST_IMAGE_INDEX_INVALID);
         }
-        List<PostImage> saved = new java.util.ArrayList<>();
+        List<PostImage> images = new ArrayList<>();
         for (int i = 0; i < imageUrls.size(); i++) {
-            saved.add(postImageRepository.save(PostImage.create(post, imageUrls.get(i), i, i == main)));
+            images.add(PostImage.create(post, imageUrls.get(i), i, i == main));
         }
-        return saved;
+        return postImageRepository.saveAll(images);
     }
 
     private Page<FreePostListResponse> enrichWithCounts(Page<FreePost> posts) {
