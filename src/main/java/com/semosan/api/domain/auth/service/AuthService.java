@@ -33,6 +33,7 @@ public class AuthService {
     @Value("${test.secret-key}")
     private String testSecretKey;
 
+    @Transactional
     public LoginResponse login(LoginRequest request) {
         if (!MessageDigest.isEqual(
                 testSecretKey.getBytes(StandardCharsets.UTF_8),
