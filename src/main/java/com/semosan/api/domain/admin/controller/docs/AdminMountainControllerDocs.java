@@ -28,6 +28,7 @@ public interface AdminMountainControllerDocs {
     })
     ResponseEntity<ApiResponse<PageResponse<AdminMountainListResponse>>> getMountains(
             @Parameter(description = "검색 키워드 (이름 또는 주소)") @RequestParam(required = false) String keyword,
+            @Parameter(description = "공개 상태 필터 (ALL, PUBLIC, PRIVATE)") @RequestParam(required = false) String visibility,
             Pageable pageable
     );
 
