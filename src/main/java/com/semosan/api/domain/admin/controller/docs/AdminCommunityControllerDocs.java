@@ -1,13 +1,13 @@
 package com.semosan.api.domain.admin.controller.docs;
 
 import com.semosan.api.common.response.ApiResponse;
+import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.domain.admin.dto.request.AdminUserSuspendRequest;
 import com.semosan.api.domain.admin.dto.response.AdminReportedPostResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,7 +20,7 @@ public interface AdminCommunityControllerDocs {
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공")
     })
-    ResponseEntity<ApiResponse<Page<AdminReportedPostResponse>>> getReportedPosts(Pageable pageable);
+    ResponseEntity<ApiResponse<PageResponse<AdminReportedPostResponse>>> getReportedPosts(Pageable pageable);
 
     @Operation(summary = "게시글 강제 삭제", description = "게시글을 강제로 삭제(숨김) 처리합니다.")
     @ApiResponses({

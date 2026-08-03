@@ -1,6 +1,7 @@
 package com.semosan.api.domain.admin.controller;
 
 import com.semosan.api.common.response.ApiResponse;
+import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.admin.controller.docs.AdminCommunityControllerDocs;
 import com.semosan.api.domain.admin.dto.request.AdminUserSuspendRequest;
@@ -23,10 +24,12 @@ public class AdminCommunityController implements AdminCommunityControllerDocs {
 
     @GetMapping("/community/reported-posts")
     @Override
-    public ResponseEntity<ApiResponse<Page<AdminReportedPostResponse>>> getReportedPosts(
+    public ResponseEntity<ApiResponse<PageResponse<AdminReportedPostResponse>>> getReportedPosts(
             @PageableDefault(size = 20) Pageable pageable
     ) {
-        Page<AdminReportedPostResponse> result = adminCommunityService.getReportedPosts(pageable);
+        PageResponse<AdminReportedPostResponse> result = PageResponse.from(
+                adminCommunityService.getReportedPosts(pageable)
+        );
         return ApiResponse.success(SuccessStatus.ADMIN_REPORTED_POST_LIST_SUCCESS, result);
     }
 
