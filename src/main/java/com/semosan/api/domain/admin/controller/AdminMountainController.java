@@ -29,10 +29,11 @@ public class AdminMountainController implements AdminMountainControllerDocs {
     @Override
     public ResponseEntity<ApiResponse<PageResponse<AdminMountainListResponse>>> getMountains(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String visibility,
             @PageableDefault(size = 20, sort = "name") Pageable pageable
     ) {
         PageResponse<AdminMountainListResponse> response = PageResponse.from(
-                adminMountainService.getMountains(keyword, pageable)
+                adminMountainService.getMountains(keyword, visibility, pageable)
         );
         return ApiResponse.success(SuccessStatus.ADMIN_MOUNTAIN_LIST_SUCCESS, response);
     }

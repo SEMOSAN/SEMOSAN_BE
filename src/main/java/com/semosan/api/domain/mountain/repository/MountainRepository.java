@@ -108,4 +108,9 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
      */
     @Query("SELECT m FROM Mountain m WHERE m.name LIKE CONCAT('%', :keyword, '%') OR m.address LIKE CONCAT('%', :keyword, '%')")
     Page<Mountain> searchByKeywordAll(@Param("keyword") String keyword, Pageable pageable);
+
+    Page<Mountain> findByIsPublicFalse(Pageable pageable);
+
+    @Query("SELECT m FROM Mountain m WHERE m.isPublic = :isPublic AND (m.name LIKE CONCAT('%', :keyword, '%') OR m.address LIKE CONCAT('%', :keyword, '%'))")
+    Page<Mountain> searchByKeywordAndVisibility(@Param("keyword") String keyword, @Param("isPublic") boolean isPublic, Pageable pageable);
 }

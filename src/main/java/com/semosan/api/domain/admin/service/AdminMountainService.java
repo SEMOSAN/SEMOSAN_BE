@@ -39,10 +39,24 @@ public class AdminMountainService {
     private final TransportationRepository transportationRepository;
 
     @Transactional(readOnly = true)
-    public Page<AdminMountainListResponse> getMountains(String keyword, Pageable pageable) {
-        Page<Mountain> mountains = (keyword != null && !keyword.isBlank())
-                ? mountainRepository.searchByKeywordAll(keyword.trim(), pageable)
-                : mountainRepository.findAll(pageable);
+    public Page<AdminMountainListResponse> getMountains(String keyword, String visibility, Pageable pageable) {
+        Page<Mountain> mountains;
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
+        String trimmedKeyword = hasKeyword ? keyword.trim() : null;
+
+        if ("PUBLIC".equals(visibility)) {
+            mountains = hasKeyword
+                    ? mountainRepository.searchByKeywordAndVisibility(trimmedKeyword, true, pageable)
+                    : mountainRepository.findByIsPublicTrue(pageable);
+        } else if ("PRIVATE".equals(visibility)) {
+            mountains = hasKeyword
+                    ? mountainRepository.searchByKeywordAndVisibility(trimmedKeyword, false, pageable)
+                    : mountainRepository.findByIsPublicFalse(pageable);
+        } else {
+            mountains = hasKeyword
+                    ? mountainRepository.searchByKeywordAll(trimmedKeyword, pageable)
+                    : mountainRepository.findAll(pageable);
+        }
 
         Map<Long, Long> courseCountMap = getCourseCountMap(mountains.getContent());
 
