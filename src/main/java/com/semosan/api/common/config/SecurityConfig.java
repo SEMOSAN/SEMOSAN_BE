@@ -1,5 +1,6 @@
 package com.semosan.api.common.config;
 
+import com.semosan.api.common.filter.MdcFilter;
 import com.semosan.api.common.jwt.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final MdcFilter mdcFilter;
     private final JwtFilter jwtFilter;
 
     /**
@@ -84,6 +86,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/app-version").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(mdcFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

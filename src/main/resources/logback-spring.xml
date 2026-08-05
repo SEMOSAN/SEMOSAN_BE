@@ -3,7 +3,7 @@
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{sessionId}] - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} [traceId=%X{traceId}] [userId=%X{userId}] [sessionId=%X{sessionId}] - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -16,8 +16,11 @@
     <springProfile name="prod">
         <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
             <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <includeMdcKeyName>sessionId</includeMdcKeyName>
+                <includeMdcKeyName>traceId</includeMdcKeyName>
                 <includeMdcKeyName>userId</includeMdcKeyName>
+                <includeMdcKeyName>sessionId</includeMdcKeyName>
+                <includeMdcKeyName>method</includeMdcKeyName>
+                <includeMdcKeyName>uri</includeMdcKeyName>
                 <timeZone>Asia/Seoul</timeZone>
             </encoder>
         </appender>
