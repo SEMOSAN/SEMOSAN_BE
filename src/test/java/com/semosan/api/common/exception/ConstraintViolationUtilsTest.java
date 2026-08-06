@@ -49,4 +49,28 @@ class ConstraintViolationUtilsTest {
 
         assertThat(result).isFalse();
     }
+
+    @Test
+    void isViolationReturnsTrueWhenNestedCauseMessageContainsExactConstraintToken() {
+        RuntimeException cause = new RuntimeException("constraint [" + CONSTRAINT_NAME + "] violated");
+        DataIntegrityViolationException exception = new DataIntegrityViolationException("wrapper", cause);
+
+        boolean result = ConstraintViolationUtils.isViolation(exception, CONSTRAINT_NAME);
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isViolationReturnsFalseWhenExceptionAndMessagesDoNotMatch() {
+        ConstraintViolationException cause = new ConstraintViolationException(
+                null,
+                new SQLException(),
+                "other_constraint"
+        );
+        DataIntegrityViolationException exception = new DataIntegrityViolationException(null, cause);
+
+        boolean result = ConstraintViolationUtils.isViolation(exception, CONSTRAINT_NAME);
+
+        assertThat(result).isFalse();
+    }
 }
