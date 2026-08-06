@@ -2,7 +2,11 @@ package com.semosan.api.common.weather;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +18,45 @@ import static org.assertj.core.api.Assertions.assertThat;
 class WeatherServiceTest {
 
     private final WeatherService weatherService = new WeatherService(WebClient.builder().build(), "api-key");
+
+    @Test
+    void getTemperatureReturnsTemperatureFromWeatherApiResponse() {
+        WebClient webClient = WebClient.builder()
+                .exchangeFunction(request -> Mono.just(ClientResponse.create(org.springframework.http.HttpStatus.OK)
+                        .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                        .body("""
+                                {
+                                  "response": {
+                                    "body": {
+                                      "items": {
+                                        "item": [
+                                          {"category": "T1H", "obsrValue": "21.5"}
+                                        ]
+                                      }
+                                    }
+                                  }
+                                }
+                                """)
+                        .build()))
+                .build();
+        WeatherService service = new WeatherService(webClient, "api-key");
+
+        Optional<Double> temperature = service.getTemperature(37.5665, 126.9780);
+
+        assertThat(temperature).contains(21.5);
+    }
+
+    @Test
+    void getTemperatureReturnsEmptyWhenWeatherApiFails() {
+        WebClient webClient = WebClient.builder()
+                .exchangeFunction(request -> Mono.error(new RuntimeException("network")))
+                .build();
+        WeatherService service = new WeatherService(webClient, "api-key");
+
+        Optional<Double> temperature = service.getTemperature(37.5665, 126.9780);
+
+        assertThat(temperature).isEmpty();
+    }
 
     @Test
     void extractTemperatureReturnsT1hObservation() {
