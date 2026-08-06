@@ -8,6 +8,7 @@ import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
 import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
 import com.semosan.api.domain.admin.dto.response.AdminMountainListResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.entity.Restaurant;
 import com.semosan.api.domain.mountain.entity.RestaurantSection;
@@ -99,6 +100,46 @@ class AdminMountainServiceTest {
     }
 
     @Test
+    void getMountainsUsesPublicListWhenPublicVisibilityWithoutKeyword() {
+        Mountain mountain = mountain(1L);
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(mountainRepository.findByIsPublicTrue(pageable))
+                .thenReturn(new PageImpl<>(List.of(mountain), pageable, 1));
+        when(courseRepository.countByMountainIds(List.of(1L)))
+                .thenReturn(Collections.singletonList(new Object[]{1L, 2L}));
+
+        Page<AdminMountainListResponse> result = adminMountainService.getMountains(null, "PUBLIC", pageable);
+
+        assertThat(result.getContent().getFirst().courseCount()).isEqualTo(2L);
+    }
+
+    @Test
+    void getMountainsUsesPrivateSearchWhenKeywordAndPrivateVisibilityProvided() {
+        Mountain mountain = mountain(1L);
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(mountainRepository.searchByKeywordAndVisibility("관악", false, pageable))
+                .thenReturn(new PageImpl<>(List.of(mountain), pageable, 1));
+        when(courseRepository.countByMountainIds(List.of(1L)))
+                .thenReturn(Collections.singletonList(new Object[]{1L, 1L}));
+
+        Page<AdminMountainListResponse> result = adminMountainService.getMountains(" 관악 ", "PRIVATE", pageable);
+
+        assertThat(result.getContent().getFirst().courseCount()).isEqualTo(1L);
+    }
+
+    @Test
+    void getMountainsUsesFindAllWhenKeywordAndVisibilityAreMissing() {
+        Mountain mountain = mountain(1L);
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(mountainRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(mountain), pageable, 1));
+        when(courseRepository.countByMountainIds(List.of(1L))).thenReturn(List.of());
+
+        Page<AdminMountainListResponse> result = adminMountainService.getMountains(" ", null, pageable);
+
+        assertThat(result.getContent().getFirst().courseCount()).isZero();
+    }
+
+    @Test
     void getMountainsUsesAllSearchWhenVisibilityIsUnknown() {
         Mountain mountain = mountain(2L);
         PageRequest pageable = PageRequest.of(0, 10);
@@ -137,6 +178,27 @@ class AdminMountainServiceTest {
         adminMountainService.updateVisibility(1L, new AdminMountainVisibilityRequest(false));
 
         assertThat(mountain.isPublic()).isFalse();
+    }
+
+    @Test
+    void getMountainDetailReturnsEmptyDetailSectionsWhenRelatedDataIsMissing() {
+        Mountain mountain = mountain(1L);
+        when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
+        when(courseRepository.findByMountainId(1L)).thenReturn(List.of());
+        when(transportationRepository.findByMountainId(1L)).thenReturn(List.of());
+        when(amenityRepository.findByMountainId(1L)).thenReturn(List.of());
+        when(restaurantSectionRepository.findByMountainIdWithRestaurants(1L)).thenReturn(List.of());
+        when(reviewService.getReviewsByMountainId(1L)).thenReturn(List.of());
+
+        MountainDetailResponse response = adminMountainService.getMountainDetail(1L);
+
+        assertThat(response.mountain().mountainId()).isEqualTo(1L);
+        assertThat(response.courses()).isEmpty();
+        assertThat(response.transportations().publicTransport()).isEmpty();
+        assertThat(response.transportations().parking()).isEmpty();
+        assertThat(response.amenities()).isEmpty();
+        assertThat(response.restaurantSections()).isEmpty();
+        assertThat(response.reviews()).isEmpty();
     }
 
     @Test
@@ -283,11 +345,41 @@ class AdminMountainServiceTest {
     }
 
     @Test
+    void getMountainDetailThrowsWhenMountainMissing() {
+        when(mountainRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminMountainService.getMountainDetail(1L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.MOUNTAIN_NOT_FOUND);
+    }
+
+    @Test
     void updateRestaurantSectionThrowsWhenSectionMissing() {
         when(restaurantSectionRepository.findById(10L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> adminMountainService.updateRestaurantSection(10L,
                 new AdminRestaurantSectionRequest("맛집")))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.RESTAURANT_SECTION_NOT_FOUND);
+    }
+
+    @Test
+    void deleteRestaurantSectionThrowsWhenSectionMissing() {
+        when(restaurantSectionRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminMountainService.deleteRestaurantSection(10L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.RESTAURANT_SECTION_NOT_FOUND);
+    }
+
+    @Test
+    void createRestaurantThrowsWhenSectionMissing() {
+        when(restaurantSectionRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminMountainService.createRestaurant(10L, restaurantRequest("식당")))
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.RESTAURANT_SECTION_NOT_FOUND);
@@ -304,10 +396,40 @@ class AdminMountainServiceTest {
     }
 
     @Test
+    void deleteRestaurantThrowsWhenRestaurantMissing() {
+        when(restaurantRepository.findById(20L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminMountainService.deleteRestaurant(20L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.RESTAURANT_NOT_FOUND);
+    }
+
+    @Test
+    void createTransportationThrowsWhenMountainMissing() {
+        when(mountainRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminMountainService.createTransportation(1L, transportationRequest("정류장")))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.MOUNTAIN_NOT_FOUND);
+    }
+
+    @Test
     void updateTransportationThrowsWhenTransportationMissing() {
         when(transportationRepository.findById(30L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> adminMountainService.updateTransportation(30L, transportationRequest("정류장")))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.TRANSPORTATION_NOT_FOUND);
+    }
+
+    @Test
+    void deleteTransportationThrowsWhenTransportationMissing() {
+        when(transportationRepository.findById(30L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminMountainService.deleteTransportation(30L))
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.TRANSPORTATION_NOT_FOUND);

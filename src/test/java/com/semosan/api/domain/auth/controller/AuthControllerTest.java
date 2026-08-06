@@ -77,4 +77,20 @@ class AuthControllerTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.JWT_TOKEN_NOT_FOUND);
     }
+
+    @Test
+    void logoutThrowsWhenAuthorizationHeaderIsNull() {
+        assertThatThrownBy(() -> authController.logout(1L, null))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_TOKEN_NOT_FOUND);
+    }
+
+    @Test
+    void withdrawThrowsWhenAuthorizationHeaderIsInvalid() {
+        assertThatThrownBy(() -> authController.withdraw(1L, "access-token"))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_TOKEN_NOT_FOUND);
+    }
 }
