@@ -11,6 +11,7 @@ import com.semosan.api.domain.user.entity.UserBlock;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.repository.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -105,6 +106,76 @@ class UserBlockServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.USER_BLOCK_SELF_NOT_ALLOWED);
         verify(userBlockRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void blockReturnsWhenAlreadyBlocked() {
+        User blocker = user(1L, "blocker");
+        User blockedUser = user(2L, "blocked");
+
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(blocker));
+        when(userRepository.findByIdAndDeletedFalse(2L)).thenReturn(Optional.of(blockedUser));
+        when(userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(1L, 2L)).thenReturn(true);
+
+        userBlockService.block(1L, 2L);
+
+        verify(userBlockRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void blockThrowsWhenBlockerMissing() {
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userBlockService.block(1L, 2L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+    }
+
+    @Test
+    void blockThrowsWhenBlockedUserMissing() {
+        User blocker = user(1L, "blocker");
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(blocker));
+        when(userRepository.findByIdAndDeletedFalse(2L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userBlockService.block(1L, 2L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+    }
+
+    @Test
+    void blockRethrowsUnrelatedDataIntegrityViolation() {
+        User blocker = user(1L, "blocker");
+        User blockedUser = user(2L, "blocked");
+        DataIntegrityViolationException exception = new DataIntegrityViolationException("other constraint");
+
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(blocker));
+        when(userRepository.findByIdAndDeletedFalse(2L)).thenReturn(Optional.of(blockedUser));
+        when(userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(1L, 2L)).thenReturn(false);
+        when(userBlockRepository.saveAndFlush(any(UserBlock.class))).thenThrow(exception);
+
+        assertThatThrownBy(() -> userBlockService.block(1L, 2L)).isSameAs(exception);
+    }
+
+    @Test
+    void blockByPostThrowsWhenPostMissing() {
+        when(freePostRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userBlockService.blockByPost(1L, 10L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_NOT_FOUND);
+    }
+
+    @Test
+    void blockByCommentThrowsWhenCommentMissing() {
+        when(commentRepository.findByIdAndDeletedFalse(20L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userBlockService.blockByComment(1L, 20L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.COMMENT_NOT_FOUND);
     }
 
     private User user(Long id, String oauthId) {

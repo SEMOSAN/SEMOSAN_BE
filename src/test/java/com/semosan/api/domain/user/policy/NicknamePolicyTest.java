@@ -43,6 +43,36 @@ class NicknamePolicyTest {
     }
 
     @Test
+    void checkStaticRulesRejectsKoreanBlockedWord() {
+        assertThat(nicknamePolicy.checkStaticRules("시발놈")).isEqualTo(NicknameCheckResult.BLOCKED_WORD);
+    }
+
+    @Test
+    void checkStaticRulesRejectsContactAndUrlByFormatBeforeBlockedWordCheck() {
+        assertThat(nicknamePolicy.checkStaticRules("연락01012345678")).isEqualTo(NicknameCheckResult.INVALID_FORMAT);
+        assertThat(nicknamePolicy.checkStaticRules("abc.com")).isEqualTo(NicknameCheckResult.INVALID_FORMAT);
+    }
+
+    @Test
+    void checkReturnsStaticErrorWithoutCheckingDuplication() {
+        assertThat(nicknamePolicy.check("a")).isEqualTo(NicknameCheckResult.INVALID_FORMAT);
+    }
+
+    @Test
+    void checkReturnsAvailableWhenStaticRulesPassAndNicknameIsNotDuplicated() {
+        when(userRepository.existsByNicknameAndDeletedFalse("푸름")).thenReturn(false);
+
+        assertThat(nicknamePolicy.check("푸름")).isEqualTo(NicknameCheckResult.AVAILABLE);
+    }
+
+    @Test
+    void validateDoesNotThrowWhenNicknameIsAvailable() {
+        when(userRepository.existsByNicknameAndDeletedFalse("푸름")).thenReturn(false);
+
+        nicknamePolicy.validate("푸름");
+    }
+
+    @Test
     void checkReturnsDuplicatedWhenRepositoryFindsNickname() {
         when(userRepository.existsByNicknameAndDeletedFalse("푸름")).thenReturn(true);
 

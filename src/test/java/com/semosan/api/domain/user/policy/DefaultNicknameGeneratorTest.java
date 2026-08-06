@@ -34,6 +34,42 @@ class DefaultNicknameGeneratorTest {
     }
 
     @Test
+    void generateThrowsWhenAllAttemptsAreDuplicated() {
+        NicknamePolicy nicknamePolicy = mock(NicknamePolicy.class);
+        when(nicknamePolicy.checkStaticRules("빠른산0000")).thenReturn(NicknameCheckResult.AVAILABLE);
+        when(nicknamePolicy.isDuplicated(org.mockito.ArgumentMatchers.anyString())).thenReturn(true);
+        DefaultNicknameGenerator generator = new DefaultNicknameGenerator(
+                nicknamePolicy,
+                resource("""
+                        default-nickname.adjectives=빠른
+                        default-nickname.nouns=산
+                        """)
+        );
+
+        assertThatThrownBy(generator::generate)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("사용 가능한 기본 닉네임을 생성할 수 없습니다.");
+    }
+
+    @Test
+    void constructorTrimsValuesAndIgnoresBlankItems() {
+        NicknamePolicy nicknamePolicy = mock(NicknamePolicy.class);
+        when(nicknamePolicy.checkStaticRules("빠른산0000")).thenReturn(NicknameCheckResult.AVAILABLE);
+        when(nicknamePolicy.isDuplicated(org.mockito.ArgumentMatchers.anyString())).thenReturn(false);
+        DefaultNicknameGenerator generator = new DefaultNicknameGenerator(
+                nicknamePolicy,
+                resource("""
+                        default-nickname.adjectives= 빠른 ,
+                        default-nickname.nouns= 산 ,
+                        """)
+        );
+
+        String nickname = generator.generate();
+
+        assertThat(nickname).startsWith("빠른산");
+    }
+
+    @Test
     void constructorThrowsWhenPoolsAreBlank() {
         NicknamePolicy nicknamePolicy = mock(NicknamePolicy.class);
 
