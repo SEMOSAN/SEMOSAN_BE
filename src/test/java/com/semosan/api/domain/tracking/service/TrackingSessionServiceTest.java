@@ -28,9 +28,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.hibernate.exception.ConstraintViolationException;
 
 import java.lang.reflect.Constructor;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -103,6 +106,43 @@ class TrackingSessionServiceTest {
     }
 
     @Test
+    void createSavesCourseSession() {
+        User user = user(1L);
+        Mountain mountain = mountain(10L);
+        Course course = course(20L, mountain);
+        CreateTrackingSessionRequest request = new CreateTrackingSessionRequest(10L, 20L, false);
+        when(trackingSessionRepository.existsByUser_IdAndStatusIn(1L, TrackingSessionStatus.ACTIVE_STATES))
+                .thenReturn(false);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain));
+        when(courseRepository.findById(20L)).thenReturn(Optional.of(course));
+        when(trackingSessionRepository.save(any(TrackingSession.class))).thenAnswer(invocation -> {
+            TrackingSession session = invocation.getArgument(0);
+            ReflectionTestUtils.setField(session, "id", 100L);
+            return session;
+        });
+
+        TrackingSessionResponse response = trackingSessionService.create(1L, request);
+
+        assertThat(response.courseId()).isEqualTo(20L);
+        assertThat(response.isFreeRecording()).isFalse();
+        verify(milestoneTriggerService).initializeMilestones(any(TrackingSession.class));
+    }
+
+    @Test
+    void createThrowsWhenMountainNotFound() {
+        when(trackingSessionRepository.existsByUser_IdAndStatusIn(1L, TrackingSessionStatus.ACTIVE_STATES))
+                .thenReturn(false);
+        when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
+        when(mountainRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> trackingSessionService.create(1L, new CreateTrackingSessionRequest(10L, null, true)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.MOUNTAIN_NOT_FOUND);
+    }
+
+    @Test
     void createThrowsWhenActiveSessionAlreadyExists() {
         when(trackingSessionRepository.existsByUser_IdAndStatusIn(1L, TrackingSessionStatus.ACTIVE_STATES))
                 .thenReturn(true);
@@ -143,6 +183,68 @@ class TrackingSessionServiceTest {
     }
 
     @Test
+    void createThrowsWhenCourseNotFound() {
+        Mountain mountain = mountain(10L);
+        when(trackingSessionRepository.existsByUser_IdAndStatusIn(1L, TrackingSessionStatus.ACTIVE_STATES))
+                .thenReturn(false);
+        when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
+        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain));
+        when(courseRepository.findById(20L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> trackingSessionService.create(1L, new CreateTrackingSessionRequest(10L, 20L, false)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.COURSE_NOT_FOUND);
+    }
+
+    @Test
+    void createThrowsWhenCourseHasNoMountain() {
+        Mountain mountain = mountain(10L);
+        Course course = course(20L, null);
+        when(trackingSessionRepository.existsByUser_IdAndStatusIn(1L, TrackingSessionStatus.ACTIVE_STATES))
+                .thenReturn(false);
+        when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
+        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain));
+        when(courseRepository.findById(20L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> trackingSessionService.create(1L, new CreateTrackingSessionRequest(10L, 20L, false)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.TRACKING_COURSE_MOUNTAIN_MISMATCH);
+    }
+
+    @Test
+    void createConvertsConcurrentActiveSessionUniqueViolation() {
+        User user = user(1L);
+        Mountain mountain = mountain(10L);
+        when(trackingSessionRepository.existsByUser_IdAndStatusIn(1L, TrackingSessionStatus.ACTIVE_STATES))
+                .thenReturn(false);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain));
+        when(trackingSessionRepository.save(any(TrackingSession.class))).thenThrow(activeSessionUniqueViolation());
+
+        assertThatThrownBy(() -> trackingSessionService.create(1L, new CreateTrackingSessionRequest(10L, null, true)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.TRACKING_SESSION_ALREADY_IN_PROGRESS);
+    }
+
+    @Test
+    void createRethrowsUnrelatedDataIntegrityViolation() {
+        User user = user(1L);
+        Mountain mountain = mountain(10L);
+        DataIntegrityViolationException exception = new DataIntegrityViolationException("other");
+        when(trackingSessionRepository.existsByUser_IdAndStatusIn(1L, TrackingSessionStatus.ACTIVE_STATES))
+                .thenReturn(false);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain));
+        when(trackingSessionRepository.save(any(TrackingSession.class))).thenThrow(exception);
+
+        assertThatThrownBy(() -> trackingSessionService.create(1L, new CreateTrackingSessionRequest(10L, null, true)))
+                .isSameAs(exception);
+    }
+
+    @Test
     void getActiveReturnsMappedSessionWhenPresent() {
         TrackingSession session = session(100L, user(1L), mountain(10L), null, true);
         when(trackingSessionRepository.findFirstActiveWithRelations(1L, TrackingSessionStatus.ACTIVE_STATES))
@@ -152,6 +254,26 @@ class TrackingSessionServiceTest {
 
         assertThat(response).isPresent();
         assertThat(response.get().sessionId()).isEqualTo(100L);
+    }
+
+    @Test
+    void getActiveReturnsEmptyWhenNoActiveSession() {
+        when(trackingSessionRepository.findFirstActiveWithRelations(1L, TrackingSessionStatus.ACTIVE_STATES))
+                .thenReturn(Optional.empty());
+
+        Optional<TrackingSessionResponse> response = trackingSessionService.getActive(1L);
+
+        assertThat(response).isEmpty();
+    }
+
+    @Test
+    void getReturnsOwnedSession() {
+        TrackingSession session = session(100L, user(1L), mountain(10L), null, true);
+        when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.of(session));
+
+        TrackingSessionResponse response = trackingSessionService.get(1L, 100L);
+
+        assertThat(response.sessionId()).isEqualTo(100L);
     }
 
     @Test
@@ -212,6 +334,25 @@ class TrackingSessionServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.TRACKING_SESSION_FORBIDDEN);
+    }
+
+    @Test
+    void getThrowsWhenSessionNotFound() {
+        when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> trackingSessionService.get(1L, 100L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.TRACKING_SESSION_NOT_FOUND);
+    }
+
+    private DataIntegrityViolationException activeSessionUniqueViolation() {
+        ConstraintViolationException cause = new ConstraintViolationException(
+                "duplicate active session",
+                new SQLException("unique violation"),
+                "uq_tracking_sessions_user_active"
+        );
+        return new DataIntegrityViolationException("duplicate active session", cause);
     }
 
     private TrackingSession session(Long id, User user, Mountain mountain, Course course, boolean freeRecording) {
