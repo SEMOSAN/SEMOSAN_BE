@@ -76,6 +76,37 @@ class RecordPostServiceTest {
     }
 
     @Test
+    void createThrowsWhenHikingRecordNotFound() {
+        User author = user(1L, "author");
+
+        when(userReader.findActiveUserById(1L)).thenReturn(author);
+        when(hikingRecordRepository.findById(100L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> recordPostService.create(1L, 100L, "본문"))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.HIKING_RECORD_NOT_FOUND);
+        verify(hikingMemberRepository, never()).existsByHikingRecordAndUser(any(), any());
+        verify(recordPostRepository, never()).save(any());
+    }
+
+    @Test
+    void createThrowsWhenAuthorIsNotHikingMember() throws Exception {
+        User author = user(1L, "author");
+        HikingRecord hikingRecord = hikingRecord(100L, course(mountain(20L, "관악산"), 30L, "과천향교 출발 코스"));
+
+        when(userReader.findActiveUserById(1L)).thenReturn(author);
+        when(hikingRecordRepository.findById(100L)).thenReturn(Optional.of(hikingRecord));
+        when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, author)).thenReturn(false);
+
+        assertThatThrownBy(() -> recordPostService.create(1L, 100L, "본문"))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.HIKING_RECORD_FORBIDDEN);
+        verify(recordPostRepository, never()).save(any());
+    }
+
+    @Test
     void getListUsesViewerSpecificVisibleQuery() throws Exception {
         RecordPost post = recordPost(10L, user(2L, "author"));
         PageRequest pageable = PageRequest.of(0, 10);
@@ -110,6 +141,16 @@ class RecordPostServiceTest {
     }
 
     @Test
+    void getMyListPropagatesActiveUserLookupFailure() {
+        GeneralException exception = new GeneralException(ErrorStatus.USER_NOT_FOUND);
+        when(userReader.findActiveUserById(1L)).thenThrow(exception);
+
+        assertThatThrownBy(() -> recordPostService.getMyList(1L, PageRequest.of(0, 10)))
+                .isSameAs(exception);
+        verify(recordPostRepository, never()).findByAuthorAndDeletedFalseWithSummary(any(), any());
+    }
+
+    @Test
     void getDetailValidatesBlockPolicyBeforeIncreasingViewCount() throws Exception {
         RecordPost post = recordPost(10L, user(2L, "author"));
 
@@ -138,6 +179,31 @@ class RecordPostServiceTest {
     }
 
     @Test
+    void getDetailThrowsWhenPostDoesNotExist() {
+        when(recordPostRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> recordPostService.getDetail(1L, 10L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_NOT_FOUND);
+        verify(postAccessPolicy, never()).validateReadable(eq(1L), any());
+    }
+
+    @Test
+    void getDetailThrowsWhenPostIsDeleted() throws Exception {
+        RecordPost post = recordPost(10L, user(2L, "author"));
+        post.softDelete();
+
+        when(recordPostRepository.findById(10L)).thenReturn(Optional.of(post));
+
+        assertThatThrownBy(() -> recordPostService.getDetail(1L, 10L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_DELETED);
+        verify(postAccessPolicy, never()).validateReadable(1L, post);
+    }
+
+    @Test
     void deleteSoftDeletesWhenRequesterOwnsPost() throws Exception {
         RecordPost post = recordPost(10L, user(2L, "author"));
 
@@ -159,6 +225,29 @@ class RecordPostServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_FORBIDDEN);
         assertThat(post.isDeleted()).isFalse();
+    }
+
+    @Test
+    void deleteThrowsWhenPostDoesNotExist() {
+        when(recordPostRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> recordPostService.delete(10L, 2L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_NOT_FOUND);
+    }
+
+    @Test
+    void deleteThrowsWhenPostIsDeleted() throws Exception {
+        RecordPost post = recordPost(10L, user(2L, "author"));
+        post.softDelete();
+
+        when(recordPostRepository.findById(10L)).thenReturn(Optional.of(post));
+
+        assertThatThrownBy(() -> recordPostService.delete(10L, 2L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_DELETED);
     }
 
     private User user(Long id, String nickname) {

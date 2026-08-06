@@ -92,6 +92,77 @@ class FreePostReportServiceTest {
     }
 
     @Test
+    void reportBuildsDiscordMessageWithTruncatedContent() throws Exception {
+        User reporter = user(1L, "reporter");
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "가".repeat(301));
+        FreePostReport report = FreePostReport.create(reporter, post, FreePostReportReason.ABUSE);
+
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(reporter));
+        when(freePostRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
+        when(freePostReportRepository.existsByReporter_IdAndPost_Id(1L, 10L)).thenReturn(false);
+        when(freePostReportRepository.saveAndFlush(any(FreePostReport.class))).thenReturn(report);
+
+        freePostReportService.report(1L, 10L, FreePostReportReason.ABUSE);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(TransactionSynchronization::afterCommit);
+
+        ArgumentCaptor<DiscordMessage> messageCaptor = ArgumentCaptor.forClass(DiscordMessage.class);
+        verify(discordAlertClient).sendReport(messageCaptor.capture());
+        assertThat(messageCaptor.getValue().embeds().get(0).description())
+                .contains("욕설/혐오")
+                .contains("가".repeat(300) + "...");
+    }
+
+    @Test
+    void reportBuildsDiscordMessageWithNullContent() throws Exception {
+        User reporter = user(1L, "reporter");
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", null);
+        FreePostReport report = FreePostReport.create(reporter, post, FreePostReportReason.ETC);
+
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(reporter));
+        when(freePostRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
+        when(freePostReportRepository.existsByReporter_IdAndPost_Id(1L, 10L)).thenReturn(false);
+        when(freePostReportRepository.saveAndFlush(any(FreePostReport.class))).thenReturn(report);
+
+        freePostReportService.report(1L, 10L, FreePostReportReason.ETC);
+        TransactionSynchronizationManager.getSynchronizations()
+                .forEach(TransactionSynchronization::afterCommit);
+
+        ArgumentCaptor<DiscordMessage> messageCaptor = ArgumentCaptor.forClass(DiscordMessage.class);
+        verify(discordAlertClient).sendReport(messageCaptor.capture());
+        assertThat(messageCaptor.getValue().embeds().get(0).description())
+                .contains("게시글 내용: null");
+    }
+
+    @Test
+    void reportThrowsWhenReporterNotFound() {
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> freePostReportService.report(1L, 10L, FreePostReportReason.SPAM))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+        verify(freePostRepository, never()).findByIdAndDeletedFalse(10L);
+        verify(freePostReportRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void reportThrowsWhenPostNotFound() {
+        User reporter = user(1L, "reporter");
+
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(reporter));
+        when(freePostRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> freePostReportService.report(1L, 10L, FreePostReportReason.SPAM))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_NOT_FOUND);
+        verify(freePostReportRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     void reportThrowsWhenReportingOwnPost() throws Exception {
         User reporter = user(1L, "reporter");
         FreePost post = freePost(10L, reporter, "제목", "본문");
@@ -141,6 +212,23 @@ class FreePostReportServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.FREE_POST_REPORT_ALREADY_EXISTS);
+    }
+
+    @Test
+    void reportRethrowsNonUniqueDataIntegrityViolation() throws Exception {
+        User reporter = user(1L, "reporter");
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+        DataIntegrityViolationException exception = new DataIntegrityViolationException("other");
+
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(reporter));
+        when(freePostRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
+        when(freePostReportRepository.existsByReporter_IdAndPost_Id(1L, 10L)).thenReturn(false);
+        when(freePostReportRepository.saveAndFlush(any(FreePostReport.class))).thenThrow(exception);
+
+        assertThatThrownBy(() -> freePostReportService.report(1L, 10L, FreePostReportReason.SPAM))
+                .isSameAs(exception);
+        verify(discordAlertClient, never()).sendReport(any());
     }
 
     private DataIntegrityViolationException uniqueViolation() {

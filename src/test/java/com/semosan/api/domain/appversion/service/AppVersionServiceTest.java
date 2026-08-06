@@ -9,7 +9,12 @@ import io.minio.GetObjectArgs;
 import io.minio.GetObjectResponse;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.errors.ErrorResponseException;
+import io.minio.messages.ErrorResponse;
 import okhttp3.Headers;
+import okhttp3.Protocol;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,6 +100,28 @@ class AppVersionServiceTest {
     }
 
     @Test
+    void getAppVersionThrowsNotFoundWhenObjectDoesNotExist() throws Exception {
+        when(minioClient.getObject(any(GetObjectArgs.class)))
+                .thenThrow(errorResponseException("NoSuchKey"));
+
+        assertThatThrownBy(() -> appVersionService.getAppVersion())
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.APP_VERSION_NOT_FOUND);
+    }
+
+    @Test
+    void getAppVersionThrowsReadFailedWhenMinioReturnsOtherErrorResponse() throws Exception {
+        when(minioClient.getObject(any(GetObjectArgs.class)))
+                .thenThrow(errorResponseException("AccessDenied"));
+
+        assertThatThrownBy(() -> appVersionService.getAppVersion())
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.APP_VERSION_READ_FAILED);
+    }
+
+    @Test
     void updateAppVersionBuildsResponseAndStoresJson() throws Exception {
         UpdateAppVersionRequest request = request();
         ArgumentCaptor<PutObjectArgs> argsCaptor = ArgumentCaptor.forClass(PutObjectArgs.class);
@@ -141,5 +168,24 @@ class AppVersionServiceTest {
                         "maintenance"
                 )
         );
+    }
+
+    private ErrorResponseException errorResponseException(String code) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                code,
+                "message",
+                "app-config",
+                "app-version.json",
+                "/app-version.json",
+                "request-id",
+                "host-id"
+        );
+        Response response = new Response.Builder()
+                .request(new Request.Builder().url("http://localhost/app-version.json").build())
+                .protocol(Protocol.HTTP_1_1)
+                .code(404)
+                .message("Not Found")
+                .build();
+        return new ErrorResponseException(errorResponse, response, "http trace");
     }
 }

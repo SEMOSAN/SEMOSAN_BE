@@ -59,6 +59,14 @@ class ImageServiceTest {
     }
 
     @Test
+    void generatePresignedUrlThrowsWhenBucketIsNull() {
+        assertThatThrownBy(() -> imageService.generatePresignedUrl(null, "photo.png"))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.INVALID_IMAGE_BUCKET);
+    }
+
+    @Test
     void generatePresignedUrlThrowsWhenExtensionIsNotAllowed() {
         assertThatThrownBy(() -> imageService.generatePresignedUrl("posts", "photo.gif"))
                 .isInstanceOf(GeneralException.class)
@@ -69,6 +77,14 @@ class ImageServiceTest {
     @Test
     void generatePresignedUrlThrowsWhenFilenameHasNoExtension() {
         assertThatThrownBy(() -> imageService.generatePresignedUrl("posts", "photo"))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.INVALID_IMAGE_EXTENSION);
+    }
+
+    @Test
+    void generatePresignedUrlThrowsWhenFilenameIsNull() {
+        assertThatThrownBy(() -> imageService.generatePresignedUrl("posts", null))
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.INVALID_IMAGE_EXTENSION);

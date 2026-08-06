@@ -86,6 +86,30 @@ class OAuthServiceTest {
     }
 
     @Test
+    void kakaoLoginAllowsMissingProfileOnly() {
+        KakaoUserInfoResponse userInfo = new KakaoUserInfoResponse(
+                12345L,
+                new KakaoUserInfoResponse.KakaoAccount("kakao@example.com", null)
+        );
+        OAuthLoginResponse expected = new OAuthLoginResponse(1L, "access", "refresh", false);
+        when(oAuthKakaoClient.getKakaoUserInfo("kakao-token")).thenReturn(userInfo);
+        when(oAuthLoginProcessor.login(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq(OAuthProvider.KAKAO),
+                org.mockito.ArgumentMatchers.eq(DeviceType.IOS)
+        )).thenReturn(expected);
+        ArgumentCaptor<OAuthUserProfile> profileCaptor = ArgumentCaptor.forClass(OAuthUserProfile.class);
+
+        OAuthLoginResponse response = oAuthService.kakaoLogin(new OAuthKakaoLoginRequest("kakao-token", DeviceType.IOS));
+
+        assertThat(response).isSameAs(expected);
+        verify(oAuthLoginProcessor).login(profileCaptor.capture(), org.mockito.ArgumentMatchers.eq(OAuthProvider.KAKAO), org.mockito.ArgumentMatchers.eq(DeviceType.IOS));
+        assertThat(profileCaptor.getValue().oauthId()).isEqualTo("12345");
+        assertThat(profileCaptor.getValue().email()).isEqualTo("kakao@example.com");
+        assertThat(profileCaptor.getValue().name()).isNull();
+    }
+
+    @Test
     void appleLoginConvertsClaimsToOAuthProfile() {
         Claims claims = mock(Claims.class);
         OAuthLoginResponse expected = new OAuthLoginResponse(1L, "access", "refresh", false);

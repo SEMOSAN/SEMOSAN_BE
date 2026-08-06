@@ -18,6 +18,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +52,18 @@ class CourseServiceTest {
         assertThat(response.id()).isEqualTo(10L);
         assertThat(response.mountainId()).isEqualTo(100L);
         assertThat(response.likedByMe()).isTrue();
+    }
+
+    @Test
+    void getCourseDetailSkipsLikeLookupWhenUserIdIsNull() {
+        when(courseRepository.findCourseDetailById(10L)).thenReturn(Optional.of(projection));
+        when(slopeSegmentCalculator.calculate(any(), any())).thenReturn(List.of());
+        stubProjection();
+
+        CourseDetailResponse response = courseService.getCourseDetail(null, 10L);
+
+        assertThat(response.likedByMe()).isFalse();
+        verify(courseLikeRepository, never()).existsByUser_IdAndCourse_Id(any(), any());
     }
 
     @Test

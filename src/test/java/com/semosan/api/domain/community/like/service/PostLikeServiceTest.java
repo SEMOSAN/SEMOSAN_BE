@@ -1,5 +1,7 @@
 package com.semosan.api.domain.community.like.service;
 
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.like.dto.PostLikeToggleResponse;
 import com.semosan.api.domain.community.like.entity.PostLike;
 import com.semosan.api.domain.community.like.event.PostLikedEvent;
@@ -23,6 +25,7 @@ import java.lang.reflect.Constructor;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -83,6 +86,7 @@ class PostLikeServiceTest {
 
         assertThat(result.liked()).isFalse();
         assertThat(result.count()).isZero();
+        verify(postLikeRepository).delete(existing);
         verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
@@ -102,6 +106,47 @@ class PostLikeServiceTest {
 
         assertThat(result.liked()).isTrue();
         assertThat(result.count()).isEqualTo(1L);
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void countReturnsPostLikeCount() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+
+        when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
+        when(postLikeRepository.countByPost(post)).thenReturn(7L);
+
+        long result = postLikeService.count(10L);
+
+        assertThat(result).isEqualTo(7L);
+    }
+
+    @Test
+    void hasLikedReturnsRepositoryResult() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User user = user(2L, "user");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+
+        when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
+        when(userReader.findActiveUserById(2L)).thenReturn(user);
+        when(postLikeRepository.existsByPostAndUser(post, user)).thenReturn(true);
+
+        boolean result = postLikeService.hasLiked(10L, 2L);
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void toggleWithCountThrowsWhenPostNotFound() {
+        when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> postLikeService.toggleWithCount(10L, 2L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_NOT_FOUND);
+        verify(userReader, never()).findActiveUserById(2L);
+        verify(postLikeRepository, never()).save(any(PostLike.class));
         verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 

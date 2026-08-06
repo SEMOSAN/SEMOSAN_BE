@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +43,40 @@ class UserReaderTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+
+        verifyNoInteractions(userRepository);
+    }
+
+    @Test
+    void findActiveUserByIdReturnsActiveUser() {
+        User user = user();
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(user));
+
+        User result = new UserReader(userRepository, userOnboardingRepository)
+                .findActiveUserById(1L);
+
+        assertThat(result).isSameAs(user);
+    }
+
+    @Test
+    void findActiveUserByIdThrowsWhenActiveUserMissing() {
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> new UserReader(userRepository, userOnboardingRepository)
+                .findActiveUserById(1L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+    }
+
+    @Test
+    void findOnboardingByUserIdReturnsEmptyWhenOnboardingMissing() {
+        when(userOnboardingRepository.findByUserIdWithUser(1L)).thenReturn(Optional.empty());
+
+        Optional<UserOnboarding> result = new UserReader(userRepository, userOnboardingRepository)
+                .findOnboardingByUserId(1L);
+
+        assertThat(result).isEmpty();
     }
 
     @Test
@@ -91,6 +126,18 @@ class UserReaderTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.ONBOARDING_NOT_COMPLETED);
+    }
+
+    @Test
+    void findCompletedOnboardingUserByIdReturnsCompletedUser() {
+        User user = user();
+        UserOnboarding onboarding = onboarding(user);
+        when(userOnboardingRepository.findByUserIdWithUser(1L)).thenReturn(Optional.of(onboarding));
+
+        User result = new UserReader(userRepository, userOnboardingRepository)
+                .findCompletedOnboardingUserById(1L);
+
+        assertThat(result).isSameAs(user);
     }
 
     private User user() {

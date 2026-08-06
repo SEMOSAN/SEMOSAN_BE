@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.times;
 
@@ -44,6 +45,54 @@ class UserWithdrawCleanupDispatcherTest {
         verify(jwtService, times(2)).blacklistAccessToken("access-token");
         verify(jwtService, times(1)).deleteRefreshToken(1L);
         verify(fcmTokenService, times(2)).deleteAllByUserId(1L);
+    }
+
+    @Test
+    void dispatchDelegatesToCleanup() {
+        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token");
+        doNothing().when(fcmTokenService).deleteAllByUserId(1L);
+        doNothing().when(jwtService).blacklistAccessToken("access-token");
+        doNothing().when(jwtService).deleteRefreshToken(1L);
+
+        dispatcher.dispatch(event);
+
+        verify(fcmTokenService).deleteAllByUserId(1L);
+        verify(jwtService).blacklistAccessToken("access-token");
+        verify(jwtService).deleteRefreshToken(1L);
+    }
+
+    @Test
+    void cleanupWithRetryStopsAfterThreeFailures() {
+        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token");
+        doThrow(new RuntimeException("fcm down")).when(fcmTokenService).deleteAllByUserId(1L);
+
+        assertDoesNotThrow(() -> dispatcher.cleanupWithRetry(event));
+
+        verify(fcmTokenService, times(3)).deleteAllByUserId(1L);
+        verify(jwtService, never()).blacklistAccessToken("access-token");
+        verify(jwtService, never()).deleteRefreshToken(1L);
+    }
+
+    @Test
+    void cleanupWithRetryStopsWhenBackoffIsInterrupted() {
+        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token");
+        doThrow(new RuntimeException("fcm down")).when(fcmTokenService).deleteAllByUserId(1L);
+        Thread.currentThread().interrupt();
+
+        try {
+            assertDoesNotThrow(() -> dispatcher.cleanupWithRetry(event));
+            assertTrue(Thread.currentThread().isInterrupted());
+        } finally {
+            Thread.interrupted();
+        }
+        verify(fcmTokenService, times(1)).deleteAllByUserId(1L);
+        verify(jwtService, never()).blacklistAccessToken("access-token");
+        verify(jwtService, never()).deleteRefreshToken(1L);
+    }
+
+    @Test
+    void sleepBackoff_returnsTrueWhenSleepCompletes() {
+        assertTrue(dispatcher.sleepBackoff(1));
     }
 
     @Test

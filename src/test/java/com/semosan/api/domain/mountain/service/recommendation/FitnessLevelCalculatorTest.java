@@ -12,6 +12,7 @@ import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.Gender;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 
@@ -63,12 +64,176 @@ class FitnessLevelCalculatorTest {
         assertThat(calculator.calculate(user, onboarding)).isEqualTo(FitnessLevel.ENTRY);
     }
 
+    @Test
+    void treatsMissingExerciseFrequencyOrDurationAsZeroExerciseScore() {
+        User user = user(Gender.MALE, 175.0, 70.0);
+        UserOnboarding missingFrequency = onboarding(
+                user,
+                HikingLevel.EXPERIENCED,
+                ExerciseType.RUNNING,
+                null,
+                ExerciseDuration.HOUR_1_2
+        );
+        UserOnboarding missingDuration = onboarding(
+                user,
+                HikingLevel.EXPERIENCED,
+                ExerciseType.RUNNING,
+                ExerciseFrequency.WEEK_1_2,
+                null
+        );
+
+        assertThat(calculator.calculate(user, missingFrequency)).isEqualTo(FitnessLevel.ENTRY);
+        assertThat(calculator.calculate(user, missingDuration)).isEqualTo(FitnessLevel.ENTRY);
+    }
+
+    @Test
+    void raisesLowScoringExpertToIntermediate() {
+        User user = user(Gender.NONE, null, null);
+        UserOnboarding onboarding = onboarding(
+                user,
+                HikingLevel.EXPERT,
+                ExerciseType.WALKING,
+                ExerciseFrequency.LESS_THAN_MONTH_1,
+                ExerciseDuration.UNDER_1H
+        );
+
+        assertThat(calculator.calculate(user, onboarding)).isEqualTo(FitnessLevel.INTERMEDIATE);
+    }
+
+    @Test
+    void appliesMaleBmiAdjustmentRanges() {
+        assertThat(calculator.calculate(
+                user(Gender.MALE, 175.0, 70.0),
+                onboarding(user(Gender.MALE, 175.0, 70.0), HikingLevel.HOBBY, ExerciseType.GYM,
+                        ExerciseFrequency.WEEK_3_4, ExerciseDuration.HOUR_2_4)
+        )).isEqualTo(FitnessLevel.INTERMEDIATE);
+
+        assertThat(calculator.calculate(
+                user(Gender.MALE, 175.0, 81.0),
+                onboarding(user(Gender.MALE, 175.0, 81.0), HikingLevel.HOBBY, ExerciseType.GYM,
+                        ExerciseFrequency.WEEK_3_4, ExerciseDuration.HOUR_2_4)
+        )).isEqualTo(FitnessLevel.INTERMEDIATE);
+
+        assertThat(calculator.calculate(
+                user(Gender.MALE, 175.0, 58.0),
+                onboarding(user(Gender.MALE, 175.0, 58.0), HikingLevel.EXPERIENCED, ExerciseType.SPORTS,
+                        ExerciseFrequency.MONTH_1_2, ExerciseDuration.UNDER_1H)
+        )).isEqualTo(FitnessLevel.ENTRY);
+
+        assertThat(calculator.calculate(
+                user(Gender.MALE, 175.0, 95.0),
+                onboarding(user(Gender.MALE, 175.0, 95.0), HikingLevel.EXPERIENCED, ExerciseType.SPORTS,
+                        ExerciseFrequency.MONTH_1_2, ExerciseDuration.UNDER_1H)
+        )).isEqualTo(FitnessLevel.ENTRY);
+    }
+
+    @Test
+    void appliesFemaleBmiAdjustmentRanges() {
+        assertThat(calculator.calculate(
+                user(Gender.FEMALE, 165.0, 55.0),
+                onboarding(user(Gender.FEMALE, 165.0, 55.0), HikingLevel.HOBBY, ExerciseType.GYM,
+                        ExerciseFrequency.WEEK_3_4, ExerciseDuration.HOUR_2_4)
+        )).isEqualTo(FitnessLevel.INTERMEDIATE);
+
+        assertThat(calculator.calculate(
+                user(Gender.FEMALE, 165.0, 65.0),
+                onboarding(user(Gender.FEMALE, 165.0, 65.0), HikingLevel.HOBBY, ExerciseType.GYM,
+                        ExerciseFrequency.WEEK_3_4, ExerciseDuration.HOUR_2_4)
+        )).isEqualTo(FitnessLevel.INTERMEDIATE);
+
+        assertThat(calculator.calculate(
+                user(Gender.FEMALE, 165.0, 48.0),
+                onboarding(user(Gender.FEMALE, 165.0, 48.0), HikingLevel.EXPERIENCED, ExerciseType.SPORTS,
+                        ExerciseFrequency.MONTH_1_2, ExerciseDuration.UNDER_1H)
+        )).isEqualTo(FitnessLevel.ENTRY);
+
+        assertThat(calculator.calculate(
+                user(Gender.FEMALE, 165.0, 85.0),
+                onboarding(user(Gender.FEMALE, 165.0, 85.0), HikingLevel.EXPERIENCED, ExerciseType.SPORTS,
+                        ExerciseFrequency.MONTH_1_2, ExerciseDuration.UNDER_1H)
+        )).isEqualTo(FitnessLevel.ENTRY);
+    }
+
+    @Test
+    void ignoresBmiAdjustmentWhenProfileIsIncompleteOrHeightInvalid() {
+        assertThat(calculator.calculate(
+                user(Gender.NONE, 175.0, 70.0),
+                onboarding(user(Gender.NONE, 175.0, 70.0), HikingLevel.EXPERIENCED, ExerciseType.SPORTS,
+                        ExerciseFrequency.MONTH_1_2, ExerciseDuration.UNDER_1H)
+        )).isEqualTo(FitnessLevel.ENTRY);
+
+        assertThat(calculator.calculate(
+                user(Gender.MALE, 0.0, 70.0),
+                onboarding(user(Gender.MALE, 0.0, 70.0), HikingLevel.EXPERIENCED, ExerciseType.SPORTS,
+                        ExerciseFrequency.MONTH_1_2, ExerciseDuration.UNDER_1H)
+        )).isEqualTo(FitnessLevel.ENTRY);
+    }
+
+    @Test
+    void appliesAgeAdjustmentRanges() {
+        User teenager = user(Gender.MALE, 175.0, 70.0, LocalDate.now().minusYears(16));
+        User youngAdult = user(Gender.MALE, 175.0, 70.0, LocalDate.now().minusYears(25));
+        User middleAged = user(Gender.MALE, 175.0, 70.0, LocalDate.now().minusYears(45));
+        User older = user(Gender.MALE, 175.0, 70.0, LocalDate.now().minusYears(60));
+
+        assertThat(calculator.calculate(teenager, baselineOnboarding(teenager))).isEqualTo(FitnessLevel.BEGINNER);
+        assertThat(calculator.calculate(youngAdult, baselineOnboarding(youngAdult))).isEqualTo(FitnessLevel.BEGINNER);
+        assertThat(calculator.calculate(middleAged, baselineOnboarding(middleAged))).isEqualTo(FitnessLevel.BEGINNER);
+        assertThat(calculator.calculate(older, baselineOnboarding(older))).isEqualTo(FitnessLevel.BEGINNER);
+    }
+
+    @Test
+    void exerciseTypeWeightsCoverAllExerciseTypes() {
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseTypeWeight", ExerciseType.HIKING)).isEqualTo(1.00);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseTypeWeight", ExerciseType.CROSSFIT)).isEqualTo(0.95);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseTypeWeight", ExerciseType.RUNNING)).isEqualTo(0.90);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseTypeWeight", ExerciseType.SPORTS)).isEqualTo(0.75);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseTypeWeight", ExerciseType.SWIMMING)).isEqualTo(0.65);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseTypeWeight", ExerciseType.HOME_TRAINING)).isEqualTo(0.55);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseTypeWeight", ExerciseType.PILATES_YOGA)).isEqualTo(0.45);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseTypeWeight", ExerciseType.WALKING)).isEqualTo(0.40);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseTypeWeight", ExerciseType.NONE)).isZero();
+    }
+
+    @Test
+    void exerciseFrequencyAndDurationMultipliersCoverAllValues() {
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseFrequencyMultiplier", ExerciseFrequency.LESS_THAN_MONTH_1)).isEqualTo(0.35);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseFrequencyMultiplier", ExerciseFrequency.MONTH_1_2)).isEqualTo(0.55);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseFrequencyMultiplier", ExerciseFrequency.WEEK_1_2)).isEqualTo(0.75);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseFrequencyMultiplier", ExerciseFrequency.WEEK_3_4)).isEqualTo(1.00);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseFrequencyMultiplier", ExerciseFrequency.DAILY)).isEqualTo(1.10);
+
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseDurationMultiplier", ExerciseDuration.UNDER_1H)).isEqualTo(0.70);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseDurationMultiplier", ExerciseDuration.HOUR_1_2)).isEqualTo(0.90);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseDurationMultiplier", ExerciseDuration.HOUR_2_4)).isEqualTo(1.00);
+        assertThat((Double) ReflectionTestUtils.invokeMethod(calculator, "exerciseDurationMultiplier", ExerciseDuration.OVER_4H)).isEqualTo(1.10);
+    }
+
+    @Test
+    void scoreToLevelCoversBoundaryScores() {
+        assertThat((FitnessLevel) ReflectionTestUtils.invokeMethod(calculator, "scoreToLevel", 75.0)).isEqualTo(FitnessLevel.ADVANCED);
+        assertThat((FitnessLevel) ReflectionTestUtils.invokeMethod(calculator, "scoreToLevel", 55.0)).isEqualTo(FitnessLevel.INTERMEDIATE);
+        assertThat((FitnessLevel) ReflectionTestUtils.invokeMethod(calculator, "scoreToLevel", 35.0)).isEqualTo(FitnessLevel.BEGINNER);
+        assertThat((FitnessLevel) ReflectionTestUtils.invokeMethod(calculator, "scoreToLevel", 34.9)).isEqualTo(FitnessLevel.ENTRY);
+    }
+
+    @Test
+    void bmiAdjustmentReturnsZeroWhenGenderHeightOrWeightIsMissing() {
+        assertThat((Integer) ReflectionTestUtils.invokeMethod(calculator, "bmiAdjustment", null, 175.0, 70.0)).isZero();
+        assertThat((Integer) ReflectionTestUtils.invokeMethod(calculator, "bmiAdjustment", Gender.MALE, null, 70.0)).isZero();
+        assertThat((Integer) ReflectionTestUtils.invokeMethod(calculator, "bmiAdjustment", Gender.MALE, 175.0, null)).isZero();
+    }
+
     private User user(Gender gender, Double height, Double weight) {
+        return user(gender, height, weight, LocalDate.of(1990, 1, 1));
+    }
+
+    private User user(Gender gender, Double height, Double weight, LocalDate birthDate) {
         User user = User.createTestUser("fitness-test-user", DeviceType.IOS);
         user.completeOnboarding(new CompleteOnboardingCommand(
                 "테스트",
                 null,
-                LocalDate.of(1990, 1, 1),
+                birthDate,
                 gender,
                 height,
                 weight
@@ -88,7 +253,17 @@ class FitnessLevelCalculatorTest {
                 hikingLevel,
                 exerciseType,
                 exerciseFrequency,
-                exerciseDuration
+            exerciseDuration
         ));
+    }
+
+    private UserOnboarding baselineOnboarding(User user) {
+        return onboarding(
+                user,
+                HikingLevel.EXPERIENCED,
+                ExerciseType.HIKING,
+                ExerciseFrequency.WEEK_1_2,
+                ExerciseDuration.HOUR_1_2
+        );
     }
 }
