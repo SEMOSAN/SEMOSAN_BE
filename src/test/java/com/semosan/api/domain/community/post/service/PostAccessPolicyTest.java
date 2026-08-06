@@ -15,6 +15,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +38,16 @@ class PostAccessPolicyTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_AUTHOR_BLOCKED);
+    }
+
+    @Test
+    void validateReadableDoesNothingWhenViewerDidNotBlockAuthor() throws Exception {
+        FreePost post = freePost(10L, user(2L, "author"));
+
+        when(userBlockRepository.existsByBlocker_IdAndBlockedUser_Id(1L, 2L)).thenReturn(false);
+
+        assertThatCode(() -> postAccessPolicy.validateReadable(1L, post))
+                .doesNotThrowAnyException();
     }
 
     private User user(Long id, String oauthId) {

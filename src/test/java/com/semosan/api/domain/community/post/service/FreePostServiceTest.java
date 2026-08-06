@@ -29,10 +29,12 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -60,6 +62,87 @@ class FreePostServiceTest {
     private FreePostService freePostService;
 
     @Test
+    void createSavesPostAndImagesWithDefaultMainImageIndex() {
+        User author = user(2L, "author");
+
+        when(userReader.findActiveUserById(2L)).thenReturn(author);
+        when(freePostRepository.save(org.mockito.ArgumentMatchers.any(FreePost.class)))
+                .thenAnswer(invocation -> {
+                    FreePost post = invocation.getArgument(0);
+                    ReflectionTestUtils.setField(post, "id", 10L);
+                    return post;
+                });
+        when(postImageRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        FreePostDetailResponse result = freePostService.create(
+                2L,
+                "제목",
+                "본문",
+                List.of("https://example.com/1.png", "https://example.com/2.png"),
+                null
+        );
+
+        assertThat(result.id()).isEqualTo(10L);
+        assertThat(result.title()).isEqualTo("제목");
+        assertThat(result.content()).isEqualTo("본문");
+        assertThat(result.images()).hasSize(2);
+        assertThat(result.images().get(0).main()).isTrue();
+        assertThat(result.images().get(1).main()).isFalse();
+        assertThat(result.likeCount()).isZero();
+        assertThat(result.commentCount()).isZero();
+        assertThat(result.likedByMe()).isFalse();
+    }
+
+    @Test
+    void createReturnsEmptyImagesWhenImageUrlsAreNullOrEmpty() {
+        User author = user(2L, "author");
+
+        when(userReader.findActiveUserById(2L)).thenReturn(author);
+        when(freePostRepository.save(org.mockito.ArgumentMatchers.any(FreePost.class)))
+                .thenAnswer(invocation -> {
+                    FreePost post = invocation.getArgument(0);
+                    ReflectionTestUtils.setField(post, "id", 10L);
+                    return post;
+                });
+
+        FreePostDetailResponse nullImagesResult = freePostService.create(2L, "제목", "본문", null, null);
+        FreePostDetailResponse emptyImagesResult = freePostService.create(2L, "제목", "본문", List.of(), null);
+
+        assertThat(nullImagesResult.images()).isEmpty();
+        assertThat(emptyImagesResult.images()).isEmpty();
+        verify(postImageRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void createThrowsWhenContentIsBlank() {
+        assertThatThrownBy(() -> freePostService.create(2L, "제목", " ", List.of(), null))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_CONTENT_REQUIRED);
+        verifyNoInteractions(userReader, freePostRepository, postImageRepository);
+    }
+
+    @Test
+    void createThrowsWhenMainImageIndexIsOutOfRange() {
+        User author = user(2L, "author");
+
+        when(userReader.findActiveUserById(2L)).thenReturn(author);
+
+        assertThatThrownBy(() -> freePostService.create(
+                2L,
+                "제목",
+                "본문",
+                List.of("https://example.com/1.png"),
+                1
+        ))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_IMAGE_INDEX_INVALID);
+        verify(freePostRepository).save(org.mockito.ArgumentMatchers.any(FreePost.class));
+        verify(postImageRepository, never()).saveAll(anyList());
+    }
+
+    @Test
     void getListUsesViewerSpecificVisibleQuery() throws Exception {
         User author = user(2L, "author");
         FreePost post = freePost(10L, author, "제목", "본문");
@@ -75,6 +158,50 @@ class FreePostServiceTest {
 
         assertThat(result).hasSize(1);
         verify(freePostRepository).findVisibleByViewerId(eq(1L), eq(PageRequest.of(0, 10)));
+    }
+
+    @Test
+    void getListReturnsEmptyPageWithoutCountQueries() {
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(freePostRepository.findVisibleByViewerId(1L, pageable)).thenReturn(Page.empty(pageable));
+
+        Page<FreePostListResponse> result = freePostService.getList(1L, pageable);
+
+        assertThat(result).isEmpty();
+        verify(postLikeRepository, never()).countByPostIdsGrouped(anyList());
+        verify(commentRepository, never()).countByPostIdsGrouped(anyList());
+        verify(postImageRepository, never()).findMainImagesByPostIds(anyList());
+        verify(postImageRepository, never()).countByPostIdsGrouped(anyList());
+    }
+
+    @Test
+    void searchReturnsEmptyPageWhenKeywordIsBlank() {
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        Page<FreePostListResponse> result = freePostService.search(1L, "  ", pageable);
+
+        assertThat(result).isEmpty();
+        verify(freePostRepository, never()).searchByKeyword(eq(1L), org.mockito.ArgumentMatchers.anyString(), any());
+    }
+
+    @Test
+    void searchStripsKeywordAndDropsSortBeforeQuerying() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+        PageRequest sorted = PageRequest.of(1, 5, org.springframework.data.domain.Sort.by("createdAt").descending());
+        PageRequest unsorted = PageRequest.of(1, 5);
+        Page<FreePost> page = new PageImpl<>(List.of(post), unsorted, 1);
+
+        when(freePostRepository.searchByKeyword(1L, "검색어", unsorted)).thenReturn(page);
+        when(postLikeRepository.countByPostIdsGrouped(anyList())).thenReturn(List.of());
+        when(commentRepository.countByPostIdsGrouped(anyList())).thenReturn(List.of());
+        when(postImageRepository.findMainImagesByPostIds(anyList())).thenReturn(List.of());
+        when(postImageRepository.countByPostIdsGrouped(anyList())).thenReturn(List.of());
+
+        Page<FreePostListResponse> result = freePostService.search(1L, "  검색어  ", sorted);
+
+        assertThat(result).hasSize(1);
+        verify(freePostRepository).searchByKeyword(1L, "검색어", unsorted);
     }
 
     @Test
@@ -205,6 +332,32 @@ class FreePostServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_AUTHOR_BLOCKED);
         verify(postImageRepository, never()).findByPostOrderBySortOrderAsc(post);
+    }
+
+    @Test
+    void getDetailThrowsWhenPostDoesNotExist() {
+        when(freePostRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> freePostService.getDetail(1L, 10L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_NOT_FOUND);
+        verify(postAccessPolicy, never()).validateReadable(eq(1L), org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void getDetailThrowsWhenPostIsDeleted() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+        post.softDelete();
+
+        when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
+
+        assertThatThrownBy(() -> freePostService.getDetail(1L, 10L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_DELETED);
+        verify(postAccessPolicy, never()).validateReadable(1L, post);
     }
 
     @Test
