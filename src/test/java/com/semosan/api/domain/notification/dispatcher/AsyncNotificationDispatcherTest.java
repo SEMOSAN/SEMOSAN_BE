@@ -47,7 +47,7 @@ class AsyncNotificationDispatcherTest {
                 eq("SEMOSAN"),
                 eq("500m 돌파! 인증 사진을 남겨보세요!"),
                 dataCaptor.capture(),
-                eq(true)
+                eq(false)
         );
         assertThat(dataCaptor.getValue())
                 .containsEntry("type", "TRACKING_PHOTO_MILESTONE")

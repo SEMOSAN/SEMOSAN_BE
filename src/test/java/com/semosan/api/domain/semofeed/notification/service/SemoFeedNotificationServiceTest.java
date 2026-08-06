@@ -61,7 +61,7 @@ class SemoFeedNotificationServiceTest {
                 argThat(params -> params.get("actorId").equals(2L)
                         && params.get("actorName").equals("reactor")
                         && params.get("semoFeedId").equals(10L)
-                        && params.get("emojiType").equals("FIRE"))
+                        && params.get("emojiType").equals("🔥"))
         );
     }
 
