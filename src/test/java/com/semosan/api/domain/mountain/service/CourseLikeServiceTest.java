@@ -1,5 +1,7 @@
 package com.semosan.api.domain.mountain.service;
 
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.mountain.dto.response.CourseLikeToggleResponse;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.CourseLike;
@@ -20,7 +22,9 @@ import java.lang.reflect.Constructor;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -83,6 +87,18 @@ class CourseLikeServiceTest {
         CourseLikeToggleResponse response = courseLikeService.toggleCourseLike(1L, 10L);
 
         assertThat(response.liked()).isTrue();
+    }
+
+    @Test
+    void toggleCourseLikeThrowsWhenCourseNotFound() {
+        when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
+        when(courseRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courseLikeService.toggleCourseLike(1L, 10L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.COURSE_NOT_FOUND);
+        verify(courseLikeRepository, never()).findByUser_IdAndCourse_Id(1L, 10L);
     }
 
     private User user(Long id) {

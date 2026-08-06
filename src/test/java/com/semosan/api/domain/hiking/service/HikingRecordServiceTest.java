@@ -32,6 +32,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -76,6 +79,84 @@ class HikingRecordServiceTest {
 
     @InjectMocks
     private HikingRecordService hikingRecordService;
+
+    @Test
+    void getUserHikingMountainRecordsMapsProjectionPage() {
+        var projection = mock(com.semosan.api.domain.hiking.repository.projection.UserHikingMountainRecordProjection.class);
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(projection.getMountainId()).thenReturn(20L);
+        when(projection.getMountainName()).thenReturn("관악산");
+        when(projection.getImageUrl1()).thenReturn("image-1.jpg");
+        when(projection.getImageUrl2()).thenReturn("image-2.jpg");
+        when(projection.getHikingCount()).thenReturn(2L);
+        when(projection.getLastHikedAt()).thenReturn(LocalDateTime.of(2026, 8, 6, 10, 0));
+        when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
+        when(hikingRecordRepository.findUserHikingMountainRecordsByUserId(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(projection), pageable, 1));
+
+        Page<com.semosan.api.domain.hiking.dto.response.GetUserHikingMountainRecordResponse> result =
+                hikingRecordService.getUserHikingMountainRecords(1L, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().getFirst().mountainId()).isEqualTo(20L);
+        assertThat(result.getContent().getFirst().hikingCount()).isEqualTo(2L);
+        assertThat(result.getContent().getFirst().imageUrls()).containsExactly("image-1.jpg", "image-2.jpg");
+    }
+
+    @Test
+    void getUserHikingRecordsMapsProjectionPage() {
+        var projection = mock(com.semosan.api.domain.hiking.repository.projection.UserHikingRecordProjection.class);
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(projection.getHikingRecordId()).thenReturn(10L);
+        when(projection.getSessionId()).thenReturn(100L);
+        when(projection.getMountainId()).thenReturn(20L);
+        when(projection.getMountainName()).thenReturn("관악산");
+        when(projection.getCourseId()).thenReturn(30L);
+        when(projection.getCourseName()).thenReturn("정상 코스");
+        when(projection.getPhotoReportImageUrl()).thenReturn("photo.jpg");
+        when(projection.getCliveImageUrl()).thenReturn("clive.jpg");
+        when(projection.getDistance()).thenReturn(1200.0);
+        when(projection.getHikedAt()).thenReturn(LocalDateTime.of(2026, 8, 6, 10, 0));
+        when(projection.getDuration()).thenReturn(3600);
+        when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
+        when(hikingRecordRepository.findUserHikingRecordsByUserId(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(projection), pageable, 1));
+
+        Page<com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse> result =
+                hikingRecordService.getUserHikingRecords(1L, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().getFirst().hikingRecordId()).isEqualTo(10L);
+        assertThat(result.getContent().getFirst().courseName()).isEqualTo("정상 코스");
+        assertThat(result.getContent().getFirst().imageUrls()).containsExactly("photo.jpg", "clive.jpg");
+    }
+
+    @Test
+    void getUserHikingRecordsByMountainIdMapsProjectionPage() {
+        var projection = mock(com.semosan.api.domain.hiking.repository.projection.UserHikingRecordProjection.class);
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(projection.getHikingRecordId()).thenReturn(10L);
+        when(projection.getSessionId()).thenReturn(100L);
+        when(projection.getMountainId()).thenReturn(20L);
+        when(projection.getMountainName()).thenReturn("관악산");
+        when(projection.getCourseId()).thenReturn(30L);
+        when(projection.getCourseName()).thenReturn("정상 코스");
+        when(projection.getPhotoReportImageUrl()).thenReturn("photo.jpg");
+        when(projection.getCliveImageUrl()).thenReturn("clive.jpg");
+        when(projection.getDistance()).thenReturn(1200.0);
+        when(projection.getHikedAt()).thenReturn(LocalDateTime.of(2026, 8, 6, 10, 0));
+        when(projection.getDuration()).thenReturn(3600);
+        when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
+        when(mountainRepository.existsById(20L)).thenReturn(true);
+        when(hikingRecordRepository.findUserHikingRecordsByUserIdAndMountainId(1L, 20L, pageable))
+                .thenReturn(new PageImpl<>(List.of(projection), pageable, 1));
+
+        Page<com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse> result =
+                hikingRecordService.getUserHikingRecordsByMountainId(1L, 20L, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().getFirst().hikingRecordId()).isEqualTo(10L);
+    }
 
     @Test
     void getUserHikingRecordsByMountainIdThrowsWhenMountainMissing() {
@@ -181,6 +262,61 @@ class HikingRecordServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.HIKING_RECORD_FORBIDDEN);
+    }
+
+    @Test
+    void getHikingRecordDetailDoesNotQueryPathOrPhotosWhenTrackingSessionMissing() throws Exception {
+        User user = user(1L);
+        HikingRecord hikingRecord = hikingRecord(10L, course(mountain(20L, "관악산"), 30L, "정상 코스"));
+
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(hikingRecordRepository.findWithMountainAndCourseById(10L)).thenReturn(Optional.of(hikingRecord));
+        when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
+
+        HikingRecordDetailResponse response = hikingRecordService.getHikingRecordDetail(1L, 10L);
+
+        assertThat(response.track()).isNull();
+        assertThat(response.altitudes()).isNull();
+        assertThat(response.photos()).isEmpty();
+        verify(trackingPointRepository, never()).findTrackBySessionId(any());
+        verify(trackingPhotoRepository, never()).findByTrackingSession_IdOrderByMilestoneIndexAsc(any());
+    }
+
+    @Test
+    void getHikingRecordDetailKeepsTrackNullWhenPathProjectionHasNullTrack() throws Exception {
+        User user = user(1L);
+        HikingRecord hikingRecord = hikingRecord(10L, course(mountain(20L, "관악산"), 30L, "정상 코스"));
+        TrackingSession session = trackingSession(100L);
+        ReflectionTestUtils.setField(hikingRecord, "trackingSession", session);
+        TrackingPathProjection path = mock(TrackingPathProjection.class);
+        when(path.getTrack()).thenReturn(null);
+
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(hikingRecordRepository.findWithMountainAndCourseById(10L)).thenReturn(Optional.of(hikingRecord));
+        when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
+        when(trackingPointRepository.findTrackBySessionId(100L)).thenReturn(Optional.of(path));
+        when(trackingPhotoRepository.findByTrackingSession_IdOrderByMilestoneIndexAsc(100L)).thenReturn(List.of());
+
+        HikingRecordDetailResponse response = hikingRecordService.getHikingRecordDetail(1L, 10L);
+
+        assertThat(response.track()).isNull();
+        assertThat(response.altitudes()).isNull();
+    }
+
+    @Test
+    void createCourseDifficultyFeedbackThrowsWhenRecordMissing() {
+        when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
+        when(hikingRecordRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> hikingRecordService.createCourseDifficultyFeedback(
+                1L,
+                10L,
+                new CreateCourseDifficultyFeedbackRequest(DifficultyFeedbackType.SIMILAR)
+        ))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.HIKING_RECORD_NOT_FOUND);
+        verify(hikingMemberRepository, never()).existsByHikingRecordAndUser(any(), any());
     }
 
     @Test

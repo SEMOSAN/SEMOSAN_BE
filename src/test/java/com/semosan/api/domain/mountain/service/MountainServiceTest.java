@@ -143,6 +143,20 @@ class MountainServiceTest {
     }
 
     @Test
+    void getMountainsForMapUsesProvidedBBox() {
+        MountainMapProjection projection = mapProjection(1L, 0L);
+        when(mountainRepository.findInBBoxWithUserHikingStats(
+                1L, 37.0, 126.0, 38.0, 127.0))
+                .thenReturn(List.of(projection));
+        when(hikingMemberRepository.existsByUser_Id(1L)).thenReturn(false);
+
+        MountainMapListResponse response = mountainService.getMountainsForMap(1L, 37.0, 126.0, 38.0, 127.0);
+
+        assertThat(response.hasHikingRecord()).isFalse();
+        assertThat(response.mountains().getFirst().visited()).isFalse();
+    }
+
+    @Test
     void getMountainsForMapThrowsWhenBBoxIsPartial() {
         assertThatThrownBy(() -> mountainService.getMountainsForMap(1L, 37.0, null, 38.0, 127.0))
                 .isInstanceOf(GeneralException.class)
@@ -238,6 +252,30 @@ class MountainServiceTest {
         assertThat(result).hasSize(3);
         assertThat(result.get(0).difficultyLabel()).isEqualTo("중");
         assertThat(result.get(0).mountainHeightM()).isEqualTo(123);
+    }
+
+    @Test
+    void getRecommendedMountainsSelectsBetterCandidatePerMountain() throws Exception {
+        User user = user();
+        UserOnboarding onboarding = onboarding(user);
+        Mountain mountain = mountain(1L, "관악산");
+        Course eligibleCourse = course(mountain);
+        Course ineligibleCourse = course(mountain);
+
+        when(userReader.findOnboardingByUserId(1L)).thenReturn(Optional.of(onboarding));
+        when(courseRepository.findAllWithMountainForRecommendation())
+                .thenReturn(List.of(ineligibleCourse, eligibleCourse));
+        when(fitnessLevelCalculator.calculate(user, onboarding))
+                .thenReturn(com.semosan.api.domain.mountain.enums.FitnessLevel.INTERMEDIATE);
+        when(trackScorer.evaluate(ineligibleCourse, com.semosan.api.domain.mountain.enums.FitnessLevel.INTERMEDIATE))
+                .thenReturn(evaluation(ineligibleCourse, false, 200));
+        when(trackScorer.evaluate(eligibleCourse, com.semosan.api.domain.mountain.enums.FitnessLevel.INTERMEDIATE))
+                .thenReturn(evaluation(eligibleCourse, true, 10));
+
+        List<MountainRecommendationResponse> result = mountainService.getRecommendedMountains(1L, null, null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().name()).isEqualTo("관악산");
     }
 
     @Test
