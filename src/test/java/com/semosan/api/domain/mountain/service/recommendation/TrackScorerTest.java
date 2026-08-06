@@ -84,16 +84,74 @@ class TrackScorerTest {
         assertThat(evaluation.metrics().gain()).isEqualTo(1200.0);
     }
 
+    @Test
+    void beginnerLevelRejectsTrackWithTooManyDangerWaypoints() throws Exception {
+        Course course = course(
+                8000.0,
+                List.of(100.0, 500.0),
+                List.of("DANGER", "DANGER", "REST")
+        );
+
+        TrackScorer.TrackEvaluation evaluation = scorer.evaluate(course, FitnessLevel.BEGINNER);
+
+        assertThat(evaluation.eligible()).isFalse();
+        assertThat(evaluation.metrics().dangerCount()).isEqualTo(2);
+    }
+
+    @Test
+    void metricsUsePositiveWaypointElevationsWhenAltitudesAreMissing() throws Exception {
+        Course course = courseWithWaypoints(
+                6000.0,
+                null,
+                List.of(
+                        new Course.CourseWaypoint(37.0, 127.0, null, "쉼터", "REST"),
+                        new Course.CourseWaypoint(37.1, 127.1, 100.0, "입구", "TRANS"),
+                        new Course.CourseWaypoint(37.2, 127.2, 450.0, "전망대", "PHOTO")
+                )
+        );
+
+        TrackScorer.TrackEvaluation evaluation = scorer.evaluate(course, FitnessLevel.BEGINNER);
+
+        assertThat(evaluation.metrics().gain()).isEqualTo(350.0);
+        assertThat(evaluation.metrics().mountainHeightM()).isEqualTo(450);
+        assertThat(evaluation.metrics().restCount()).isEqualTo(1);
+        assertThat(evaluation.metrics().accessCount()).isEqualTo(1);
+        assertThat(evaluation.metrics().scenicCount()).isEqualTo(1);
+    }
+
+    @Test
+    void metricsUseZeroElevationWhenAltitudeAndWaypointElevationsAreMissing() throws Exception {
+        Course course = course(3000.0, null, null);
+
+        TrackScorer.TrackEvaluation evaluation = scorer.evaluate(course, FitnessLevel.ENTRY);
+
+        assertThat(evaluation.metrics().gain()).isZero();
+        assertThat(evaluation.metrics().mountainHeightM()).isZero();
+        assertThat(evaluation.metrics().dangerCount()).isZero();
+        assertThat(evaluation.metrics().restCount()).isZero();
+    }
+
     private Course course(Double distance, List<Double> altitudes, List<String> waypointCategories) throws Exception {
+        List<Course.CourseWaypoint> waypoints = waypointCategories == null
+                ? null
+                : waypointCategories.stream()
+                .map(category -> new Course.CourseWaypoint(37.0, 127.0, 100.0, category, category))
+                .toList();
+        return courseWithWaypoints(distance, altitudes, waypoints);
+    }
+
+    private Course courseWithWaypoints(
+            Double distance,
+            List<Double> altitudes,
+            List<Course.CourseWaypoint> waypoints
+    ) throws Exception {
         Constructor<Course> constructor = Course.class.getDeclaredConstructor();
         constructor.setAccessible(true);
         Course course = constructor.newInstance();
 
         ReflectionTestUtils.setField(course, "distance", distance);
         ReflectionTestUtils.setField(course, "altitudes", altitudes);
-        ReflectionTestUtils.setField(course, "waypoints", waypointCategories.stream()
-                .map(category -> new Course.CourseWaypoint(37.0, 127.0, 100.0, category, category))
-                .toList());
+        ReflectionTestUtils.setField(course, "waypoints", waypoints);
         return course;
     }
 }
