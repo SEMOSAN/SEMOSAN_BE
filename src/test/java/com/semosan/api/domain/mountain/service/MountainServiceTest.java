@@ -1,15 +1,28 @@
 package com.semosan.api.domain.mountain.service;
 
+import com.semosan.api.common.exception.GeneralException;
+import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
+import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainRecommendationResponse;
+import com.semosan.api.domain.mountain.entity.Amenity;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.Mountain;
+import com.semosan.api.domain.mountain.entity.Restaurant;
+import com.semosan.api.domain.mountain.entity.RestaurantSection;
+import com.semosan.api.domain.mountain.entity.Transportation;
+import com.semosan.api.domain.mountain.enums.AmenityType;
 import com.semosan.api.domain.mountain.enums.Difficulty;
+import com.semosan.api.domain.mountain.enums.TransportationType;
 import com.semosan.api.domain.mountain.repository.AmenityRepository;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.mountain.repository.RestaurantSectionRepository;
 import com.semosan.api.domain.mountain.repository.TransportationRepository;
+import com.semosan.api.domain.mountain.repository.projection.MountainMapProjection;
+import com.semosan.api.domain.review.entity.Review;
 import com.semosan.api.domain.mountain.service.recommendation.FitnessLevelCalculator;
 import com.semosan.api.domain.mountain.service.recommendation.TrackScorer;
 import com.semosan.api.domain.review.service.ReviewService;
@@ -29,6 +42,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
@@ -37,6 +53,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -75,6 +93,111 @@ class MountainServiceTest {
 
     @InjectMocks
     private MountainService mountainService;
+
+    @Test
+    void getMountainsReturnsPublicMountains() throws Exception {
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(mountainRepository.findByIsPublicTrue(pageable))
+                .thenReturn(new PageImpl<>(List.of(mountain(1L, "관악산")), pageable, 1));
+
+        Page<MountainListResponse> result = mountainService.getMountains(1L, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().getFirst().mountainId()).isEqualTo(1L);
+        assertThat(result.getContent().getFirst().name()).isEqualTo("관악산");
+    }
+
+    @Test
+    void searchMountainsTrimsKeywordAndMapsResult() throws Exception {
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(mountainRepository.searchByKeyword("관악", pageable))
+                .thenReturn(new PageImpl<>(List.of(mountain(1L, "관악산")), pageable, 1));
+
+        Page<MountainListResponse> result = mountainService.searchMountains(1L, "  관악  ", pageable);
+
+        assertThat(result.getContent().getFirst().name()).isEqualTo("관악산");
+    }
+
+    @Test
+    void searchMountainsThrowsWhenKeywordBlank() {
+        assertThatThrownBy(() -> mountainService.searchMountains(1L, "   ", PageRequest.of(0, 10)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void getMountainsForMapUsesDefaultBBoxWhenCoordinatesAreMissing() {
+        MountainMapProjection projection = mapProjection(1L, 2L);
+        when(mountainRepository.findInBBoxWithUserHikingStats(
+                1L, 37.413, 126.764, 37.715, 127.184))
+                .thenReturn(List.of(projection));
+        when(hikingMemberRepository.existsByUser_Id(1L)).thenReturn(true);
+
+        MountainMapListResponse response = mountainService.getMountainsForMap(1L, null, null, null, null);
+
+        assertThat(response.hasHikingRecord()).isTrue();
+        assertThat(response.mountains()).hasSize(1);
+        assertThat(response.mountains().getFirst().visited()).isTrue();
+        assertThat(response.mountains().getFirst().visitCount()).isEqualTo(2L);
+    }
+
+    @Test
+    void getMountainsForMapThrowsWhenBBoxIsPartial() {
+        assertThatThrownBy(() -> mountainService.getMountainsForMap(1L, 37.0, null, 38.0, 127.0))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.MOUNTAIN_BBOX_PARTIAL);
+    }
+
+    @Test
+    void getMountainDetailReturnsGroupedDetailData() throws Exception {
+        Mountain mountain = mountain(1L, "관악산");
+        Course course = course(mountain);
+        ReflectionTestUtils.setField(course, "id", 10L);
+        ReflectionTestUtils.setField(course, "name", "정상 코스");
+        ReflectionTestUtils.setField(course, "difficulty", Difficulty.NORMAL);
+        ReflectionTestUtils.setField(course, "distance", 1500.0);
+        ReflectionTestUtils.setField(course, "duration", 90);
+        ReflectionTestUtils.setField(course, "startName", "입구");
+        ReflectionTestUtils.setField(course, "endName", "정상");
+        Transportation bus = transportation(1L, TransportationType.BUS, "상행", "버스", "버스 설명");
+        Transportation parking = transportation(2L, TransportationType.PARKING, "입구", "주차장", "주차 설명");
+        Amenity restroom = amenity(AmenityType.RESTROOM, "입구");
+        RestaurantSection section = RestaurantSection.create(mountain, "근처 맛집");
+        Restaurant restaurant = Restaurant.create(section, "식당", "한식", "메뉴", "설명", "image", "map", "blog");
+        ReflectionTestUtils.setField(restaurant, "id", 30L);
+        ReflectionTestUtils.setField(section, "restaurants", List.of(restaurant));
+        Review review = review(40L, user(), course);
+
+        when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
+        when(courseRepository.findByMountainId(1L)).thenReturn(List.of(course));
+        when(transportationRepository.findByMountainId(1L)).thenReturn(List.of(bus, parking));
+        when(amenityRepository.findByMountainId(1L)).thenReturn(List.of(restroom));
+        when(restaurantSectionRepository.findByMountainIdWithRestaurants(1L)).thenReturn(List.of(section));
+        when(reviewService.getReviewsByMountainId(1L)).thenReturn(List.of(review));
+
+        MountainDetailResponse response = mountainService.getMountainDetail(1L, 1L);
+
+        assertThat(response.mountain().mountainId()).isEqualTo(1L);
+        assertThat(response.courses().getFirst().courseId()).isEqualTo(10L);
+        assertThat(response.transportations().publicTransport()).containsKey("상행");
+        assertThat(response.transportations().parking()).containsKey("입구");
+        assertThat(response.amenities()).containsEntry("입구", List.of(AmenityType.RESTROOM));
+        assertThat(response.restaurantSections().getFirst().restaurants().getFirst().restaurantId()).isEqualTo(30L);
+        assertThat(response.reviews().getFirst().reviewId()).isEqualTo(40L);
+        assertThat(response.reviews().getFirst().courseName()).isEqualTo("정상 코스");
+    }
+
+    @Test
+    void getMountainDetailThrowsWhenMountainMissing() {
+        when(mountainRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> mountainService.getMountainDetail(1L, 1L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.MOUNTAIN_NOT_FOUND);
+    }
 
     @Test
     void getRecommendedMountainsReturnsTopThreeMountainsByTrackScore() throws Exception {
@@ -202,7 +325,10 @@ class MountainServiceTest {
         ReflectionTestUtils.setField(mountain, "difficulty", Difficulty.NORMAL);
         ReflectionTestUtils.setField(mountain, "altitude", 500.0);
         ReflectionTestUtils.setField(mountain, "address", "주소");
-        ReflectionTestUtils.setField(mountain, "imageUrls", List.of());
+        ReflectionTestUtils.setField(mountain, "duration", 120);
+        ReflectionTestUtils.setField(mountain, "imageUrls", List.of("image.jpg"));
+        ReflectionTestUtils.setField(mountain, "latitude", 37.5);
+        ReflectionTestUtils.setField(mountain, "longitude", 127.0);
         return mountain;
     }
 
@@ -212,6 +338,64 @@ class MountainServiceTest {
         Course course = constructor.newInstance();
         ReflectionTestUtils.setField(course, "mountain", mountain);
         return course;
+    }
+
+    private MountainMapProjection mapProjection(Long id, Long visitCount) {
+        MountainMapProjection projection = mock(MountainMapProjection.class);
+        when(projection.getId()).thenReturn(id);
+        when(projection.getName()).thenReturn("관악산");
+        when(projection.getLatitude()).thenReturn(37.5);
+        when(projection.getLongitude()).thenReturn(127.0);
+        when(projection.getVisitCount()).thenReturn(visitCount);
+        when(projection.getImageUrl()).thenReturn("image.jpg");
+        return projection;
+    }
+
+    private Transportation transportation(
+            Long id,
+            TransportationType type,
+            String direction,
+            String name,
+            String description
+    ) {
+        Transportation transportation = Transportation.create(mountainForRelation(), type, direction, name, description);
+        ReflectionTestUtils.setField(transportation, "id", id);
+        return transportation;
+    }
+
+    private Amenity amenity(AmenityType type, String direction) {
+        Amenity amenity = newInstance(Amenity.class);
+        ReflectionTestUtils.setField(amenity, "type", type);
+        ReflectionTestUtils.setField(amenity, "direction", direction);
+        return amenity;
+    }
+
+    private Review review(Long id, User user, Course course) {
+        Review review = newInstance(Review.class);
+        ReflectionTestUtils.setField(review, "id", id);
+        ReflectionTestUtils.setField(review, "user", user);
+        ReflectionTestUtils.setField(review, "course", course);
+        ReflectionTestUtils.setField(review, "content", "리뷰");
+        ReflectionTestUtils.setField(review, "difficulty", Difficulty.EASY);
+        ReflectionTestUtils.setField(review, "imageUrl", "review.jpg");
+        return review;
+    }
+
+    private Mountain mountainForRelation() {
+        Mountain mountain = newInstance(Mountain.class);
+        ReflectionTestUtils.setField(mountain, "id", 1L);
+        ReflectionTestUtils.setField(mountain, "name", "관악산");
+        return mountain;
+    }
+
+    private <T> T newInstance(Class<T> type) {
+        try {
+            Constructor<T> constructor = type.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private TrackScorer.TrackEvaluation evaluation(Course course, boolean eligible, double score) {
