@@ -50,6 +50,20 @@ class MdcFilterTest {
     }
 
     @Test
+    void doFilterGeneratesTraceIdWhenHeaderIsMissing() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/health");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, (servletRequest, servletResponse) -> {
+            assertThat(MDC.get("traceId")).isNotBlank();
+            assertThat(MDC.get("method")).isEqualTo("GET");
+            assertThat(MDC.get("uri")).isEqualTo("/health");
+        });
+
+        assertThat(MDC.getCopyOfContextMap()).isNull();
+    }
+
+    @Test
     void doFilterRestoresMdcEvenWhenChainThrows() {
         MDC.put("existing", "value");
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/fail");

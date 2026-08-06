@@ -189,6 +189,42 @@ class JwtServiceTest {
                 .isEqualTo(ErrorStatus.JWT_MALFORMED);
     }
 
+    @Test
+    void validateAccessTokenThrowsWhenSignatureIsInvalid() {
+        JwtService jwtService = jwtService();
+        SecretKey otherKey = io.jsonwebtoken.security.Keys.hmacShaKeyFor(
+                "abcdefghijklmnopqrstuvwxyz123456".getBytes(StandardCharsets.UTF_8)
+        );
+        String token = Jwts.builder()
+                .subject("1")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + ACCESS_EXPIRATION))
+                .signWith(otherKey, Jwts.SIG.HS256)
+                .compact();
+
+        assertThatThrownBy(() -> jwtService.validateAccessTokenAndGetClaims(token))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_GENERAL_ERROR);
+    }
+
+    @Test
+    void validateAccessTokenThrowsWhenTokenIsExpired() {
+        JwtService jwtService = jwtService();
+        SecretKey key = io.jsonwebtoken.security.Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String token = Jwts.builder()
+                .subject("1")
+                .issuedAt(new Date(System.currentTimeMillis() - 2_000L))
+                .expiration(new Date(System.currentTimeMillis() - 1_000L))
+                .signWith(key, Jwts.SIG.HS256)
+                .compact();
+
+        assertThatThrownBy(() -> jwtService.validateAccessTokenAndGetClaims(token))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_EXPIRED);
+    }
+
     private JwtService jwtService() {
         return new JwtService(SECRET, ACCESS_EXPIRATION, REFRESH_EXPIRATION, tokenRedisService);
     }

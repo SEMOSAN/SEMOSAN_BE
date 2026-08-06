@@ -21,4 +21,18 @@ class GridConverterTest {
         assertThat(grid.nx()).isEqualTo(53);
         assertThat(grid.ny()).isEqualTo(38);
     }
+
+    @Test
+    void toGridNormalizesLongitudeGreaterThanPiFromOrigin() {
+        GridConverter.Grid grid = GridConverter.toGrid(37.0, 400.0);
+
+        assertThat(grid.nx()).isEqualTo(-1178);
+    }
+
+    @Test
+    void toGridNormalizesLongitudeLessThanMinusPiFromOrigin() {
+        GridConverter.Grid grid = GridConverter.toGrid(37.0, -200.0);
+
+        assertThat(grid.nx()).isEqualTo(615);
+    }
 }

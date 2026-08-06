@@ -93,6 +93,26 @@ class FcmServiceTest {
         assertThat(read(message, "getNotification")).isNotNull();
     }
 
+    @Test
+    void sendMessageAllowsEmptyData() throws Exception {
+        FirebaseMessaging firebaseMessaging = mock(FirebaseMessaging.class);
+        when(firebaseMessaging.send(org.mockito.ArgumentMatchers.any(Message.class))).thenReturn("message-id");
+        ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
+
+        try (MockedStatic<FirebaseMessaging> mockedStatic = mockStatic(FirebaseMessaging.class)) {
+            mockedStatic.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
+
+            String result = fcmService.sendMessage("token", "title", "body", Map.of(), true);
+
+            assertThat(result).isEqualTo("message-id");
+            org.mockito.Mockito.verify(firebaseMessaging).send(captor.capture());
+        }
+
+        Message message = captor.getValue();
+        assertThat(read(message, "getData")).isNull();
+        assertThat(read(message, "getNotification")).isNull();
+    }
+
     private Object read(Message message, String methodName) throws Exception {
         Method method = Message.class.getDeclaredMethod(methodName);
         method.setAccessible(true);

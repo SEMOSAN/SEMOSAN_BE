@@ -154,6 +154,23 @@ class JwtFilterTest {
         assertThat(response.getContentAsString()).contains(ErrorStatus.JWT_MALFORMED.getCode());
     }
 
+    @Test
+    void doFilterSetsAuthenticationEvenWhenUserIsNotFound() throws Exception {
+        Claims claims = mock(Claims.class);
+        when(jwtService.validateAccessTokenAndGetClaims("access")).thenReturn(claims);
+        when(jwtService.isAccessTokenBlacklisted("access")).thenReturn(false);
+        when(jwtService.getUserIdFromClaims(claims)).thenReturn(1L);
+        when(claims.get("tokenType", String.class)).thenReturn(null);
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        MockHttpServletRequest request = request("/api/mountains", "Bearer access");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter().doFilter(request, response, new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).isEqualTo(1L);
+    }
+
     private JwtFilter filter() {
         return new JwtFilter(jwtService, objectMapper, userRepository);
     }
