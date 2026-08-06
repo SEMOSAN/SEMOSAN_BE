@@ -123,6 +123,15 @@ class FreePostServiceTest {
     }
 
     @Test
+    void createThrowsWhenContentIsNull() {
+        assertThatThrownBy(() -> freePostService.create(2L, "제목", null, List.of(), null))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_CONTENT_REQUIRED);
+        verifyNoInteractions(userReader, freePostRepository, postImageRepository);
+    }
+
+    @Test
     void createThrowsWhenMainImageIndexIsOutOfRange() {
         User author = user(2L, "author");
 
@@ -161,6 +170,30 @@ class FreePostServiceTest {
     }
 
     @Test
+    void getListEnrichesThumbnailExtraImageCountAndDefaultCounts() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+        PostImage mainImage = PostImage.create(post, "https://example.com/main.png", 0, true);
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        when(freePostRepository.findVisibleByViewerId(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(post), pageable, 1));
+        when(postLikeRepository.countByPostIdsGrouped(List.of(10L))).thenReturn(List.of());
+        when(commentRepository.countByPostIdsGrouped(List.of(10L))).thenReturn(List.of());
+        when(postImageRepository.findMainImagesByPostIds(List.of(10L))).thenReturn(List.of(mainImage));
+        when(postImageRepository.countByPostIdsGrouped(List.of(10L)))
+                .thenReturn(List.<Object[]>of(new Object[]{10L, 3L}));
+
+        Page<FreePostListResponse> result = freePostService.getList(1L, pageable);
+
+        FreePostListResponse response = result.getContent().getFirst();
+        assertThat(response.thumbnailUrl()).isEqualTo("https://example.com/main.png");
+        assertThat(response.extraImageCount()).isEqualTo(2);
+        assertThat(response.likeCount()).isZero();
+        assertThat(response.commentCount()).isZero();
+    }
+
+    @Test
     void getListReturnsEmptyPageWithoutCountQueries() {
         PageRequest pageable = PageRequest.of(0, 10);
         when(freePostRepository.findVisibleByViewerId(1L, pageable)).thenReturn(Page.empty(pageable));
@@ -179,6 +212,16 @@ class FreePostServiceTest {
         PageRequest pageable = PageRequest.of(0, 10);
 
         Page<FreePostListResponse> result = freePostService.search(1L, "  ", pageable);
+
+        assertThat(result).isEmpty();
+        verify(freePostRepository, never()).searchByKeyword(eq(1L), org.mockito.ArgumentMatchers.anyString(), any());
+    }
+
+    @Test
+    void searchReturnsEmptyPageWhenKeywordIsNull() {
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        Page<FreePostListResponse> result = freePostService.search(1L, null, pageable);
 
         assertThat(result).isEmpty();
         verify(freePostRepository, never()).searchByKeyword(eq(1L), org.mockito.ArgumentMatchers.anyString(), any());
@@ -221,6 +264,30 @@ class FreePostServiceTest {
         assertThat(result.likeCount()).isEqualTo(3L);
         assertThat(result.commentCount()).isEqualTo(2L);
         verify(postAccessPolicy).validateReadable(1L, post);
+    }
+
+    @Test
+    void getMyListFindsAuthorAndEnrichesPosts() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        when(userReader.findActiveUserById(2L)).thenReturn(author);
+        when(freePostRepository.findByAuthorAndDeletedFalse(author, pageable))
+                .thenReturn(new PageImpl<>(List.of(post), pageable, 1));
+        when(postLikeRepository.countByPostIdsGrouped(List.of(10L)))
+                .thenReturn(List.<Object[]>of(new Object[]{10L, 4L}));
+        when(commentRepository.countByPostIdsGrouped(List.of(10L)))
+                .thenReturn(List.<Object[]>of(new Object[]{10L, 5L}));
+        when(postImageRepository.findMainImagesByPostIds(List.of(10L))).thenReturn(List.of());
+        when(postImageRepository.countByPostIdsGrouped(List.of(10L))).thenReturn(List.of());
+
+        Page<FreePostListResponse> result = freePostService.getMyList(2L, pageable);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().getFirst().likeCount()).isEqualTo(4L);
+        assertThat(result.getContent().getFirst().commentCount()).isEqualTo(5L);
+        verify(freePostRepository).findByAuthorAndDeletedFalse(author, pageable);
     }
 
     @Test
@@ -293,6 +360,21 @@ class FreePostServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_DELETED);
+    }
+
+    @Test
+    void updateThrowsWhenMainImageIndexIsNegative() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+
+        when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
+
+        assertThatThrownBy(() -> updatePost(2L, List.of("https://example.com/1.png"), -1))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_IMAGE_INDEX_INVALID);
+        verify(postImageRepository).deleteByPost(post);
+        verify(postImageRepository, never()).saveAll(anyList());
     }
 
     @Test
@@ -384,6 +466,30 @@ class FreePostServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_FORBIDDEN);
         assertThat(post.isDeleted()).isFalse();
+    }
+
+    @Test
+    void deleteThrowsWhenPostDoesNotExist() {
+        when(freePostRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> freePostService.delete(10L, 2L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_NOT_FOUND);
+    }
+
+    @Test
+    void deleteThrowsWhenPostIsDeleted() throws Exception {
+        User author = user(2L, "author");
+        FreePost post = freePost(10L, author, "제목", "본문");
+        post.softDelete();
+
+        when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
+
+        assertThatThrownBy(() -> freePostService.delete(10L, 2L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_DELETED);
     }
 
     private User user(Long id, String oauthId) {
