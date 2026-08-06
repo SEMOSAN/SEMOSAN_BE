@@ -81,6 +81,17 @@ class DefaultNicknameGeneratorTest {
     }
 
     @Test
+    void constructorThrowsWhenRequiredPoolPropertyIsMissing() {
+        NicknamePolicy nicknamePolicy = mock(NicknamePolicy.class);
+
+        assertThatThrownBy(() -> new DefaultNicknameGenerator(
+                nicknamePolicy,
+                resource("default-nickname.adjectives=빠른")
+        )).isInstanceOf(IllegalStateException.class)
+                .hasMessage("기본 닉네임 리소스 값이 비어 있습니다.");
+    }
+
+    @Test
     void constructorThrowsWhenNoValidPrefixExists() {
         NicknamePolicy nicknamePolicy = mock(NicknamePolicy.class);
         when(nicknamePolicy.checkStaticRules("나쁜말0000")).thenReturn(NicknameCheckResult.BLOCKED_WORD);

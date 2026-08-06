@@ -99,6 +99,54 @@ class TrackScorerTest {
     }
 
     @Test
+    void beginnerLevelRejectsTrackWhenDistanceOrGainExceedsLimit() throws Exception {
+        TrackScorer.TrackEvaluation longTrack = scorer.evaluate(
+                course(9500.0, List.of(100.0, 300.0), List.of()),
+                FitnessLevel.BEGINNER
+        );
+        TrackScorer.TrackEvaluation highGainTrack = scorer.evaluate(
+                course(8000.0, List.of(100.0, 750.0), List.of()),
+                FitnessLevel.BEGINNER
+        );
+
+        assertThat(longTrack.eligible()).isFalse();
+        assertThat(highGainTrack.eligible()).isFalse();
+    }
+
+    @Test
+    void intermediateLevelRejectsTrackOutsideLimits() throws Exception {
+        TrackScorer.TrackEvaluation longTrack = scorer.evaluate(
+                course(14000.0, List.of(100.0, 500.0), List.of()),
+                FitnessLevel.INTERMEDIATE
+        );
+        TrackScorer.TrackEvaluation dangerousTrack = scorer.evaluate(
+                course(10000.0, List.of(100.0, 500.0), List.of("DANGER", "DANGER", "DANGER", "DANGER")),
+                FitnessLevel.INTERMEDIATE
+        );
+
+        assertThat(longTrack.eligible()).isFalse();
+        assertThat(dangerousTrack.eligible()).isFalse();
+    }
+
+    @Test
+    void metricsIgnoreNullWaypointsAndNullAltitudes() throws Exception {
+        Course course = courseWithWaypoints(
+                4000.0,
+                java.util.Arrays.asList(null, null),
+                java.util.Arrays.asList(
+                        null,
+                        new Course.CourseWaypoint(37.0, 127.0, 100.0, "위험", "DANGER")
+                )
+        );
+
+        TrackScorer.TrackEvaluation evaluation = scorer.evaluate(course, FitnessLevel.ENTRY);
+
+        assertThat(evaluation.metrics().gain()).isZero();
+        assertThat(evaluation.metrics().mountainHeightM()).isZero();
+        assertThat(evaluation.metrics().dangerCount()).isEqualTo(1);
+    }
+
+    @Test
     void metricsUsePositiveWaypointElevationsWhenAltitudesAreMissing() throws Exception {
         Course course = courseWithWaypoints(
                 6000.0,

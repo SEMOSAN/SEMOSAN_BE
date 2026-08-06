@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.util.List;
@@ -83,6 +84,16 @@ class TrackingMilestoneTriggerServiceTest {
     }
 
     @Test
+    void evaluateReturnsWhenMilestonesAreBlank() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("tracking:session:1:milestones")).thenReturn(" ");
+
+        service().evaluate(1L, 10L, 100.0);
+
+        verifyNoInteractions(messagingTemplate, notificationService);
+    }
+
+    @Test
     void evaluateOpensPhotoWindowAndSendsCourseModeNotification() {
         mockLoadedMilestones("100.0,200.0,300.0,400.0", Set.of(), Set.of());
 
@@ -116,6 +127,52 @@ class TrackingMilestoneTriggerServiceTest {
                 eq(Map.of("distance", 100)),
                 eq("100m 돌파! 인증 사진을 남겨보세요!")
         );
+    }
+
+    @Test
+    void evaluateUsesCourseModeBodiesForLaterMilestones() {
+        assertThat((String) ReflectionTestUtils.invokeMethod(
+                TrackingMilestoneTriggerService.class,
+                "courseModeBody",
+                4,
+                1,
+                200
+        )).isEqualTo("정상 도착_절반 돌파_눌러서 인증 남기기");
+        assertThat((String) ReflectionTestUtils.invokeMethod(
+                TrackingMilestoneTriggerService.class,
+                "courseModeBody",
+                4,
+                2,
+                300
+        )).isEqualTo("정상 도착_마지막 1/4_눌러서 인증 남기기");
+        assertThat((String) ReflectionTestUtils.invokeMethod(
+                TrackingMilestoneTriggerService.class,
+                "courseModeBody",
+                4,
+                3,
+                400
+        )).isEqualTo("정상 도착_완료_진짜최종_눌러서 인증하기");
+        assertThat((String) ReflectionTestUtils.invokeMethod(
+                TrackingMilestoneTriggerService.class,
+                "courseModeBody",
+                4,
+                99,
+                900
+        )).isEqualTo("900m 돌파! 인증 사진을 남겨보세요!");
+    }
+
+    @Test
+    void evaluateTreatsNullOpenedAndClosedMembersAsEmptySets() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(redisTemplate.opsForSet()).thenReturn(setOperations);
+        when(valueOperations.get("tracking:session:1:milestones")).thenReturn("100.0,200.0,300.0,400.0");
+        when(setOperations.members("tracking:session:1:photo:opened")).thenReturn(null);
+        when(setOperations.members("tracking:session:1:photo:closed")).thenReturn(null);
+
+        service().evaluate(1L, 10L, 90.0);
+
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/photo-window"), any(Map.class));
+        verify(setOperations).add("tracking:session:1:photo:opened", "0");
     }
 
     @Test

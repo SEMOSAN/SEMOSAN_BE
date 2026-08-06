@@ -120,6 +120,39 @@ class UserOnboardingServiceTest {
     }
 
     @Test
+    void registerAllowsExerciseNoneWhenExerciseDetailsAreMissing() {
+        User user = user(1L);
+        UserNotificationSetting setting = UserNotificationSetting.createDefault(user);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(userOnboardingRepository.existsByUser_Id(1L)).thenReturn(false);
+        when(userNotificationSettingRepository.findByUser_Id(1L)).thenReturn(Optional.of(setting));
+
+        service.registerUserOnboarding(
+                1L,
+                request(LocalDate.now().minusYears(20), ExerciseType.NONE, null, null)
+        );
+
+        verify(userOnboardingRepository).save(any(UserOnboarding.class));
+        assertThat(user.getOnboardingStatus()).isEqualTo(OnboardingStatus.COMPLETE);
+    }
+
+    @Test
+    void registerAllowsExactlyFourteenYearsOldUser() {
+        User user = user(1L);
+        UserNotificationSetting setting = UserNotificationSetting.createDefault(user);
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(userOnboardingRepository.existsByUser_Id(1L)).thenReturn(false);
+        when(userNotificationSettingRepository.findByUser_Id(1L)).thenReturn(Optional.of(setting));
+
+        service.registerUserOnboarding(
+                1L,
+                request(LocalDate.now().minusYears(14), ExerciseType.RUNNING, ExerciseFrequency.WEEK_1_2, ExerciseDuration.UNDER_1H)
+        );
+
+        assertThat(user.getOnboardingStatus()).isEqualTo(OnboardingStatus.COMPLETE);
+    }
+
+    @Test
     void registerThrowsWhenExerciseDetailIsRequired() {
         User user = user(1L);
         when(userReader.findActiveUserById(1L)).thenReturn(user);

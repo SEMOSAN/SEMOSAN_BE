@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -114,7 +115,23 @@ class TrackingStreamConsumerTest {
         consumer.flushAll();
         consumer.flushAll();
 
-        verify(flushService, org.mockito.Mockito.times(2)).flush(eq(1L), any());
+        verify(flushService, times(2)).flush(eq(1L), any());
+    }
+
+    @Test
+    void onMessageFlushesImmediatelyWhenBufferReachesThreshold() {
+        LocalDateTime recordedAt = LocalDateTime.now();
+        when(statsService.getLastPosition(1L))
+                .thenReturn(new TrackingSessionStatsService.LastPosition(null, null, null));
+        when(statsService.recordPoint(eq(1L), any(Double.class), any(Double.class), any(), eq(recordedAt)))
+                .thenReturn(10.0);
+        when(flushService.flush(eq(1L), any())).thenReturn(100);
+
+        for (int i = 0; i < 100; i++) {
+            consumer.onMessage(message(1L, 10L, 37.5 + i * 0.001, 127.0, "", recordedAt));
+        }
+
+        verify(flushService).flush(eq(1L), any());
     }
 
     @Test
@@ -130,6 +147,21 @@ class TrackingStreamConsumerTest {
         when(statsService.getLastPosition(1L))
                 .thenReturn(new TrackingSessionStatsService.LastPosition(null, null, null));
         when(statsService.recordPoint(1L, 37.5, 127.0, null, recordedAt)).thenReturn(10.0);
+
+        consumer.onMessage(message(1L, 10L, 37.5, 127.0, "", recordedAt));
+        consumer.onSessionTerminated(new TrackingSessionTerminatedEvent(1L));
+        consumer.flushAll();
+
+        verify(flushService).flush(eq(1L), any());
+    }
+
+    @Test
+    void onSessionTerminatedSuppressesFinalFlushFailureAndClearsBuffer() {
+        LocalDateTime recordedAt = LocalDateTime.now();
+        when(statsService.getLastPosition(1L))
+                .thenReturn(new TrackingSessionStatsService.LastPosition(null, null, null));
+        when(statsService.recordPoint(1L, 37.5, 127.0, null, recordedAt)).thenReturn(10.0);
+        when(flushService.flush(eq(1L), any())).thenThrow(new RuntimeException("db down"));
 
         consumer.onMessage(message(1L, 10L, 37.5, 127.0, "", recordedAt));
         consumer.onSessionTerminated(new TrackingSessionTerminatedEvent(1L));

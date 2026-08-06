@@ -257,6 +257,28 @@ class UserServiceTest {
     }
 
     @Test
+    void updateUserProfileDoesNotValidateNicknameWhenNicknameIsNull() {
+        User user = User.createTestUser("profile-test-user", DeviceType.IOS);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest(
+                "profile.jpg",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+
+        userService.updateUserProfile(1L, request);
+
+        verify(nicknamePolicy, never()).validate(any());
+        assertThat(user.getProfileUrl()).isEqualTo("profile.jpg");
+    }
+
+    @Test
     void updateUserProfileCreatesOnboardingWhenOneOnboardingFieldProvidedAndRowMissing() {
         User user = User.createTestUser("profile-test-user", DeviceType.IOS);
         ReflectionTestUtils.setField(user, "id", 1L);
