@@ -78,6 +78,24 @@ class PostLikedEventListenerTest {
         verify(communityNotificationService, never()).sendPostLikeNotification(any(), any());
     }
 
+    @Test
+    void onPostLikedSuppressesUnexpectedNotificationFailure() throws Exception {
+        User author = user(1L, "author");
+        User actor = user(2L, "actor");
+        FreePost post = freePost(10L, author);
+
+        when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
+        when(userReader.findActiveUserById(2L)).thenReturn(actor);
+        org.mockito.Mockito.doThrow(new IllegalStateException("notification failed"))
+                .when(communityNotificationService)
+                .sendPostLikeNotification(post, actor);
+
+        assertThatCode(() -> listener.onPostLiked(new PostLikedEvent(10L, 2L)))
+                .doesNotThrowAnyException();
+
+        verify(communityNotificationService).sendPostLikeNotification(post, actor);
+    }
+
     private User user(Long id, String nickname) {
         User user = User.createTestUser(nickname, DeviceType.IOS);
         ReflectionTestUtils.setField(user, "id", id);

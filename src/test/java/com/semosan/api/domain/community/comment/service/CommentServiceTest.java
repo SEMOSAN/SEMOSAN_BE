@@ -14,6 +14,9 @@ import com.semosan.api.domain.user.repository.UserBlockRepository;
 import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,6 +29,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -94,6 +98,91 @@ class CommentServiceTest {
         assertThat(result.getId()).isEqualTo(101L);
         verify(communityNotificationService)
                 .sendReplyNotification(post, replyAuthor, parent, mentionedUser, result);
+    }
+
+    @Test
+    void replyNormalizesNestedReplyParentAndAllowsNoMentionedUser() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User parentAuthor = user(2L, "parent-author");
+        User nestedAuthor = user(3L, "nested-author");
+        User replyAuthor = user(4L, "reply-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        Comment parent = comment(100L, post, parentAuthor, "부모 댓글");
+        Comment nestedReply = reply(101L, post, nestedAuthor, parent, "기존 대댓글");
+
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userReader.findActiveUserById(4L)).thenReturn(replyAuthor);
+        when(commentRepository.findByIdAndDeletedFalse(101L)).thenReturn(Optional.of(nestedReply));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(invocation -> {
+            Comment comment = invocation.getArgument(0);
+            ReflectionTestUtils.setField(comment, "id", 102L);
+            return comment;
+        });
+
+        Comment result = commentService.reply(10L, 4L, 101L, null, "새 대댓글");
+
+        assertThat(result.getParent()).isSameAs(parent);
+        assertThat(result.getMentionedUser()).isNull();
+        verify(userReader, never()).findActiveUserById(null);
+        verify(communityNotificationService)
+                .sendReplyNotification(post, replyAuthor, parent, null, result);
+    }
+
+    @Test
+    void replyThrowsWhenParentBelongsToDifferentPost() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User parentAuthor = user(2L, "parent-author");
+        User replyAuthor = user(3L, "reply-author");
+        FreePost requestedPost = freePost(10L, postAuthor, "제목", "본문");
+        FreePost otherPost = freePost(11L, postAuthor, "다른 제목", "다른 본문");
+        Comment parent = comment(100L, otherPost, parentAuthor, "부모 댓글");
+
+        when(postRepository.findById(10L)).thenReturn(Optional.of(requestedPost));
+        when(userReader.findActiveUserById(3L)).thenReturn(replyAuthor);
+        when(commentRepository.findByIdAndDeletedFalse(100L)).thenReturn(Optional.of(parent));
+
+        assertThatThrownBy(() -> commentService.reply(10L, 3L, 100L, null, "대댓글"))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.COMMENT_PARENT_POST_MISMATCH);
+        verify(commentRepository, never()).save(any(Comment.class));
+        verify(communityNotificationService, never()).sendReplyNotification(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void createThrowsWhenPostNotFound() {
+        when(postRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> commentService.create(10L, 2L, "댓글"))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.POST_NOT_FOUND);
+        verify(userReader, never()).findActiveUserById(2L);
+        verify(commentRepository, never()).save(any(Comment.class));
+    }
+
+    @Test
+    void getCommentsByPostMapsVisibleParentsWithBlockedUsers() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User normalAuthor = user(2L, "normal-author");
+        User blockedAuthor = user(3L, "blocked-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        Comment normalComment = comment(100L, post, normalAuthor, "일반 댓글");
+        Comment blockedComment = comment(101L, post, blockedAuthor, "차단 댓글");
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        when(postRepository.findById(10L)).thenReturn(Optional.of(post));
+        when(userBlockRepository.findBlockedUserIdsByBlocker_Id(9L)).thenReturn(List.of(3L));
+        when(commentRepository.findVisibleParentsByPost(post, pageable))
+                .thenReturn(new PageImpl<>(List.of(normalComment, blockedComment), pageable, 2));
+
+        Page<CommentResponse> result = commentService.getCommentsByPost(10L, 9L, pageable);
+
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent().get(0).content()).isEqualTo("일반 댓글");
+        assertThat(result.getContent().get(0).isBlocked()).isFalse();
+        assertThat(result.getContent().get(1).content()).isEqualTo("차단한 사용자입니다.");
+        assertThat(result.getContent().get(1).isBlocked()).isTrue();
     }
 
     @Test
@@ -166,6 +255,17 @@ class CommentServiceTest {
         assertThat(result.get(0).isBlocked()).isFalse();
         assertThat(result.get(0).content()).isEqualTo("일반 대댓글");
         assertThat(result.get(0).author().id()).isEqualTo(3L);
+    }
+
+    @Test
+    void getRepliesThrowsWhenParentNotFound() {
+        when(commentRepository.findById(100L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> commentService.getReplies(100L, 9L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.COMMENT_NOT_FOUND);
+        verify(userBlockRepository, never()).findBlockedUserIdsByBlocker_Id(9L);
     }
 
     private User user(Long id, String nickname) {

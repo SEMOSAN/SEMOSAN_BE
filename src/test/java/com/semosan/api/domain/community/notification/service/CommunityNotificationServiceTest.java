@@ -134,6 +134,32 @@ class CommunityNotificationServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void sendReplyNotificationSendsOnlyToParentAuthorWhenMentionedUserIsNull() throws Exception {
+        CommunityNotificationService service = service();
+        User postAuthor = user(1L, "post-author");
+        User parentAuthor = user(2L, "parent-author");
+        User replyAuthor = user(3L, "reply-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        Comment parent = comment(100L, post, parentAuthor, "부모 댓글");
+        Comment reply = reply(101L, post, replyAuthor, parent, null, "대댓글입니다");
+
+        when(userRepository.existsByIdAndDeletedFalse(2L)).thenReturn(true);
+
+        service.sendReplyNotification(post, replyAuthor, parent, null, reply);
+
+        ArgumentCaptor<Map<String, Object>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(notificationService, times(1)).send(
+                eq(2L),
+                eq(NotificationType.COMMUNITY_REPLY),
+                paramsCaptor.capture()
+        );
+        assertThat(paramsCaptor.getValue())
+                .containsEntry("actorId", 3L)
+                .containsEntry("commentPreview", "대댓글입니다");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void sendPostLikeNotificationSendsToPostAuthor() throws Exception {
         CommunityNotificationService service = service();
         User postAuthor = user(1L, "post-author");
@@ -157,6 +183,23 @@ class CommunityNotificationServiceTest {
     }
 
     @Test
+    void sendPostLikeNotificationSkipsSelfAndInactiveReceiver() throws Exception {
+        CommunityNotificationService service = service();
+        User author = user(1L, "author");
+        User inactivePostAuthor = user(2L, "inactive-author");
+        User liker = user(3L, "liker");
+        FreePost selfPost = freePost(10L, author, "제목", "본문");
+        FreePost inactiveAuthorPost = freePost(11L, inactivePostAuthor, "제목", "본문");
+
+        when(userRepository.existsByIdAndDeletedFalse(2L)).thenReturn(false);
+
+        service.sendPostLikeNotification(selfPost, author);
+        service.sendPostLikeNotification(inactiveAuthorPost, liker);
+
+        verify(notificationService, never()).send(any(), any(), any());
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void sendCommentNotificationTrimsPreview() throws Exception {
         CommunityNotificationService service = service();
@@ -177,6 +220,30 @@ class CommunityNotificationServiceTest {
         );
         assertThat(paramsCaptor.getValue())
                 .containsEntry("commentPreview", "가".repeat(50) + "...");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sendCommentNotificationUsesEmptyPreviewWhenContentIsNull() throws Exception {
+        CommunityNotificationService service = service();
+        User postAuthor = user(1L, "post-author");
+        User commentAuthor = user(2L, "comment-author");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        Comment comment = comment(100L, post, commentAuthor, "댓글입니다");
+        ReflectionTestUtils.setField(comment, "content", null);
+
+        when(userRepository.existsByIdAndDeletedFalse(1L)).thenReturn(true);
+
+        service.sendCommentNotification(post, commentAuthor, comment);
+
+        ArgumentCaptor<Map<String, Object>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(notificationService).send(
+                eq(1L),
+                eq(NotificationType.COMMUNITY_COMMENT),
+                paramsCaptor.capture()
+        );
+        assertThat(paramsCaptor.getValue())
+                .containsEntry("commentPreview", "");
     }
 
     private CommunityNotificationService service() {
