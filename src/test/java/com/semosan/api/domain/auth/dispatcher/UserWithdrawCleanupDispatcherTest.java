@@ -74,6 +74,28 @@ class UserWithdrawCleanupDispatcherTest {
     }
 
     @Test
+    void cleanupWithRetryStopsWhenBackoffIsInterrupted() {
+        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token");
+        doThrow(new RuntimeException("fcm down")).when(fcmTokenService).deleteAllByUserId(1L);
+        Thread.currentThread().interrupt();
+
+        try {
+            assertDoesNotThrow(() -> dispatcher.cleanupWithRetry(event));
+            assertTrue(Thread.currentThread().isInterrupted());
+        } finally {
+            Thread.interrupted();
+        }
+        verify(fcmTokenService, times(1)).deleteAllByUserId(1L);
+        verify(jwtService, never()).blacklistAccessToken("access-token");
+        verify(jwtService, never()).deleteRefreshToken(1L);
+    }
+
+    @Test
+    void sleepBackoff_returnsTrueWhenSleepCompletes() {
+        assertTrue(dispatcher.sleepBackoff(1));
+    }
+
+    @Test
     void sleepBackoff_returnsFalseWhenInterrupted() {
         Thread.currentThread().interrupt();
 
