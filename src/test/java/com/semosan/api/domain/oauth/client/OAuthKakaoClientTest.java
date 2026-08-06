@@ -6,16 +6,22 @@ import com.semosan.api.domain.oauth.dto.KakaoUserInfoResponse;
 import com.semosan.api.domain.oauth.properties.KakaoProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.BodyInserter;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -117,6 +123,37 @@ class OAuthKakaoClientTest {
 
     @Test
     @SuppressWarnings({"rawtypes", "unchecked"})
+    void getKakaoUserInfoOnStatusHandlerReturnsKakaoTokenRequestFailure() {
+        WebClient webClient = mock(WebClient.class);
+        WebClient.RequestHeadersUriSpec uriSpec = mock(WebClient.RequestHeadersUriSpec.class);
+        WebClient.RequestHeadersSpec headersSpec = mock(WebClient.RequestHeadersSpec.class);
+        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+        OAuthKakaoClient client = new OAuthKakaoClient(webClient, kakaoProperties());
+        var predicateCaptor = forClass(Predicate.class);
+        var handlerCaptor = forClass(Function.class);
+
+        when(webClient.get()).thenReturn(uriSpec);
+        when(uriSpec.uri("/v2/user/me")).thenReturn(headersSpec);
+        when(headersSpec.header("Authorization", "Bearer access-token")).thenReturn(headersSpec);
+        when(headersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.onStatus(predicateCaptor.capture(), handlerCaptor.capture())).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(KakaoUserInfoResponse.class))
+                .thenReturn(Mono.just(new KakaoUserInfoResponse(123L, null)));
+
+        client.getKakaoUserInfo("access-token");
+
+        Predicate<HttpStatusCode> predicate = predicateCaptor.getValue();
+        Function<ClientResponse, Mono<? extends Throwable>> handler = handlerCaptor.getValue();
+        assertThat(predicate.test(HttpStatus.UNAUTHORIZED)).isTrue();
+        assertThat(predicate.test(HttpStatus.OK)).isFalse();
+        assertThatThrownBy(() -> handler.apply(errorResponse(HttpStatus.UNAUTHORIZED)).block())
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.KAKAO_TOKEN_REQUEST_FAILED);
+    }
+
+    @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
     void unlinkKakaoUserCompletesRequest() {
         WebClient webClient = mock(WebClient.class);
         WebClient.RequestBodyUriSpec uriSpec = mock(WebClient.RequestBodyUriSpec.class);
@@ -167,6 +204,38 @@ class OAuthKakaoClientTest {
     }
 
     @Test
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    void unlinkKakaoUserOnStatusHandlerReturnsKakaoTokenRequestFailure() {
+        WebClient webClient = mock(WebClient.class);
+        WebClient.RequestBodyUriSpec uriSpec = mock(WebClient.RequestBodyUriSpec.class);
+        WebClient.RequestBodySpec bodySpec = mock(WebClient.RequestBodySpec.class);
+        WebClient.RequestHeadersSpec headersSpec = mock(WebClient.RequestHeadersSpec.class);
+        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+        OAuthKakaoClient client = new OAuthKakaoClient(webClient, kakaoProperties());
+        var predicateCaptor = forClass(Predicate.class);
+        var handlerCaptor = forClass(Function.class);
+
+        when(webClient.post()).thenReturn(uriSpec);
+        when(uriSpec.uri("/v1/user/unlink")).thenReturn(bodySpec);
+        when(bodySpec.header("Authorization", "KakaoAK admin-key")).thenReturn(bodySpec);
+        when(bodySpec.body(any(BodyInserter.class))).thenReturn(headersSpec);
+        when(headersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.onStatus(predicateCaptor.capture(), handlerCaptor.capture())).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(Void.class)).thenReturn(Mono.empty());
+
+        client.unlinkKakaoUser("123");
+
+        Predicate<HttpStatusCode> predicate = predicateCaptor.getValue();
+        Function<ClientResponse, Mono<? extends Throwable>> handler = handlerCaptor.getValue();
+        assertThat(predicate.test(HttpStatus.BAD_REQUEST)).isTrue();
+        assertThat(predicate.test(HttpStatus.OK)).isFalse();
+        assertThatThrownBy(() -> handler.apply(errorResponse(HttpStatus.BAD_REQUEST)).block())
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.KAKAO_TOKEN_REQUEST_FAILED);
+    }
+
+    @Test
     void handleErrorReturnsKakaoTokenRequestFailure() {
         OAuthKakaoClient client = new OAuthKakaoClient(mock(WebClient.class), kakaoProperties());
 
@@ -187,5 +256,11 @@ class OAuthKakaoClientTest {
 
     private KakaoProperties kakaoProperties() {
         return new KakaoProperties("client-id", "redirect-uri", "client-secret", "admin-key");
+    }
+
+    private ClientResponse errorResponse(HttpStatus status) {
+        return ClientResponse.create(status)
+                .body("error-body")
+                .build();
     }
 }
