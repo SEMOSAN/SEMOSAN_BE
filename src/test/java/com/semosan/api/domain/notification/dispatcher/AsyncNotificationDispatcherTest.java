@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -97,6 +98,64 @@ class AsyncNotificationDispatcherTest {
                 .containsEntry("title", "새 댓글이 달렸어요")
                 .containsEntry("body", "푸름: 확인했어요")
                 .doesNotContainKey("extras");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void dispatchBuildsBasePayloadWhenExtrasAreNull() throws Exception {
+        AsyncNotificationDispatcher dispatcher = dispatcher();
+        NotificationDispatchCommand command = new NotificationDispatchCommand(
+                3L,
+                10L,
+                NotificationType.TRACKING_SUMMIT_REACHED,
+                "SEMOSAN",
+                "정상에 도착했나요? 정상 인증하기!",
+                null,
+                List.of("token-1")
+        );
+
+        dispatcher.dispatch(command);
+
+        ArgumentCaptor<Map<String, String>> dataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(fcmService).sendMessage(
+                eq("token-1"),
+                eq("SEMOSAN"),
+                eq("정상에 도착했나요? 정상 인증하기!"),
+                dataCaptor.capture(),
+                eq(false)
+        );
+        assertThat(dataCaptor.getValue())
+                .containsEntry("type", "TRACKING_SUMMIT_REACHED")
+                .containsEntry("title", "SEMOSAN")
+                .containsEntry("body", "정상에 도착했나요? 정상 인증하기!")
+                .containsEntry("notificationId", "3");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void dispatchIgnoresNullExtraKeysAndValues() throws Exception {
+        AsyncNotificationDispatcher dispatcher = dispatcher();
+        Map<String, Object> extras = new HashMap<>();
+        extras.put("distance", 500);
+        extras.put("ignored", null);
+        extras.put(null, "ignored");
+        NotificationDispatchCommand command = new NotificationDispatchCommand(
+                4L,
+                10L,
+                NotificationType.TRACKING_PHOTO_MILESTONE,
+                "SEMOSAN",
+                "500m 돌파! 인증 사진을 남겨보세요!",
+                extras,
+                List.of("token-1")
+        );
+
+        dispatcher.dispatch(command);
+
+        ArgumentCaptor<Map<String, String>> dataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(fcmService).sendMessage(anyString(), anyString(), anyString(), dataCaptor.capture(), eq(false));
+        assertThat(dataCaptor.getValue())
+                .containsEntry("distance", "500")
+                .doesNotContainKeys("ignored", null);
     }
 
     @Test
