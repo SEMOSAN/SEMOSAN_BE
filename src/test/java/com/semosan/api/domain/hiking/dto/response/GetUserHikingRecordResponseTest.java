@@ -16,10 +16,36 @@ class GetUserHikingRecordResponseTest {
 
         assertThat(response.hikingRecordId()).isEqualTo(1L);
         assertThat(response.sessionId()).isEqualTo(10L);
+        assertThat(response.imageUrls()).containsExactly("photo-report", "clive");
         assertThat(response.hikedAt()).isEqualTo(LocalDate.of(2026, 5, 28));
     }
 
+    @Test
+    void fromIncludesOnlyPhotoReportImageWhenCliveImageIsNull() {
+        GetUserHikingRecordResponse response = GetUserHikingRecordResponse.from(projection("photo-report", null));
+
+        assertThat(response.imageUrls()).containsExactly("photo-report");
+    }
+
+    @Test
+    void fromIncludesOnlyCliveImageWhenPhotoReportImageIsNull() {
+        GetUserHikingRecordResponse response = GetUserHikingRecordResponse.from(projection(null, "clive"));
+
+        assertThat(response.imageUrls()).containsExactly("clive");
+    }
+
+    @Test
+    void fromReturnsEmptyImageUrlsWhenBothImagesAreNull() {
+        GetUserHikingRecordResponse response = GetUserHikingRecordResponse.from(projection(null, null));
+
+        assertThat(response.imageUrls()).isEmpty();
+    }
+
     private UserHikingRecordProjection projection() {
+        return projection("photo-report", "clive");
+    }
+
+    private UserHikingRecordProjection projection(String photoReportImageUrl, String cliveImageUrl) {
         return new UserHikingRecordProjection() {
             @Override
             public Long getHikingRecordId() {
@@ -53,12 +79,12 @@ class GetUserHikingRecordResponseTest {
 
             @Override
             public String getPhotoReportImageUrl() {
-                return "photo-report";
+                return photoReportImageUrl;
             }
 
             @Override
             public String getCliveImageUrl() {
-                return "clive";
+                return cliveImageUrl;
             }
 
             @Override

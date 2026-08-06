@@ -77,6 +77,54 @@ class TrackingStreamConsumerTest {
     }
 
     @Test
+    void onMessageAcceptsPointWhenHorizontalDistancePassesThreshold() {
+        LocalDateTime recordedAt = LocalDateTime.now();
+        when(statsService.getLastPosition(1L))
+                .thenReturn(new TrackingSessionStatsService.LastPosition(37.5, 127.0, 100.0));
+        when(statsService.recordPoint(1L, 37.501, 127.0, 101.0, recordedAt)).thenReturn(20.0);
+
+        consumer.onMessage(message(1L, 10L, 37.501, 127.0, "101.0", recordedAt));
+
+        verify(statsService).recordPoint(1L, 37.501, 127.0, 101.0, recordedAt);
+        verify(milestoneTriggerService).evaluate(1L, 10L, 20.0);
+    }
+
+    @Test
+    void onMessageAcceptsPointWhenOnlyAltitudeChangePassesThreshold() {
+        LocalDateTime recordedAt = LocalDateTime.now();
+        when(statsService.getLastPosition(1L))
+                .thenReturn(new TrackingSessionStatsService.LastPosition(37.5, 127.0, 100.0));
+        when(statsService.recordPoint(1L, 37.50001, 127.00001, 104.0, recordedAt)).thenReturn(15.0);
+
+        consumer.onMessage(message(1L, 10L, 37.50001, 127.00001, "104.0", recordedAt));
+
+        verify(statsService).recordPoint(1L, 37.50001, 127.00001, 104.0, recordedAt);
+        verify(milestoneTriggerService).evaluate(1L, 10L, 15.0);
+    }
+
+    @Test
+    void flushAllRequeuesBatchWhenFlushFailsAndRetriesNextFlush() {
+        LocalDateTime recordedAt = LocalDateTime.now();
+        when(statsService.getLastPosition(1L))
+                .thenReturn(new TrackingSessionStatsService.LastPosition(null, null, null));
+        when(statsService.recordPoint(1L, 37.5, 127.0, null, recordedAt)).thenReturn(10.0);
+        when(flushService.flush(eq(1L), any())).thenThrow(new RuntimeException("db down")).thenReturn(1);
+
+        consumer.onMessage(message(1L, 10L, 37.5, 127.0, "", recordedAt));
+        consumer.flushAll();
+        consumer.flushAll();
+
+        verify(flushService, org.mockito.Mockito.times(2)).flush(eq(1L), any());
+    }
+
+    @Test
+    void onSessionTerminatedReturnsWhenBufferIsMissing() {
+        consumer.onSessionTerminated(new TrackingSessionTerminatedEvent(999L));
+
+        verify(flushService, never()).flush(any(), any());
+    }
+
+    @Test
     void onSessionTerminatedFlushesRemainingBufferedPointsAndClearsBuffer() {
         LocalDateTime recordedAt = LocalDateTime.now();
         when(statsService.getLastPosition(1L))

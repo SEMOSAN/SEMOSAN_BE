@@ -63,8 +63,28 @@ class StompAuthChannelInterceptorTest {
     }
 
     @Test
+    void preSendReturnsMessageWhenStompAccessorIsMissing() {
+        Message<?> message = MessageBuilder.withPayload(new byte[0]).build();
+
+        Message<?> result = interceptor.preSend(message, mock(MessageChannel.class));
+
+        assertThat(result).isSameAs(message);
+        verify(jwtService, never()).validateAccessTokenAndGetClaims(org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
     void preSendThrowsWhenAuthorizationHeaderMissing() {
         Message<?> message = connectMessage(null);
+
+        assertThatThrownBy(() -> interceptor.preSend(message, mock(MessageChannel.class)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_TOKEN_NOT_FOUND);
+    }
+
+    @Test
+    void preSendThrowsWhenAuthorizationHeaderDoesNotStartWithBearer() {
+        Message<?> message = connectMessage("Basic access-token");
 
         assertThatThrownBy(() -> interceptor.preSend(message, mock(MessageChannel.class)))
                 .isInstanceOf(GeneralException.class)
