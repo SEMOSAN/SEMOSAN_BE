@@ -285,6 +285,33 @@ class UserServiceTest {
     }
 
     @Test
+    void updateUserProfileCreatesOnboardingWithExerciseTypeWhenRowMissing() {
+        User user = User.createTestUser("profile-test-user", DeviceType.IOS);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                ExerciseType.HIKING
+        );
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(userOnboardingRepository.findByUser_Id(1L)).thenReturn(Optional.empty());
+        when(userOnboardingRepository.save(any(UserOnboarding.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        userService.updateUserProfile(1L, request);
+
+        var captor = forClass(UserOnboarding.class);
+        verify(userOnboardingRepository).save(captor.capture());
+        assertThat(captor.getValue().getHikingLevel()).isNull();
+        assertThat(captor.getValue().getExerciseType()).isEqualTo(ExerciseType.HIKING);
+    }
+
+    @Test
     void updateUserProfileUpdatesExistingOnboardingWithProvidedFieldsOnly() {
         User user = User.createTestUser("profile-test-user", DeviceType.IOS);
         ReflectionTestUtils.setField(user, "id", 1L);
@@ -312,6 +339,59 @@ class UserServiceTest {
 
         assertThat(onboarding.getHikingLevel()).isEqualTo(HikingLevel.EXPERIENCED);
         assertThat(onboarding.getExerciseType()).isEqualTo(ExerciseType.NONE);
+    }
+
+    @Test
+    void updateUserProfileUpdatesExistingOnboardingHikingLevelOnly() {
+        User user = User.createTestUser("profile-test-user", DeviceType.IOS);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        UserOnboarding onboarding = UserOnboarding.create(new CreateUserOnboardingCommand(
+                user,
+                HikingLevel.BEGINNER,
+                ExerciseType.HIKING,
+                null,
+                null
+        ));
+        UpdateUserProfileRequest request = new UpdateUserProfileRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                HikingLevel.EXPERT,
+                null
+        );
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(userOnboardingRepository.findByUser_Id(1L)).thenReturn(Optional.of(onboarding));
+
+        userService.updateUserProfile(1L, request);
+
+        assertThat(onboarding.getHikingLevel()).isEqualTo(HikingLevel.EXPERT);
+        assertThat(onboarding.getExerciseType()).isEqualTo(ExerciseType.HIKING);
+    }
+
+    @Test
+    void findOrCreateTestUserCreatesNewUserWhenMatchedUserIsDeleted() {
+        User deletedUser = User.createTestUser("test-id", DeviceType.IOS);
+        ReflectionTestUtils.setField(deletedUser, "id", 1L);
+        deletedUser.withdraw();
+        ReflectionTestUtils.setField(deletedUser, "oauthId", "test-id");
+
+        when(userRepository.findByOauthIdAndOauthProvider("test-id", OAuthProvider.TEST))
+                .thenReturn(Optional.of(deletedUser));
+        when(defaultNicknameGenerator.generate()).thenReturn("재가입테스트1234");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User result = userService.findOrCreateTestUser("test-id", DeviceType.ANDROID);
+
+        verify(userRepository).save(result);
+        verify(userNotificationSettingRepository).save(any());
+        assertThat(result).isNotSameAs(deletedUser);
+        assertThat(result.getOauthId()).isEqualTo("test-id");
+        assertThat(result.getDeviceType()).isEqualTo(DeviceType.ANDROID);
+        assertThat(result.getNickname()).isEqualTo("재가입테스트1234");
+        assertThat(result.isDeleted()).isFalse();
     }
 
     @Test

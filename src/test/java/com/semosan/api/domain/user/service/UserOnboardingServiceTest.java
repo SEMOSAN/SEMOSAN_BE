@@ -192,6 +192,28 @@ class UserOnboardingServiceTest {
         assertThat(response.exerciseType()).isEqualTo(ExerciseType.RUNNING);
     }
 
+    @Test
+    void getUserProfileReturnsNullOnboardingFieldsWhenOnboardingMissing() {
+        User user = user(1L);
+        user.completeOnboarding(new com.semosan.api.domain.user.dto.command.CompleteOnboardingCommand(
+                "푸름",
+                "https://example.com/profile.png",
+                LocalDate.now().minusYears(20),
+                Gender.FEMALE,
+                170.0,
+                60.0
+        ));
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(userOnboardingRepository.findByUser_Id(1L)).thenReturn(Optional.empty());
+
+        GetUserProfileResponse response = service.getUserProfile(1L);
+
+        assertThat(response.userId()).isEqualTo(1L);
+        assertThat(response.nickname()).isEqualTo("푸름");
+        assertThat(response.hikingLevel()).isNull();
+        assertThat(response.exerciseType()).isNull();
+    }
+
     private RegisterOnboardingRequest request() {
         return request(LocalDate.now().minusYears(20), ExerciseType.RUNNING, ExerciseFrequency.WEEK_1_2, ExerciseDuration.UNDER_1H);
     }
