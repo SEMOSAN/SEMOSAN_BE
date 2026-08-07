@@ -2,10 +2,15 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.13'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'jacoco'
 }
 
 group = 'com.semosan'
 version = '0.0.1-SNAPSHOT'
+
+jacoco {
+	toolVersion = '0.8.12'
+}
 
 java {
 	toolchain {
@@ -73,4 +78,13 @@ jar { enabled = false }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true
+		html.required = true
+	}
 }
