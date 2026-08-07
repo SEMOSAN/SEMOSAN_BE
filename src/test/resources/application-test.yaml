@@ -1,0 +1,59 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/semosan
+    username: pooreum
+    password: pooreum02
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+firebase:
+  service-account-path: dummy-firebase-service-account.json
+
+jwt:
+  secret: 2f46cc02e8155284ccc5eb23d1cc30ae8c7077a6d2578b72a60a44643b2c01f0
+  access-token-expiration: 3600000
+  refresh-token-expiration: 604800000
+
+kakao:
+  client-id: dummy
+  redirect-uri: http://localhost:8080/oauth/kakao/callback
+  client-secret: dummy
+  admin-key: dummy
+
+apple:
+  client-id: dummy
+
+tracking:
+  stream-key: tracking:gps
+  consumer-group: tracking-consumer-group
+  stream-max-len: 100000
+
+test:
+  secret-key: semosan-test-secret-2026
+
+minio:
+  endpoint: http://localhost:9000
+  access-key: minio-admin
+  secret-key: minio-secret-password
+  public-url: http://localhost:9000
+
+discord:
+  alert:
+    enabled: false
+    webhook-url: https://discord.example.com/webhook
+    report-webhook-url: https://discord.example.com/report
+
+weather:
+  api-key: dummy

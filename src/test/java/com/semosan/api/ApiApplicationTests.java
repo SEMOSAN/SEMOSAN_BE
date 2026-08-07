@@ -1,5 +1,6 @@
 package com.semosan.api;
 
+import com.semosan.api.common.config.FirebaseConfig;
 import com.semosan.api.domain.oauth.properties.KakaoProperties;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -9,12 +10,18 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mockStatic;
 
 @SpringBootTest
+@ActiveProfiles("test")
 class ApiApplicationTests {
+
+    @MockitoBean
+    private FirebaseConfig firebaseConfig;
 
     @Test
     void contextLoads() {
