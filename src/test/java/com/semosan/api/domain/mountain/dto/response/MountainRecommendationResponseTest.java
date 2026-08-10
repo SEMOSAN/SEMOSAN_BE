@@ -14,11 +14,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MountainRecommendationResponseTest {
 
     @Test
-    void fromUsesFirstImageAndMetricsHeight() throws Exception {
+    void ofUsesFirstImageAndMetricsHeight() throws Exception {
         Mountain mountain = mountain(Difficulty.NORMAL, List.of("first.jpg", "second.jpg"), 632.2);
         TrackMetrics metrics = new TrackMetrics(5.0, 300.0, 700, 0, 1, 1, 1);
 
-        MountainRecommendationResponse response = MountainRecommendationResponse.from(mountain, metrics);
+        MountainRecommendationResponse response = MountainRecommendationResponse.of(mountain, metrics);
 
         assertThat(response.mountainId()).isEqualTo(1L);
         assertThat(response.name()).isEqualTo("관악산");
@@ -40,11 +40,11 @@ class MountainRecommendationResponseTest {
     }
 
     @Test
-    void fromReturnsNullImageWhenImageUrlsAreNull() throws Exception {
+    void ofReturnsNullImageWhenImageUrlsAreNull() throws Exception {
         Mountain mountain = mountain(Difficulty.HARD, null, 900.0);
         TrackMetrics metrics = new TrackMetrics(10.0, 600.0, 900, 1, 2, 0, 0);
 
-        MountainRecommendationResponse response = MountainRecommendationResponse.from(mountain, metrics);
+        MountainRecommendationResponse response = MountainRecommendationResponse.of(mountain, metrics);
 
         assertThat(response.imageUrl()).isNull();
         assertThat(response.difficultyLabel()).isEqualTo("상");

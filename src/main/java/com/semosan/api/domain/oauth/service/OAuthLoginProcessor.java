@@ -27,7 +27,7 @@ public class OAuthLoginProcessor {
     ) {
         User user = userService.findOrRegisterOAuthUser(profile, provider, deviceType);
         TokenIssuance tokens = jwtService.issueTokens(user);
-        return OAuthLoginResponse.from(user, tokens);
+        return OAuthLoginResponse.of(user, tokens);
     }
 
 }

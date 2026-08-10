@@ -12,12 +12,12 @@ import static org.mockito.Mockito.when;
 class LoginResponseTest {
 
     @Test
-    void fromReturnsOnboardingCompletedTrueWhenUserStatusIsComplete() {
+    void ofReturnsOnboardingCompletedTrueWhenUserStatusIsComplete() {
         User user = mock(User.class);
         when(user.getId()).thenReturn(1L);
         when(user.getOnboardingStatus()).thenReturn(OnboardingStatus.COMPLETE);
 
-        LoginResponse response = LoginResponse.from(user, new TokenIssuance("access", "refresh"));
+        LoginResponse response = LoginResponse.of(user, new TokenIssuance("access", "refresh"));
 
         assertThat(response.userId()).isEqualTo(1L);
         assertThat(response.accessToken()).isEqualTo("access");
@@ -26,12 +26,12 @@ class LoginResponseTest {
     }
 
     @Test
-    void fromReturnsOnboardingCompletedFalseWhenUserStatusIsIncomplete() {
+    void ofReturnsOnboardingCompletedFalseWhenUserStatusIsIncomplete() {
         User user = mock(User.class);
         when(user.getId()).thenReturn(1L);
         when(user.getOnboardingStatus()).thenReturn(OnboardingStatus.INCOMPLETE);
 
-        LoginResponse response = LoginResponse.from(user, new TokenIssuance("access", "refresh"));
+        LoginResponse response = LoginResponse.of(user, new TokenIssuance("access", "refresh"));
 
         assertThat(response.onboardingCompleted()).isFalse();
     }

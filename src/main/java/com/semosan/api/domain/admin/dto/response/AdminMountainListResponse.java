@@ -19,7 +19,7 @@ public record AdminMountainListResponse(
         long courseCount
 ) {
 
-    public static AdminMountainListResponse from(Mountain mountain, long courseCount) {
+    public static AdminMountainListResponse of(Mountain mountain, long courseCount) {
         return new AdminMountainListResponse(
                 mountain.getId(),
                 mountain.getName(),

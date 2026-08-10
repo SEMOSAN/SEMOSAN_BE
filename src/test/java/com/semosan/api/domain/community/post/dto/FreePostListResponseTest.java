@@ -11,10 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FreePostListResponseTest {
 
     @Test
-    void fromReturnsPreviewAndExtraImageCount() {
+    void ofReturnsPreviewAndExtraImageCount() {
         FreePost post = freePost(10L, user(1L, "author"), "제목", "가".repeat(101));
 
-        FreePostListResponse result = FreePostListResponse.from(
+        FreePostListResponse result = FreePostListResponse.of(
                 post,
                 "https://example.com/main.png",
                 3,
@@ -33,11 +33,11 @@ class FreePostListResponseTest {
     }
 
     @Test
-    void fromReturnsNullPreviewAndExtraImageCountWhenContentOrImageCountMissing() {
+    void ofReturnsNullPreviewAndExtraImageCountWhenContentOrImageCountMissing() {
         FreePost post = freePost(10L, user(1L, "author"), "제목", null);
 
-        FreePostListResponse nullCountResult = FreePostListResponse.from(post, null, null, 0L, 0L);
-        FreePostListResponse oneImageResult = FreePostListResponse.from(post, null, 1, 0L, 0L);
+        FreePostListResponse nullCountResult = FreePostListResponse.of(post, null, null, 0L, 0L);
+        FreePostListResponse oneImageResult = FreePostListResponse.of(post, null, 1, 0L, 0L);
 
         assertThat(nullCountResult.contentPreview()).isNull();
         assertThat(nullCountResult.extraImageCount()).isNull();
