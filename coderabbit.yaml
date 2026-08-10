@@ -1,0 +1,115 @@
+# ---------------------------------------------------------------- #
+# CodeRabbit AI 설정
+# ---------------------------------------------------------------- #
+
+# 응답 기본 언어 설정
+language: "ko-KR"
+
+# AI 페르소나 및 톤앤매너 지시
+tone_instructions: >
+  1. 피드백은 명확하고 구체적이어야 하며, 문제의 원인과 개선 방법을 반드시 제시하세요.
+  2. 리뷰는 교육적이어야 하며, 관련 개념이나 공식 문서를 함께 추천하세요.
+  3. 비판보다는 개선 중심의 제안을 우선하세요.
+  4. 칭찬은 짧고 위트 있게 작성하세요.
+
+# ---------------------------------------------------------------- #
+# 코드 리뷰 기능 세부 설정
+# ---------------------------------------------------------------- #
+reviews:
+  profile: "chill"                  # 리뷰 전반 스타일 (부드러운 톤)
+  request_changes_workflow: false   # 코멘트 resolve 시 자동 Approve 처리
+  high_level_summary: true          # PR 변경 사항 고수준 요약 활성화
+  collapse_walkthrough: true        # 워크스루 코멘트 접기 활성화
+  changed_files_summary: true       # 변경된 파일별 요약 생성
+  sequence_diagrams: true           # 실행 흐름 시퀀스 다이어그램 생성
+  assess_linked_issues: true        # 연결된 이슈 분석 컨텍스트 활용
+  related_issues: false             # 연관 다른 이슈 링크 비활성화
+  related_prs: true                 # 연관 다른 PR 링크 활성화
+  suggested_labels: false           # 적절한 레이블 제안 비활성화
+  auto_apply_labels: false          # 제안 레이블 자동 적용 비활성화
+  suggested_reviewers: false        # 동료 리뷰어 추천 비활성화
+  auto_assign_reviewers: false      # 추천 리뷰어 자동 할당 비활성화
+  poem: true                        # 리뷰 요약에 위트 있는 시 포함 활성화
+
+  # ---------------------------------------------------------------- #
+  # 자동 리뷰 트리거 설정
+  # ---------------------------------------------------------------- #
+  auto_review:
+    enabled: true
+    auto_incremental_review: true   # 추가 커밋 시 변경된 부분만 자동 리뷰
+    base_branches:
+      - "develop"
+
+  # ---------------------------------------------------------------- #
+  # 리뷰 제외 경로 — CI(JaCoCo)/마이그레이션 등 CodeRabbit이 볼 필요 없는 파일
+  # ---------------------------------------------------------------- #
+  path_filters:
+    - "!src/main/resources/db/migration/**"
+    - "!src/test/resources/**"
+    - "!**/*.yaml"
+    - "!**/*.yml"
+    - "!gradle/**"
+    - "!gradlew"
+    - "!gradlew.bat"
+
+  # ---------------------------------------------------------------- #
+  # 경로별 리뷰 지시사항 — CLAUDE.md 컨벤션 기반
+  # ---------------------------------------------------------------- #
+  path_instructions:
+    - path: "src/main/java/**/controller/**/*.java"
+      instructions: >
+        컨트롤러에는 비즈니스 로직이 있으면 안 되고 controller → service → repository
+        위임만 해야 한다. Swagger 문서는 컨트롤러에 직접 달지 않고 별도
+        `controller/docs/<Name>ControllerDocs` 인터페이스에 작성되어 있는지 확인하라.
+        모든 응답은 `ApiResponse<T>`를 반환해야 한다.
+
+    - path: "src/main/java/**/service/**/*.java"
+      instructions: >
+        비즈니스 로직이 이 계층에 위치하는지 확인하라.
+        오류는 반드시 `throw new GeneralException(ErrorStatus.XXX)` 형태로 던져야 하며,
+        의미 없는 RuntimeException을 그대로 던지지 않는지 확인하라.
+
+        [트랜잭션]
+        - 엔티티를 조회 후 수정/삭제하는 메서드에 `@Transactional`이 누락되지 않았는지 확인하라.
+        - 단순 조회만 하는 메서드에는 `@Transactional(readOnly = true)`가 붙어있는지 확인하라.
+        - `@Transactional` 범위 안에 외부 API 호출(WebClient 등), Redis 호출, 파일/이미지 업로드처럼
+          DB 커넥션을 불필요하게 오래 점유하는 작업이 섞여 있지 않은지 확인하라. 섞여 있다면
+          해당 호출을 트랜잭션 밖으로 분리하거나 트랜잭션을 거는 범위를 좁히도록 제안하라.
+        - 트랜잭션 전파(`REQUIRES_NEW` 등)나 AOP self-invocation으로 `@Transactional`이
+          무시되는 구조(같은 클래스 내부 메서드 호출)가 없는지 확인하라.
+
+        [단일 책임]
+        - 하나의 서비스 클래스가 서로 다른 도메인의 책임(예: 알림 발송 + 결제 처리 + 통계 집계)을
+          한꺼번에 지고 있지 않은지 확인하라.
+        - 생성자 의존성이 과도하게 많거나(대략 6~7개 이상), 메서드 수가 많아 클래스가 비대해지고
+          있다면 책임 분리(별도 서비스/컴포넌트 추출)를 제안하라.
+
+    - path: "src/main/java/**/entity/**/*.java"
+      instructions: >
+        무분별한 public setter 대신 의도가 드러나는 행위 메서드(예: withdraw(), suspend())로
+        상태를 변경하는지 확인하라. soft delete 정책이 있는 엔티티라면 관련 필드(deleted 등)
+        일관성을 확인하라.
+
+    - path: "src/main/java/**/dto/**/*.java"
+      instructions: >
+        요청 DTO는 `*Request.java`, 응답 DTO는 `*Response.java`, 서비스 간 전달용 DTO는
+        `dto/command/` 하위 `*Command.java` 네이밍 규칙을 따르는지 확인하라.
+        정적 팩토리 메서드는 인자 1개면 `from`, 2개 이상이면 `of` 명명 규칙을 따르는지 확인하라.
+
+# ---------------------------------------------------------------- #
+# 채팅 기능 설정
+# ---------------------------------------------------------------- #
+chat:
+  auto_reply: true                  # 태그하지 않아도 자동 답글 활성화
+
+# ---------------------------------------------------------------- #
+# CodeRabbit의 지식 기반(Knowledge Base) 설정
+# ---------------------------------------------------------------- #
+knowledge_base:
+  web_search:
+    enabled: true                   # 최신 문서 검색 허용
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "CLAUDE.md"
+      - ".claude/commands/review.md"
