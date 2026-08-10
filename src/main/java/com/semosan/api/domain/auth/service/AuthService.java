@@ -9,6 +9,7 @@ import com.semosan.api.domain.auth.dto.response.LoginResponse;
 import com.semosan.api.domain.auth.dto.response.ReissueResponse;
 import com.semosan.api.domain.auth.event.UserWithdrawCleanupRequestedEvent;
 import com.semosan.api.domain.user.entity.User;
+import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import com.semosan.api.domain.user.service.UserReader;
 import com.semosan.api.domain.user.service.UserService;
 import io.jsonwebtoken.Claims;
@@ -66,8 +67,14 @@ public class AuthService {
     @Transactional
     public void withdraw(Long userId, String accessToken) {
         User user = userReader.findActiveUserById(userId);
+        // withdrawUser()가 oauthId를 익명화하기 전에 원본 값을 먼저 확보해둔다.
+        String oauthId = user.getOauthId();
+        OAuthProvider provider = user.getOauthProvider();
+
         userService.withdrawUser(user);
-        eventPublisher.publishEvent(new UserWithdrawCleanupRequestedEvent(userId, accessToken));
+        eventPublisher.publishEvent(
+                new UserWithdrawCleanupRequestedEvent(userId, accessToken, oauthId, provider)
+        );
     }
 
 }

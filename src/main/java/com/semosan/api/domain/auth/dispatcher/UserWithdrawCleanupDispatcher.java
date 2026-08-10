@@ -3,6 +3,8 @@ package com.semosan.api.domain.auth.dispatcher;
 import com.semosan.api.common.jwt.JwtService;
 import com.semosan.api.domain.auth.event.UserWithdrawCleanupRequestedEvent;
 import com.semosan.api.domain.notification.service.FcmTokenService;
+import com.semosan.api.domain.oauth.client.OAuthKakaoClient;
+import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -18,6 +20,7 @@ public class UserWithdrawCleanupDispatcher {
 
     private final JwtService jwtService;
     private final FcmTokenService fcmTokenService;
+    private final OAuthKakaoClient oAuthKakaoClient;
 
     @Async("authCleanupTaskExecutor")
     public void dispatch(UserWithdrawCleanupRequestedEvent event) {
@@ -30,6 +33,9 @@ public class UserWithdrawCleanupDispatcher {
         for (int attempt = 1; attempt <= MAX_RETRY_COUNT; attempt++) {
             try {
                 fcmTokenService.deleteAllByUserId(event.userId());
+                if (event.provider() == OAuthProvider.KAKAO) {
+                    oAuthKakaoClient.unlinkKakaoUser(event.oauthId());
+                }
                 jwtService.blacklistAccessToken(event.accessToken());
                 jwtService.deleteRefreshToken(event.userId());
                 return;

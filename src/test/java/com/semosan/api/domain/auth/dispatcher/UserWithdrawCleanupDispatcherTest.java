@@ -3,6 +3,8 @@ package com.semosan.api.domain.auth.dispatcher;
 import com.semosan.api.common.jwt.JwtService;
 import com.semosan.api.domain.auth.event.UserWithdrawCleanupRequestedEvent;
 import com.semosan.api.domain.notification.service.FcmTokenService;
+import com.semosan.api.domain.oauth.client.OAuthKakaoClient;
+import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,12 +29,35 @@ class UserWithdrawCleanupDispatcherTest {
     @Mock
     private FcmTokenService fcmTokenService;
 
+    @Mock
+    private OAuthKakaoClient oAuthKakaoClient;
+
     @InjectMocks
     private UserWithdrawCleanupDispatcher dispatcher;
 
     @Test
+    void cleanupWithRetry_unlinksKakaoWhenProviderIsKakao() {
+        UserWithdrawCleanupRequestedEvent event =
+                new UserWithdrawCleanupRequestedEvent(1L, "access-token", "kakao-1", OAuthProvider.KAKAO);
+
+        dispatcher.cleanupWithRetry(event);
+
+        verify(oAuthKakaoClient).unlinkKakaoUser("kakao-1");
+    }
+
+    @Test
+    void cleanupWithRetry_skipsKakaoUnlinkWhenProviderIsNotKakao() {
+        UserWithdrawCleanupRequestedEvent event =
+                new UserWithdrawCleanupRequestedEvent(1L, "access-token", "apple-1", OAuthProvider.APPLE);
+
+        dispatcher.cleanupWithRetry(event);
+
+        verify(oAuthKakaoClient, never()).unlinkKakaoUser(org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
     void cleanupWithRetry_retriesOnceWhenJwtFails() {
-        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token");
+        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token", "kakao-1", OAuthProvider.KAKAO);
 
         doNothing().when(fcmTokenService).deleteAllByUserId(1L);
         doThrow(new RuntimeException("redis down"))
@@ -49,7 +74,7 @@ class UserWithdrawCleanupDispatcherTest {
 
     @Test
     void dispatchDelegatesToCleanup() {
-        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token");
+        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token", "kakao-1", OAuthProvider.KAKAO);
         doNothing().when(fcmTokenService).deleteAllByUserId(1L);
         doNothing().when(jwtService).blacklistAccessToken("access-token");
         doNothing().when(jwtService).deleteRefreshToken(1L);
@@ -63,7 +88,7 @@ class UserWithdrawCleanupDispatcherTest {
 
     @Test
     void cleanupWithRetryStopsAfterThreeFailures() {
-        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token");
+        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token", "kakao-1", OAuthProvider.KAKAO);
         doThrow(new RuntimeException("fcm down")).when(fcmTokenService).deleteAllByUserId(1L);
 
         assertDoesNotThrow(() -> dispatcher.cleanupWithRetry(event));
@@ -75,7 +100,7 @@ class UserWithdrawCleanupDispatcherTest {
 
     @Test
     void cleanupWithRetryStopsWhenBackoffIsInterrupted() {
-        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token");
+        UserWithdrawCleanupRequestedEvent event = new UserWithdrawCleanupRequestedEvent(1L, "access-token", "kakao-1", OAuthProvider.KAKAO);
         doThrow(new RuntimeException("fcm down")).when(fcmTokenService).deleteAllByUserId(1L);
         Thread.currentThread().interrupt();
 
