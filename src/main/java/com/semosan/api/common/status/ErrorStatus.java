@@ -39,6 +39,7 @@ public enum ErrorStatus implements BaseStatus {
     REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "JWT_401_11", "리프레시 토큰이 존재하지 않습니다."),
     REFRESH_TOKEN_MISMATCH(HttpStatus.UNAUTHORIZED, "JWT_401_12", "리프레시 토큰 정보가 사용자 정보와 일치하지 않습니다."),
     JWT_EXTRACT_ROLE_FAILED(HttpStatus.UNAUTHORIZED, "JWT_401_13", "토큰에서 사용자 Role을 추출할 수 없습니다."),
+    JWT_USER_WITHDRAWN(HttpStatus.UNAUTHORIZED, "JWT_401_14", "탈퇴했거나 존재하지 않는 사용자입니다."),
 
     /**
      * Kakao OAuth

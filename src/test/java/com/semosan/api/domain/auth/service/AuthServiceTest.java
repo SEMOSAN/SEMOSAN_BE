@@ -119,6 +119,8 @@ class AuthServiceTest {
         verify(eventPublisher).publishEvent(captor.capture());
         assertThat(captor.getValue().userId()).isEqualTo(1L);
         assertThat(captor.getValue().accessToken()).isEqualTo("access");
+        assertThat(captor.getValue().oauthId()).isEqualTo("test-1");
+        assertThat(captor.getValue().provider()).isEqualTo(com.semosan.api.domain.user.enums.user.OAuthProvider.TEST);
     }
 
     private User user(Long id, OnboardingStatus onboardingStatus) {
