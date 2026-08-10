@@ -157,7 +157,7 @@ public class FreePostService {
         Map<Long, Long> imageCountMap = postImageRepository.countByPostIdsGrouped(postIds).stream()
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
 
-        return posts.map(post -> FreePostListResponse.from(
+        return posts.map(post -> FreePostListResponse.of(
                 post,
                 mainImageMap.get(post.getId()),
                 imageCountMap.getOrDefault(post.getId(), 0L).intValue(),

@@ -17,7 +17,7 @@ public record FreePostListResponse(
 ) {
     private static final int PREVIEW_LENGTH = 100;
 
-    public static FreePostListResponse from(
+    public static FreePostListResponse of(
             FreePost post,
             String thumbnailUrl,
             Integer extraImageCount,
