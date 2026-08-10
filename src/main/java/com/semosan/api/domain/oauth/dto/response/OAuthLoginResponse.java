@@ -11,7 +11,7 @@ public record OAuthLoginResponse(
         boolean onboardingCompleted
 ) {
 
-    public static OAuthLoginResponse from(User user, TokenIssuance tokens) {
+    public static OAuthLoginResponse of(User user, TokenIssuance tokens) {
         return new OAuthLoginResponse(
                 user.getId(),
                 tokens.accessToken(),
