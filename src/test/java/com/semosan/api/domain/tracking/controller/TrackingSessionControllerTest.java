@@ -4,7 +4,9 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.tracking.dto.request.CompleteTrackingSessionRequest;
 import com.semosan.api.domain.tracking.dto.request.CreateTrackingSessionRequest;
+import com.semosan.api.domain.tracking.dto.response.TrackingRestoreResponse;
 import com.semosan.api.domain.tracking.dto.response.TrackingSessionResponse;
+import com.semosan.api.domain.tracking.dto.response.TrackingTrackResponse;
 import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
 import com.semosan.api.domain.tracking.service.TrackingSessionService;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -107,6 +110,41 @@ class TrackingSessionControllerTest {
         trackingSessionController.completeSession(1L, 100L, null);
 
         verify(trackingSessionService).complete(1L, 100L, null);
+    }
+
+    @Test
+    void getSessionTrackReturnsSuccessResponse() {
+        TrackingTrackResponse track = TrackingTrackResponse.of(
+                100L, "{\"type\":\"LineString\",\"coordinates\":[]}", "[310.0]");
+        when(trackingSessionService.getTrack(1L, 100L)).thenReturn(track);
+
+        ResponseEntity<ApiResponse<TrackingTrackResponse>> response =
+                trackingSessionController.getSessionTrack(1L, 100L);
+
+        assertThat(response.getStatusCode())
+                .isEqualTo(SuccessStatus.TRACKING_SESSION_GET_TRACK_SUCCESS.getHttpStatus());
+        assertThat(response.getBody().getData()).isSameAs(track);
+        verify(trackingSessionService).getTrack(1L, 100L);
+    }
+
+    @Test
+    void restoreSessionReturnsSuccessResponse() {
+        TrackingRestoreResponse restore = new TrackingRestoreResponse(
+                session(100L, TrackingSessionStatus.IN_PROGRESS),
+                4_820L,
+                new TrackingRestoreResponse.Stats(3241.7, 452.0, 88.3, 781.2, 842L),
+                new TrackingRestoreResponse.PhotoMilestone(
+                        List.of(812.5), List.of(0), List.of(), false)
+        );
+        when(trackingSessionService.restore(1L, 100L)).thenReturn(restore);
+
+        ResponseEntity<ApiResponse<TrackingRestoreResponse>> response =
+                trackingSessionController.restoreSession(1L, 100L);
+
+        assertThat(response.getStatusCode())
+                .isEqualTo(SuccessStatus.TRACKING_SESSION_RESTORE_SUCCESS.getHttpStatus());
+        assertThat(response.getBody().getData()).isSameAs(restore);
+        verify(trackingSessionService).restore(1L, 100L);
     }
 
     private TrackingSessionResponse session(Long sessionId, TrackingSessionStatus status) {

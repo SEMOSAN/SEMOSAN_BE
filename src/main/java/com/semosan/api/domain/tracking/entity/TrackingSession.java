@@ -129,6 +129,30 @@ public class TrackingSession extends BaseEntity {
         }
     }
 
+    /**
+     * 일시정지 시간을 제외한 실제 경과 시간(초).
+     *
+     * 상태별로 식이 다르다.
+     *  - IN_PROGRESS : now - startedAt - pausedSecondsTotal
+     *  - PAUSED      : 위에서 (now - pausedAt) 을 한 번 더 뺀다. 아직 pausedSecondsTotal 에
+     *                  누적되지 않은 "현재 진행 중인 일시정지 구간" 이기 때문.
+     *  - 종료 상태    : endedAt 기준. complete/abandon 시 finalizePausedSeconds() 가 이미
+     *                  마지막 일시정지 구간을 누적해뒀으므로 추가 보정이 필요 없다.
+     *
+     * 클라이언트가 이 계산을 직접 하면 PAUSED 분기를 놓쳐 일시정지 중에도 시간이 흐르는
+     * 버그가 나기 쉬우므로, 규칙을 엔티티 한 곳에 모아둔다.
+     */
+    public long elapsedSeconds() {
+        LocalDateTime until = (endedAt != null) ? endedAt : LocalDateTime.now();
+        long elapsed = Duration.between(startedAt, until).toSeconds();
+        elapsed -= (pausedSecondsTotal == null ? 0 : pausedSecondsTotal);
+
+        if (status == TrackingSessionStatus.PAUSED && pausedAt != null) {
+            elapsed -= Duration.between(pausedAt, until).toSeconds();
+        }
+        return Math.max(elapsed, 0);
+    }
+
     public boolean isOwnedBy(Long userId) {
         return user != null && userId != null && userId.equals(user.getId());
     }
