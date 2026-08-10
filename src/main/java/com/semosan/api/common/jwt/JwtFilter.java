@@ -82,8 +82,10 @@ public class JwtFilter extends OncePerRequestFilter {
                 if ("ADMIN".equals(tokenType)) {
                     authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
                 } else {
-                    User user = userRepository.findById(userId).orElse(null);
-                    if (user != null && user.isSuspended()) {
+                    // 탈퇴(soft-delete)했거나 존재하지 않는 유저는 인증 실패 처리
+                    User user = userRepository.findByIdAndDeletedFalse(userId)
+                            .orElseThrow(() -> new GeneralException(ErrorStatus.JWT_USER_WITHDRAWN));
+                    if (user.isSuspended()) {
                         throw new GeneralException(ErrorStatus.USER_SUSPENDED);
                     }
                 }

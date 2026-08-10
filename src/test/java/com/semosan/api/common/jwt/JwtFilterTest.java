@@ -53,7 +53,7 @@ class JwtFilterTest {
         when(jwtService.isAccessTokenBlacklisted("access")).thenReturn(false);
         when(jwtService.getUserIdFromClaims(claims)).thenReturn(1L);
         when(claims.get("tokenType", String.class)).thenReturn(null);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(user));
         MockHttpServletRequest request = request("/api/mountains", "Bearer access");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -80,7 +80,7 @@ class JwtFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication().getAuthorities())
                 .extracting("authority")
                 .containsExactly("ROLE_ADMIN");
-        verify(userRepository, never()).findById(9L);
+        verify(userRepository, never()).findByIdAndDeletedFalse(9L);
     }
 
     @Test
@@ -130,7 +130,7 @@ class JwtFilterTest {
         when(jwtService.isAccessTokenBlacklisted("access")).thenReturn(false);
         when(jwtService.getUserIdFromClaims(claims)).thenReturn(1L);
         when(claims.get("tokenType", String.class)).thenReturn(null);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(user));
         MockHttpServletRequest request = request("/api/mountains", "Bearer access");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -155,20 +155,21 @@ class JwtFilterTest {
     }
 
     @Test
-    void doFilterSetsAuthenticationEvenWhenUserIsNotFound() throws Exception {
+    void doFilterWritesErrorResponseWhenUserIsWithdrawnOrNotFound() throws Exception {
         Claims claims = mock(Claims.class);
         when(jwtService.validateAccessTokenAndGetClaims("access")).thenReturn(claims);
         when(jwtService.isAccessTokenBlacklisted("access")).thenReturn(false);
         when(jwtService.getUserIdFromClaims(claims)).thenReturn(1L);
         when(claims.get("tokenType", String.class)).thenReturn(null);
-        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.empty());
         MockHttpServletRequest request = request("/api/mountains", "Bearer access");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter().doFilter(request, response, new MockFilterChain());
 
-        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
-        assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal()).isEqualTo(1L);
+        assertThat(response.getStatus()).isEqualTo(ErrorStatus.JWT_USER_WITHDRAWN.getHttpStatus().value());
+        assertThat(response.getContentAsString()).contains(ErrorStatus.JWT_USER_WITHDRAWN.getCode());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
     private JwtFilter filter() {
