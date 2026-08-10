@@ -66,7 +66,7 @@ public class AdminMountainService {
 
         Map<Long, Long> courseCountMap = getCourseCountMap(mountains.getContent());
 
-        return mountains.map(mountain -> AdminMountainListResponse.from(
+        return mountains.map(mountain -> AdminMountainListResponse.of(
                 mountain,
                 courseCountMap.getOrDefault(mountain.getId(), 0L)
         ));
