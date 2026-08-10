@@ -30,7 +30,7 @@ public record CourseDetailResponse(
         @JsonRawValue String altitudes,
         List<SlopeSegmentResponse> segments
 ) {
-    public static CourseDetailResponse from(
+    public static CourseDetailResponse of(
             CourseDetailProjection p,
             boolean likedByMe,
             List<SlopeSegmentResponse> segments

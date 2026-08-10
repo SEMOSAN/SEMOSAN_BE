@@ -121,7 +121,7 @@ public class MountainService {
         return candidateByMountainId.values().stream()
                 .sorted(RecommendationCandidate.recommendationOrder())
                 .limit(3)
-                .map(candidate -> MountainRecommendationResponse.from(
+                .map(candidate -> MountainRecommendationResponse.of(
                         candidate.mountain(),
                         candidate.evaluation().metrics()
                 ))

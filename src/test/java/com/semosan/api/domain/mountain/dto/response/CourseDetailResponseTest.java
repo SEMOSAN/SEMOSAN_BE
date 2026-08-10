@@ -14,10 +14,10 @@ import static org.mockito.Mockito.when;
 class CourseDetailResponseTest {
 
     @Test
-    void fromConvertsProjectionAndDifficulty() {
+    void ofConvertsProjectionAndDifficulty() {
         List<SlopeSegmentResponse> segments = List.of(new SlopeSegmentResponse(0, 1, SlopeGrade.FLAT));
 
-        CourseDetailResponse response = CourseDetailResponse.from(projection("NORMAL"), true, segments);
+        CourseDetailResponse response = CourseDetailResponse.of(projection("NORMAL"), true, segments);
 
         assertThat(response.id()).isEqualTo(1L);
         assertThat(response.mountainId()).isEqualTo(10L);
@@ -37,8 +37,8 @@ class CourseDetailResponseTest {
     }
 
     @Test
-    void fromKeepsDifficultyNullWhenProjectionDifficultyIsNull() {
-        CourseDetailResponse response = CourseDetailResponse.from(projection(null), false, List.of());
+    void ofKeepsDifficultyNullWhenProjectionDifficultyIsNull() {
+        CourseDetailResponse response = CourseDetailResponse.of(projection(null), false, List.of());
 
         assertThat(response.difficulty()).isNull();
         assertThat(response.likedByMe()).isFalse();

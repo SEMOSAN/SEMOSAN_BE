@@ -13,7 +13,7 @@ public record MountainRecommendationResponse(
         String address
 ) {
 
-    public static MountainRecommendationResponse from(
+    public static MountainRecommendationResponse of(
             Mountain mountain,
             TrackMetrics metrics
     ) {
