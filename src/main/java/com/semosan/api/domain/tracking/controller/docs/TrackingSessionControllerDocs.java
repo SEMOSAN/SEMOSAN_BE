@@ -1,6 +1,7 @@
 package com.semosan.api.domain.tracking.controller.docs;
 
 import com.semosan.api.common.response.ApiResponse;
+import com.semosan.api.domain.tracking.dto.request.CompleteTrackingSessionRequest;
 import com.semosan.api.domain.tracking.dto.request.CreateTrackingSessionRequest;
 import com.semosan.api.domain.tracking.dto.response.TrackingSessionResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -72,11 +73,25 @@ public interface TrackingSessionControllerDocs {
             @PathVariable Long sessionId
     );
 
-    @Operation(summary = "트래킹 세션 정상 종료",
-            description = "세션 상태/시각만 마감합니다. 실제 HikingRecord 변환은 #20 에서 구현됩니다.")
+    @Operation(
+            summary = "트래킹 세션 정상 종료",
+            description = "세션을 COMPLETED 로 마감하고 누적 통계를 등산 기록으로 변환합니다.\n\n"
+                    + "- **자유기록**: `name` 으로 기록 이름을 함께 보냅니다. "
+                    + "비워 보내거나 body 자체를 생략하면 서버가 `260723_등산왕의코스1` 형태로 채웁니다.\n"
+                    + "- **코스 기록**: 코스명으로 표시되므로 `name` 을 보내도 무시됩니다.\n"
+                    + "- body 는 선택입니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "종료 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "기록 이름이 30자를 초과",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 종료된 세션",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+    })
     ResponseEntity<ApiResponse<TrackingSessionResponse>> completeSession(
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
-            @PathVariable Long sessionId
+            @PathVariable Long sessionId,
+            @RequestBody(required = false) CompleteTrackingSessionRequest request
     );
 
     @Operation(summary = "트래킹 세션 포기", description = "기록 없이 세션을 ABANDONED 처리합니다.")

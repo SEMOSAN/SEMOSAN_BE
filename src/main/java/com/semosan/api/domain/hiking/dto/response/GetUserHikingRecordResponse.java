@@ -13,6 +13,8 @@ public record GetUserHikingRecordResponse(
         String mountainName,
         Long courseId,
         String courseName,
+        /** 자유기록에만 값이 있다. 코스 기록은 courseName 으로 표시한다. */
+        String recordName,
         List<String> imageUrls,
         Double distance,
         Integer duration,
@@ -29,6 +31,7 @@ public record GetUserHikingRecordResponse(
                 projection.getMountainName(),
                 projection.getCourseId(),
                 projection.getCourseName(),
+                projection.getRecordName(),
                 buildImageUrls(projection.getPhotoReportImageUrl(), projection.getCliveImageUrl()),
                 projection.getDistance(),
                 projection.getDuration(),

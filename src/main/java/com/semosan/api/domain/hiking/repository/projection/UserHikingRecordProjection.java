@@ -16,6 +16,9 @@ public interface UserHikingRecordProjection {
 
     String getCourseName();
 
+    /** 자유기록에만 값이 있다. 화면 표시는 courseName ?? recordName. */
+    String getRecordName();
+
     String getPhotoReportImageUrl();
 
     String getCliveImageUrl();

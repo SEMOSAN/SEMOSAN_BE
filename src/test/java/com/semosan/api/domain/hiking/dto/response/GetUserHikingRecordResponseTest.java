@@ -58,6 +58,11 @@ class GetUserHikingRecordResponseTest {
             }
 
             @Override
+            public String getRecordName() {
+                return null;
+            }
+
+            @Override
             public Long getMountainId() {
                 return 2L;
             }

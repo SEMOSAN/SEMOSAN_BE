@@ -19,6 +19,8 @@ public record HikingRecordDetailResponse(
         Long hikingRecordId,
         MountainSummary mountain,
         CourseSummary course,
+        /** 자유기록에만 값이 있다. 코스 기록은 course.name 으로 표시한다. */
+        String recordName,
         Double distanceMeters,
         Integer durationSeconds,
         Double maxAltitudeMeters,
@@ -79,6 +81,7 @@ public record HikingRecordDetailResponse(
                                 record.getCourse().getStartName(),
                                 record.getCourse().getEndName()
                         ),
+                record.getName(),
                 record.getDistance(),
                 record.getDuration(),
                 record.getMaxAltitude(),

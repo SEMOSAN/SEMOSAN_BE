@@ -61,7 +61,7 @@ class HikingRecordControllerTest {
         GetUserHikingRecordResponse record = hikingRecordResponse();
         GetUserHikingRecordSummaryResponse summary = new GetUserHikingRecordSummaryResponse(3L, 2L, 1500.0);
         HikingRecordDetailResponse detail = new HikingRecordDetailResponse(
-                1L, null, null, 1000.0, 3600, 650.0, 100.0, 80.0,
+                1L, null, null, "260806_등산왕의코스1", 1000.0, 3600, 650.0, 100.0, 80.0,
                 400, 18.0, LocalDateTime.now(), LocalDateTime.now(), null, null, List.of()
         );
         when(hikingRecordService.getUserHikingMountainRecords(1L, pageable))
@@ -99,7 +99,7 @@ class HikingRecordControllerTest {
 
     private GetUserHikingRecordResponse hikingRecordResponse() {
         return new GetUserHikingRecordResponse(
-                100L, 200L, 10L, "관악산", 20L, "정상 코스",
+                100L, 200L, 10L, "관악산", 20L, "정상 코스", null,
                 List.of("report.jpg", "clive.jpg"), 1500.0, 3600, LocalDate.of(2026, 8, 6)
         );
     }

@@ -3,6 +3,7 @@ package com.semosan.api.domain.tracking.controller;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.tracking.controller.docs.TrackingSessionControllerDocs;
+import com.semosan.api.domain.tracking.dto.request.CompleteTrackingSessionRequest;
 import com.semosan.api.domain.tracking.dto.request.CreateTrackingSessionRequest;
 import com.semosan.api.domain.tracking.dto.response.TrackingSessionResponse;
 import com.semosan.api.domain.tracking.service.TrackingSessionService;
@@ -71,13 +72,18 @@ public class TrackingSessionController implements TrackingSessionControllerDocs 
         return ApiResponse.success(SuccessStatus.TRACKING_SESSION_RESUME_SUCCESS, response);
     }
 
+    /**
+     * 자유기록은 종료 시 이름을 함께 받는다. body 를 생략하거나 name 이 비면 서버가 기본 이름을 채운다.
+     */
     @PostMapping("/{sessionId}/complete")
     @Override
     public ResponseEntity<ApiResponse<TrackingSessionResponse>> completeSession(
             @AuthenticationPrincipal Long userId,
-            @PathVariable Long sessionId
+            @PathVariable Long sessionId,
+            @Valid @RequestBody(required = false) CompleteTrackingSessionRequest request
     ) {
-        TrackingSessionResponse response = trackingSessionService.complete(userId, sessionId);
+        String name = (request == null) ? null : request.name();
+        TrackingSessionResponse response = trackingSessionService.complete(userId, sessionId, name);
         return ApiResponse.success(SuccessStatus.TRACKING_SESSION_COMPLETE_SUCCESS, response);
     }
 

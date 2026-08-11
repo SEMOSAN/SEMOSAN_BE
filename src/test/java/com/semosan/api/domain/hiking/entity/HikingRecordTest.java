@@ -29,7 +29,7 @@ class HikingRecordTest {
                 600
         );
 
-        HikingRecord record = HikingRecord.fromTrackingSession(session, 1000.0, 650.0, 100.0, 80.0);
+        HikingRecord record = HikingRecord.fromTrackingSession(session, 1000.0, 650.0, 100.0, 80.0, "북한산 아침 산책");
 
         assertThat(record.getMountain()).isSameAs(mountain);
         assertThat(record.getCourse()).isSameAs(course);
@@ -43,6 +43,7 @@ class HikingRecordTest {
         assertThat(record.getPausedSecondsTotal()).isEqualTo(600);
         assertThat(record.getStartedAt()).isEqualTo(LocalDateTime.of(2026, 8, 6, 10, 0));
         assertThat(record.getEndedAt()).isEqualTo(LocalDateTime.of(2026, 8, 6, 11, 0));
+        assertThat(record.getName()).isEqualTo("북한산 아침 산책");
     }
 
     @Test
@@ -56,8 +57,9 @@ class HikingRecordTest {
                 null
         );
 
-        HikingRecord record = HikingRecord.fromTrackingSession(session, null, null, null, null);
+        HikingRecord record = HikingRecord.fromTrackingSession(session, null, null, null, null, null);
 
+        assertThat(record.getName()).isNull();
         assertThat(record.getCourse()).isNull();
         assertThat(record.getDuration()).isEqualTo(1800);
         assertThat(record.getMaxAltitude()).isZero();
@@ -86,9 +88,9 @@ class HikingRecordTest {
                 0
         );
 
-        assertThat(HikingRecord.fromTrackingSession(withoutStartedAt, 1000.0, 100.0, 10.0, 0.0).getDuration())
+        assertThat(HikingRecord.fromTrackingSession(withoutStartedAt, 1000.0, 100.0, 10.0, 0.0, null).getDuration())
                 .isZero();
-        assertThat(HikingRecord.fromTrackingSession(withoutEndedAt, 1000.0, 100.0, 10.0, 0.0).getDuration())
+        assertThat(HikingRecord.fromTrackingSession(withoutEndedAt, 1000.0, 100.0, 10.0, 0.0, null).getDuration())
                 .isZero();
     }
 
@@ -103,7 +105,7 @@ class HikingRecordTest {
                 120
         );
 
-        HikingRecord record = HikingRecord.fromTrackingSession(session, 1000.0, 100.0, 10.0, 0.0);
+        HikingRecord record = HikingRecord.fromTrackingSession(session, 1000.0, 100.0, 10.0, 0.0, null);
 
         assertThat(record.getDuration()).isZero();
     }
@@ -118,7 +120,7 @@ class HikingRecordTest {
                 LocalDateTime.of(2026, 8, 6, 10, 30),
                 0
         );
-        HikingRecord record = HikingRecord.fromTrackingSession(session, 1000.0, 100.0, 10.0, 0.0);
+        HikingRecord record = HikingRecord.fromTrackingSession(session, 1000.0, 100.0, 10.0, 0.0, null);
 
         record.updateTemperature(18.5);
 

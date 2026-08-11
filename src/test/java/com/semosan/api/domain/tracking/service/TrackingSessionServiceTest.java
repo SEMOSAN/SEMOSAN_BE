@@ -5,6 +5,7 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.common.weather.WeatherService;
 import com.semosan.api.domain.hiking.entity.HikingMember;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
+import com.semosan.api.domain.hiking.policy.DefaultRecordNameGenerator;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
 import com.semosan.api.domain.mountain.entity.Course;
@@ -41,6 +42,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,6 +79,9 @@ class TrackingSessionServiceTest {
 
     @Mock
     private WeatherService weatherService;
+
+    @Mock
+    private DefaultRecordNameGenerator defaultRecordNameGenerator;
 
     @InjectMocks
     private TrackingSessionService trackingSessionService;
@@ -300,7 +306,7 @@ class TrackingSessionServiceTest {
             return record;
         });
 
-        TrackingSessionResponse response = trackingSessionService.complete(1L, 100L);
+        TrackingSessionResponse response = trackingSessionService.complete(1L, 100L, null);
 
         assertThat(response.status()).isEqualTo(TrackingSessionStatus.COMPLETED);
         assertThat(response.hikingRecordId()).isEqualTo(200L);
@@ -344,6 +350,74 @@ class TrackingSessionServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.TRACKING_SESSION_NOT_FOUND);
+    }
+
+    @Test
+    void completeStoresRequestedNameForFreeRecording() {
+        TrackingSession session = completableSession(null);
+        when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.of(session));
+        stubCompleteDependencies();
+
+        trackingSessionService.complete(1L, 100L, "  북한산 아침 산책  ");
+
+        // 앞뒤 공백은 제거하고 저장한다.
+        assertThat(savedRecord().getName()).isEqualTo("북한산 아침 산책");
+        verify(hikingRecordRepository, never()).countFreeRecordsByUserAndDay(any(), any(), any());
+    }
+
+    @Test
+    void completeGeneratesDefaultNameWhenFreeRecordingNameIsBlank() {
+        TrackingSession session = completableSession(null);
+        ReflectionTestUtils.setField(session, "startedAt", LocalDateTime.of(2026, 7, 23, 9, 30));
+        when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.of(session));
+        stubCompleteDependencies();
+        // 같은 날 이미 2건 있었으므로 이번은 3번째다.
+        when(hikingRecordRepository.countFreeRecordsByUserAndDay(
+                1L,
+                LocalDateTime.of(2026, 7, 23, 0, 0),
+                LocalDateTime.of(2026, 7, 24, 0, 0)))
+                .thenReturn(2L);
+        when(defaultRecordNameGenerator.generate(any(), any(), eq(3L))).thenReturn("260723_등산왕의코스3");
+
+        trackingSessionService.complete(1L, 100L, "   ");
+
+        assertThat(savedRecord().getName()).isEqualTo("260723_등산왕의코스3");
+    }
+
+    @Test
+    void completeIgnoresNameForCourseRecording() {
+        Mountain mountain = mountain(10L);
+        TrackingSession session = completableSession(course(20L, mountain));
+        when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.of(session));
+        stubCompleteDependencies();
+
+        trackingSessionService.complete(1L, 100L, "무시되어야 하는 이름");
+
+        // 코스 기록은 courses.name 으로 표시되므로 별도 이름을 두지 않는다.
+        assertThat(savedRecord().getName()).isNull();
+        verify(hikingRecordRepository, never()).countFreeRecordsByUserAndDay(any(), any(), any());
+    }
+
+    private TrackingSession completableSession(Course course) {
+        TrackingSession session = session(100L, user(1L), mountain(10L), course, course == null);
+        ReflectionTestUtils.setField(session, "startedAt", LocalDateTime.of(2026, 7, 23, 9, 30));
+        return session;
+    }
+
+    private void stubCompleteDependencies() {
+        when(statsService.getStats(100L))
+                .thenReturn(new TrackingSessionStatsService.Stats(1200.0, 100.0, 80.0, 650.0, 5));
+        when(hikingRecordRepository.save(any(HikingRecord.class))).thenAnswer(invocation -> {
+            HikingRecord record = invocation.getArgument(0);
+            ReflectionTestUtils.setField(record, "id", 200L);
+            return record;
+        });
+    }
+
+    private HikingRecord savedRecord() {
+        ArgumentCaptor<HikingRecord> captor = ArgumentCaptor.forClass(HikingRecord.class);
+        verify(hikingRecordRepository).save(captor.capture());
+        return captor.getValue();
     }
 
     private DataIntegrityViolationException activeSessionUniqueViolation() {
