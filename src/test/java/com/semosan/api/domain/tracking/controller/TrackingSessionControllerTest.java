@@ -2,6 +2,7 @@ package com.semosan.api.domain.tracking.controller;
 
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.SuccessStatus;
+import com.semosan.api.domain.tracking.dto.request.CompleteTrackingSessionRequest;
 import com.semosan.api.domain.tracking.dto.request.CreateTrackingSessionRequest;
 import com.semosan.api.domain.tracking.dto.response.TrackingSessionResponse;
 import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
@@ -72,17 +73,40 @@ class TrackingSessionControllerTest {
         TrackingSessionResponse abandoned = session(100L, TrackingSessionStatus.ABANDONED);
         when(trackingSessionService.pause(1L, 100L)).thenReturn(paused);
         when(trackingSessionService.resume(1L, 100L)).thenReturn(inProgress);
-        when(trackingSessionService.complete(1L, 100L)).thenReturn(completed);
+        when(trackingSessionService.complete(1L, 100L, null)).thenReturn(completed);
         when(trackingSessionService.abandon(1L, 100L)).thenReturn(abandoned);
 
         assertThat(trackingSessionController.pauseSession(1L, 100L).getBody().getData()).isSameAs(paused);
         assertThat(trackingSessionController.resumeSession(1L, 100L).getBody().getData()).isSameAs(inProgress);
-        assertThat(trackingSessionController.completeSession(1L, 100L).getBody().getData()).isSameAs(completed);
+        assertThat(trackingSessionController.completeSession(1L, 100L, null).getBody().getData()).isSameAs(completed);
         assertThat(trackingSessionController.abandonSession(1L, 100L).getBody().getData()).isSameAs(abandoned);
         verify(trackingSessionService).pause(1L, 100L);
         verify(trackingSessionService).resume(1L, 100L);
-        verify(trackingSessionService).complete(1L, 100L);
+        verify(trackingSessionService).complete(1L, 100L, null);
         verify(trackingSessionService).abandon(1L, 100L);
+    }
+
+    @Test
+    void completeSessionPassesRequestedNameToService() {
+        TrackingSessionResponse completed = session(100L, TrackingSessionStatus.COMPLETED);
+        when(trackingSessionService.complete(1L, 100L, "북한산 아침 산책")).thenReturn(completed);
+
+        ResponseEntity<ApiResponse<TrackingSessionResponse>> response = trackingSessionController
+                .completeSession(1L, 100L, new CompleteTrackingSessionRequest("북한산 아침 산책"));
+
+        assertThat(response.getBody().getData()).isSameAs(completed);
+        verify(trackingSessionService).complete(1L, 100L, "북한산 아침 산책");
+    }
+
+    @Test
+    void completeSessionPassesNullWhenBodyIsOmitted() {
+        // body 를 생략하고 호출하는 경우 — 서버가 기본 이름을 채우도록 null 을 그대로 넘긴다.
+        TrackingSessionResponse completed = session(100L, TrackingSessionStatus.COMPLETED);
+        when(trackingSessionService.complete(1L, 100L, null)).thenReturn(completed);
+
+        trackingSessionController.completeSession(1L, 100L, null);
+
+        verify(trackingSessionService).complete(1L, 100L, null);
     }
 
     private TrackingSessionResponse session(Long sessionId, TrackingSessionStatus status) {

@@ -87,15 +87,25 @@ public class HikingRecord extends BaseEntity {
     private String photoReportImageUrl;
 
     /**
+     * 자유기록에만 채워지는 기록 이름. 코스 기록은 courses.name 으로 표시되므로 null 이다.
+     * 사용자가 종료 시 직접 입력하거나, 비워두면 서버가 기본 이름을 만들어 채운다.
+     */
+    @Column(name = "name", length = 100)
+    private String name;
+
+    /**
      * 트래킹 세션 종료 시점의 통계를 영구 기록으로 변환한다.
      * 이미지(clive/photoReport) URL 은 추후 #46 사진 흐름에서 채워진다.
+     *
+     * @param name 자유기록 이름. 코스 기록이면 null 이 전달된다.
      */
     public static HikingRecord fromTrackingSession(
             TrackingSession session,
             Double distance,
             Double maxAltitude,
             Double ascent,
-            Double descent
+            Double descent,
+            String name
     ) {
         int duration = computeDurationSeconds(session);
         // 사용자 체중 + 코스 강도(ascent/distance) 기반 MET 공식.
@@ -115,6 +125,7 @@ public class HikingRecord extends BaseEntity {
                 .pausedSecondsTotal(session.getPausedSecondsTotal() == null ? 0 : session.getPausedSecondsTotal())
                 .startedAt(session.getStartedAt())
                 .endedAt(session.getEndedAt())
+                .name(name)
                 .build();
     }
 

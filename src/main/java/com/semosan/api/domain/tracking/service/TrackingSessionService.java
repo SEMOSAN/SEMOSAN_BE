@@ -4,6 +4,7 @@ import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.hiking.entity.HikingMember;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
+import com.semosan.api.domain.hiking.policy.DefaultRecordNameGenerator;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
 import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
 import com.semosan.api.domain.mountain.entity.Course;
@@ -27,6 +28,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Slf4j
@@ -47,6 +49,7 @@ public class TrackingSessionService {
     private final TrackingMilestoneTriggerService milestoneTriggerService;
     private final ApplicationEventPublisher eventPublisher;
     private final WeatherService weatherService;
+    private final DefaultRecordNameGenerator defaultRecordNameGenerator;
 
     /**
      * 세션 생성. 유저당 진행 중 세션은 1개만 허용한다.
@@ -114,7 +117,7 @@ public class TrackingSessionService {
      *  - cliveImageUrl / photoReportImageUrl 은 #46 사진 흐름에서 채워질 예정 (현재 null).
      */
     @Transactional
-    public TrackingSessionResponse complete(Long userId, Long sessionId) {
+    public TrackingSessionResponse complete(Long userId, Long sessionId, String requestedName) {
         TrackingSession session = findOwnedSession(userId, sessionId);
         session.complete();
 
@@ -128,7 +131,8 @@ public class TrackingSessionService {
                 stats.distanceMeters(),
                 stats.maxAltitudeMeters(),
                 stats.ascentMeters(),
-                stats.descentMeters()
+                stats.descentMeters(),
+                resolveRecordName(session, requestedName)
         );
         Mountain mountain = session.getMountain();
         if (mountain.getLatitude() != null && mountain.getLongitude() != null) {
@@ -155,6 +159,28 @@ public class TrackingSessionService {
         eventPublisher.publishEvent(new TrackingSessionTerminatedEvent(sessionId));
         log.info("[SESSION] 세션 포기 | sessionId={} | userId={}", sessionId, userId);
         return TrackingSessionResponse.from(session);
+    }
+
+    /**
+     * 기록에 남길 이름을 정한다.
+     *
+     *  - 코스 기록: courses.name 으로 표시되므로 이름을 두지 않는다. 값이 와도 무시한다
+     *    (자유기록에서 courseId 를 무시하는 것과 같은 방향).
+     *  - 자유기록 + 입력값 있음: 앞뒤 공백만 제거해 그대로 쓴다.
+     *  - 자유기록 + 입력값 없음: 같은 날 순번을 세어 기본 이름을 만든다.
+     */
+    private String resolveRecordName(TrackingSession session, String requestedName) {
+        if (session.getCourse() != null) {
+            return null;
+        }
+        if (requestedName != null && !requestedName.isBlank()) {
+            return requestedName.trim();
+        }
+        LocalDateTime hikedAt = session.getStartedAt();
+        LocalDateTime dayStart = hikedAt.toLocalDate().atStartOfDay();
+        long sequence = hikingRecordRepository.countFreeRecordsByUserAndDay(
+                session.getUser().getId(), dayStart, dayStart.plusDays(1)) + 1;
+        return defaultRecordNameGenerator.generate(session.getUser(), hikedAt, sequence);
     }
 
     private TrackingSession findOwnedSession(Long userId, Long sessionId) {

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +27,25 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
             WHERE hr.id = :id
             """)
     Optional<HikingRecord> findWithMountainAndCourseById(@Param("id") Long id);
+
+    /**
+     * 기본 기록 이름의 순번(N) 계산용 — 해당 유저가 같은 날 남긴 자유기록 수.
+     *
+     * HikingRecord 에는 user 참조가 없어 trackingSession.user 로 타고 간다.
+     * 세션 없이 수동 생성된 기록은 이 조인에서 자연히 빠지는데, 이름 대상이 아니라 문제없다.
+     */
+    @Query("""
+            SELECT COUNT(hr) FROM HikingRecord hr
+            WHERE hr.trackingSession.user.id = :userId
+              AND hr.course IS NULL
+              AND hr.startedAt >= :dayStart
+              AND hr.startedAt < :dayEnd
+            """)
+    long countFreeRecordsByUserAndDay(
+            @Param("userId") Long userId,
+            @Param("dayStart") LocalDateTime dayStart,
+            @Param("dayEnd") LocalDateTime dayEnd
+    );
 
     @Query(
             value = """
@@ -122,6 +142,7 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
                         m.name AS mountainName,
                         c.id AS courseId,
                         c.name AS courseName,
+                        hr.name AS recordName,
                         hr.photo_report_image_url AS photoReportImageUrl,
                         hr.clive_image_url AS cliveImageUrl,
                         c.distance AS distance,
@@ -170,6 +191,7 @@ public interface HikingRecordRepository extends JpaRepository<HikingRecord, Long
                         m.name AS mountainName,
                         c.id AS courseId,
                         c.name AS courseName,
+                        hr.name AS recordName,
                         hr.photo_report_image_url AS photoReportImageUrl,
                         hr.clive_image_url AS cliveImageUrl,
                         c.distance AS distance,
