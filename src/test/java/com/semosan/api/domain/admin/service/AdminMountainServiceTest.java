@@ -2,13 +2,16 @@ package com.semosan.api.domain.admin.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.admin.dto.request.AdminMountainSummitRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
 import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
+import com.semosan.api.domain.admin.dto.response.AdminCourseWaypointsResponse;
 import com.semosan.api.domain.admin.dto.response.AdminMountainListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
+import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.entity.Restaurant;
 import com.semosan.api.domain.mountain.entity.RestaurantSection;
@@ -168,6 +171,62 @@ class AdminMountainServiceTest {
         assertThat(mountain.getDifficulty()).isEqualTo(Difficulty.HARD);
         assertThat(mountain.getDuration()).isEqualTo(240);
         assertThat(mountain.getImageUrls()).containsExactly("a.jpg", "b.jpg");
+    }
+
+    @Test
+    void getWaypointsReturnsWaypointsGroupedByCourse() {
+        Mountain mountain = mountain(1L);
+        Course course = course(5L, "정상 코스",
+                List.of(new Course.CourseWaypoint(37.5, 127.0, 632.2, "연주대", "PEAK")));
+        when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
+        when(courseRepository.findByMountainId(1L)).thenReturn(List.of(course));
+
+        List<AdminCourseWaypointsResponse> result = adminMountainService.getWaypoints(1L);
+
+        assertThat(result).hasSize(1);
+        AdminCourseWaypointsResponse response = result.getFirst();
+        assertThat(response.courseId()).isEqualTo(5L);
+        assertThat(response.courseName()).isEqualTo("정상 코스");
+        assertThat(response.waypoints()).containsExactly(
+                new AdminCourseWaypointsResponse.WaypointInfo(37.5, 127.0, 632.2, "연주대", "PEAK"));
+    }
+
+    @Test
+    void getWaypointsReturnsEmptyListWhenCourseWaypointsAreNull() {
+        Mountain mountain = mountain(1L);
+        Course course = course(5L, "정상 코스", null);
+        when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
+        when(courseRepository.findByMountainId(1L)).thenReturn(List.of(course));
+
+        List<AdminCourseWaypointsResponse> result = adminMountainService.getWaypoints(1L);
+
+        assertThat(result.getFirst().waypoints()).isEmpty();
+    }
+
+    @Test
+    void updateSummitUpdatesCoordinatesAndAltitude() {
+        Mountain mountain = mountain(1L);
+        when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
+
+        adminMountainService.updateSummit(1L, new AdminMountainSummitRequest(37.5, 127.0, 836.5));
+
+        assertThat(mountain.getLatitude()).isEqualTo(37.5);
+        assertThat(mountain.getLongitude()).isEqualTo(127.0);
+        assertThat(mountain.getAltitude()).isEqualTo(836.5);
+        assertThat(mountain.getLocation().getY()).isEqualTo(37.5);
+        assertThat(mountain.getLocation().getX()).isEqualTo(127.0);
+    }
+
+    @Test
+    void updateSummitKeepsExistingAltitudeWhenAltitudeIsNull() {
+        Mountain mountain = mountain(1L);
+        when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
+
+        adminMountainService.updateSummit(1L, new AdminMountainSummitRequest(37.5, 127.0, null));
+
+        assertThat(mountain.getLatitude()).isEqualTo(37.5);
+        assertThat(mountain.getLongitude()).isEqualTo(127.0);
+        assertThat(mountain.getAltitude()).isEqualTo(632.2);
     }
 
     @Test
@@ -345,6 +404,27 @@ class AdminMountainServiceTest {
     }
 
     @Test
+    void getWaypointsThrowsWhenMountainMissing() {
+        when(mountainRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminMountainService.getWaypoints(1L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.MOUNTAIN_NOT_FOUND);
+    }
+
+    @Test
+    void updateSummitThrowsWhenMountainMissing() {
+        when(mountainRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> adminMountainService.updateSummit(1L,
+                new AdminMountainSummitRequest(37.5, 127.0, null)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.MOUNTAIN_NOT_FOUND);
+    }
+
+    @Test
     void getMountainDetailThrowsWhenMountainMissing() {
         when(mountainRepository.findById(1L)).thenReturn(Optional.empty());
 
@@ -446,6 +526,14 @@ class AdminMountainServiceTest {
         ReflectionTestUtils.setField(mountain, "imageUrls", List.of("image.jpg"));
         ReflectionTestUtils.setField(mountain, "isPublic", true);
         return mountain;
+    }
+
+    private Course course(Long id, String name, List<Course.CourseWaypoint> waypoints) {
+        Course course = newInstance(Course.class);
+        ReflectionTestUtils.setField(course, "id", id);
+        ReflectionTestUtils.setField(course, "name", name);
+        ReflectionTestUtils.setField(course, "waypoints", waypoints);
+        return course;
     }
 
     private AdminRestaurantRequest restaurantRequest(String name) {
