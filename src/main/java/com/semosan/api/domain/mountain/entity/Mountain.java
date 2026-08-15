@@ -80,6 +80,14 @@ public class Mountain extends BaseEntity {
         this.isPublic = isPublic;
     }
 
+    /** 정상 waypoint 반영: 좌표를 갱신하고, 고도가 주어지면 함께 갱신한다. */
+    public void updateSummit(Double latitude, Double longitude, Double altitude) {
+        updateCoordinates(latitude, longitude);
+        if (altitude != null) {
+            this.altitude = altitude;
+        }
+    }
+
     public void updateCoordinates(Double latitude, Double longitude) {
         this.latitude = latitude;
         this.longitude = longitude;
