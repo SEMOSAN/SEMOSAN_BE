@@ -157,7 +157,9 @@ public enum SuccessStatus implements BaseStatus {
     ADMIN_USER_UNSUSPEND_SUCCESS(HttpStatus.OK, "ADM_200_12", "사용자 정지 해제에 성공했습니다."),
     ADMIN_TRANSPORTATION_UPDATE_SUCCESS(HttpStatus.OK, "ADM_200_13", "교통정보 수정에 성공했습니다."),
     ADMIN_TRANSPORTATION_DELETE_SUCCESS(HttpStatus.OK, "ADM_200_14", "교통정보 삭제에 성공했습니다."),
-    ADMIN_TRANSPORTATION_CREATE_SUCCESS(HttpStatus.CREATED, "ADM_201_3", "교통정보 생성에 성공했습니다.");
+    ADMIN_TRANSPORTATION_CREATE_SUCCESS(HttpStatus.CREATED, "ADM_201_3", "교통정보 생성에 성공했습니다."),
+    ADMIN_MOUNTAIN_WAYPOINT_LIST_SUCCESS(HttpStatus.OK, "ADM_200_17", "코스 웨이포인트 조회에 성공했습니다."),
+    ADMIN_MOUNTAIN_SUMMIT_UPDATE_SUCCESS(HttpStatus.OK, "ADM_200_18", "산 정상 좌표 반영에 성공했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

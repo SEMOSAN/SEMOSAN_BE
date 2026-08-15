@@ -2,11 +2,13 @@ package com.semosan.api.domain.admin.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.admin.dto.request.AdminMountainSummitRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
 import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
+import com.semosan.api.domain.admin.dto.response.AdminCourseWaypointsResponse;
 import com.semosan.api.domain.admin.dto.response.AdminMountainListResponse;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.entity.Restaurant;
@@ -105,6 +107,20 @@ public class AdminMountainService {
         mountain.updateInfo(request.name(), request.address(), request.altitude(),
                 request.difficulty(), request.duration());
         mountain.updateImageUrls(request.imageUrls());
+    }
+
+    @Transactional(readOnly = true)
+    public List<AdminCourseWaypointsResponse> getWaypoints(Long mountainId) {
+        findMountainById(mountainId);
+        return courseRepository.findByMountainId(mountainId).stream()
+                .map(AdminCourseWaypointsResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public void updateSummit(Long mountainId, AdminMountainSummitRequest request) {
+        Mountain mountain = findMountainById(mountainId);
+        mountain.updateSummit(request.latitude(), request.longitude(), request.altitude());
     }
 
     @Transactional

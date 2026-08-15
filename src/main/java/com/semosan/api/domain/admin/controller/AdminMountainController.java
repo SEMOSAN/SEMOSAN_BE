@@ -4,11 +4,13 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.admin.controller.docs.AdminMountainControllerDocs;
+import com.semosan.api.domain.admin.dto.request.AdminMountainSummitRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
 import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
+import com.semosan.api.domain.admin.dto.response.AdminCourseWaypointsResponse;
 import com.semosan.api.domain.admin.dto.response.AdminMountainListResponse;
 import com.semosan.api.domain.admin.service.AdminMountainService;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
@@ -18,6 +20,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -56,6 +60,25 @@ public class AdminMountainController implements AdminMountainControllerDocs {
     ) {
         adminMountainService.updateMountain(mountainId, request);
         return ApiResponse.success(SuccessStatus.ADMIN_MOUNTAIN_UPDATE_SUCCESS);
+    }
+
+    @GetMapping("/mountains/{mountainId}/waypoints")
+    @Override
+    public ResponseEntity<ApiResponse<List<AdminCourseWaypointsResponse>>> getWaypoints(
+            @PathVariable Long mountainId
+    ) {
+        List<AdminCourseWaypointsResponse> response = adminMountainService.getWaypoints(mountainId);
+        return ApiResponse.success(SuccessStatus.ADMIN_MOUNTAIN_WAYPOINT_LIST_SUCCESS, response);
+    }
+
+    @PatchMapping("/mountains/{mountainId}/summit")
+    @Override
+    public ResponseEntity<ApiResponse<Void>> updateSummit(
+            @PathVariable Long mountainId,
+            @Valid @RequestBody AdminMountainSummitRequest request
+    ) {
+        adminMountainService.updateSummit(mountainId, request);
+        return ApiResponse.success(SuccessStatus.ADMIN_MOUNTAIN_SUMMIT_UPDATE_SUCCESS);
     }
 
     @PatchMapping("/mountains/{mountainId}/visibility")

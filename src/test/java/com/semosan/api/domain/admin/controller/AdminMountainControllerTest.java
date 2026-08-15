@@ -3,11 +3,13 @@ package com.semosan.api.domain.admin.controller;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
+import com.semosan.api.domain.admin.dto.request.AdminMountainSummitRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
 import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
+import com.semosan.api.domain.admin.dto.response.AdminCourseWaypointsResponse;
 import com.semosan.api.domain.admin.dto.response.AdminMountainListResponse;
 import com.semosan.api.domain.admin.service.AdminMountainService;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
@@ -63,6 +65,29 @@ class AdminMountainControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(SuccessStatus.ADMIN_MOUNTAIN_DETAIL_SUCCESS.getHttpStatus());
         assertThat(response.getBody().getData()).isSameAs(detail);
+    }
+
+    @Test
+    void getWaypointsReturnsSuccessResponse() {
+        List<AdminCourseWaypointsResponse> waypoints = List.of(
+                new AdminCourseWaypointsResponse(5L, "정상 코스", List.of()));
+        when(adminMountainService.getWaypoints(1L)).thenReturn(waypoints);
+
+        ResponseEntity<ApiResponse<List<AdminCourseWaypointsResponse>>> response =
+                adminMountainController.getWaypoints(1L);
+
+        assertThat(response.getStatusCode())
+                .isEqualTo(SuccessStatus.ADMIN_MOUNTAIN_WAYPOINT_LIST_SUCCESS.getHttpStatus());
+        assertThat(response.getBody().getData()).isSameAs(waypoints);
+    }
+
+    @Test
+    void updateSummitDelegatesAndReturnsSuccessResponse() {
+        AdminMountainSummitRequest request = new AdminMountainSummitRequest(37.5, 127.0, 836.5);
+
+        assertThat(adminMountainController.updateSummit(1L, request).getStatusCode())
+                .isEqualTo(SuccessStatus.ADMIN_MOUNTAIN_SUMMIT_UPDATE_SUCCESS.getHttpStatus());
+        verify(adminMountainService).updateSummit(1L, request);
     }
 
     @Test
