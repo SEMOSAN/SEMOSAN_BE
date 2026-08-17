@@ -1,6 +1,6 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.13'
+	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'jacoco'
 }
@@ -37,9 +37,11 @@ dependencies {
 
 	// WebClient (카카오 API 호출)
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	// Boot 4부터 WebClientAutoConfiguration(WebClient.Builder 빈)이 starter-webflux와 분리된 별도 모듈로 이동
+	implementation 'org.springframework.boot:spring-boot-webclient'
 
 	// Swagger
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.6")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
 
 	// MinIO
 	implementation 'io.minio:minio:8.5.17'
