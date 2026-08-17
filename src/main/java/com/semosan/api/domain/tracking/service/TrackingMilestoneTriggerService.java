@@ -102,7 +102,7 @@ public class TrackingMilestoneTriggerService {
         payload.put("milestoneDistance", mi);
         payload.put("status", "OPEN");
         payload.put("openedAt", LocalDateTime.now().toString());
-        messagingTemplate.convertAndSend(photoTopic(sessionId), payload);
+        messagingTemplate.convertAndSend(photoTopic(sessionId), (Object) payload);
         log.info("Photo window OPEN: sessionId={} idx={} milestone={}m", sessionId, idx, (int) Math.round(mi));
 
         try {
@@ -144,7 +144,7 @@ public class TrackingMilestoneTriggerService {
         payload.put("milestoneDistance", mi);
         payload.put("status", "CLOSED");
         payload.put("closedAt", LocalDateTime.now().toString());
-        messagingTemplate.convertAndSend(photoTopic(sessionId), payload);
+        messagingTemplate.convertAndSend(photoTopic(sessionId), (Object) payload);
         log.info("Photo window CLOSED: sessionId={} idx={} milestone={}m", sessionId, idx, (int) Math.round(mi));
     }
 
@@ -177,7 +177,7 @@ public class TrackingMilestoneTriggerService {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("halfwayMark", halfwayMark);
         payload.put("reachedAt", LocalDateTime.now().toString());
-        messagingTemplate.convertAndSend(summitTopic(sessionId), payload);
+        messagingTemplate.convertAndSend(summitTopic(sessionId), (Object) payload);
         log.info("Summit reached: sessionId={} userId={} halfwayMark={}m", sessionId, userId, (int) Math.round(halfwayMark));
 
         try {

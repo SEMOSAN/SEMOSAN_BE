@@ -100,7 +100,7 @@ class TrackingMilestoneTriggerServiceTest {
         service().evaluate(1L, 10L, 90.0);
 
         ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/photo-window"), payloadCaptor.capture());
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/photo-window"), (Object) payloadCaptor.capture());
         assertThat(payloadCaptor.getValue())
                 .containsEntry("milestoneIndex", 0)
                 .containsEntry("milestoneDistance", 100.0)
@@ -171,7 +171,7 @@ class TrackingMilestoneTriggerServiceTest {
 
         service().evaluate(1L, 10L, 90.0);
 
-        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/photo-window"), any(Map.class));
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/photo-window"), (Object) any(Map.class));
         verify(setOperations).add("tracking:session:1:photo:opened", "0");
     }
 
@@ -184,7 +184,7 @@ class TrackingMilestoneTriggerServiceTest {
 
         service().evaluate(1L, 10L, 90.0);
 
-        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/photo-window"), any(Map.class));
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/photo-window"), (Object) any(Map.class));
         verify(setOperations).add("tracking:session:1:photo:opened", "0");
     }
 
@@ -195,7 +195,7 @@ class TrackingMilestoneTriggerServiceTest {
         service().evaluate(1L, 10L, 111.0);
 
         ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/photo-window"), payloadCaptor.capture());
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/photo-window"), (Object) payloadCaptor.capture());
         assertThat(payloadCaptor.getValue())
                 .containsEntry("milestoneIndex", 0)
                 .containsEntry("milestoneDistance", 100.0)
@@ -210,7 +210,7 @@ class TrackingMilestoneTriggerServiceTest {
 
         service().evaluate(1L, 10L, 111.0);
 
-        verify(messagingTemplate, never()).convertAndSend(eq("/topic/tracking/1/photo-window"), any(Map.class));
+        verify(messagingTemplate, never()).convertAndSend(eq("/topic/tracking/1/photo-window"), (Object) any(Map.class));
         verify(setOperations, never()).add("tracking:session:1:photo:closed", "0");
     }
 
@@ -258,7 +258,7 @@ class TrackingMilestoneTriggerServiceTest {
 
         ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
         verify(redisTemplate).expire("tracking:session:1:summit:notified", Duration.ofHours(24));
-        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), payloadCaptor.capture());
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) payloadCaptor.capture());
         assertThat(payloadCaptor.getValue()).containsEntry("halfwayMark", 200.0);
         verify(notificationService).send(10L, NotificationType.TRACKING_SUMMIT_REACHED, Map.of());
     }
@@ -273,7 +273,7 @@ class TrackingMilestoneTriggerServiceTest {
 
         service().evaluateSummit(1L, 10L, 200.0, 400.0);
 
-        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), any(Map.class));
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
     }
 
     private void mockLoadedMilestones(String rawMilestones, Set<String> opened, Set<String> closed) {
