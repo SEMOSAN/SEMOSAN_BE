@@ -4,6 +4,10 @@ metadata:
   name: semosan-api
   namespace: semosan
 spec:
+  # 현재 인스턴스 1대(이중화 없음) — RollingUpdate 기본값(maxSurge=1, maxUnavailable=0)이라
+  # 새 pod가 Ready 상태가 될 때까지는 기존 pod가 유지되어 배포 실패 시 즉시 다운되진 않는다.
+  # 다만 배포 실패(예: Flyway 마이그레이션 오류)가 반영된 이미지가 남아있는 상태에서
+  # 이후 어떤 이유로든(노드 재시작, OOM 등) 기존 pod가 재시작되면 그때는 실제 다운으로 이어진다 — #324
   replicas: 1
   selector:
     matchLabels:
@@ -20,6 +24,8 @@ spec:
           image: ghcr.io/semosan/semosan_be:88c9467c40d8d7be2080b78d68e54b3d6c2ea2ce
           ports:
             - containerPort: 8080
+            - name: management
+              containerPort: 9090
           envFrom:
             - secretRef:
                 name: app-secret
@@ -31,13 +37,15 @@ spec:
               mountPath: /etc/firebase
               readOnly: true
           readinessProbe:
-            tcpSocket:
-              port: 8080
+            httpGet:
+              path: /actuator/health
+              port: management
             initialDelaySeconds: 30
             periodSeconds: 10
           livenessProbe:
-            tcpSocket:
-              port: 8080
+            httpGet:
+              path: /actuator/health
+              port: management
             initialDelaySeconds: 60
             periodSeconds: 30
       volumes:

@@ -3,6 +3,12 @@ kind: Application
 metadata:
   name: semosan
   namespace: argocd
+  # 롤아웃(sync) 실패 또는 헬스 저하 시 discord로 알림.
+  # 실제 발송을 담당하는 notification service/template(discord 웹훅 URL 포함)은
+  # argocd-notifications-cm/-secret(argocd 네임스페이스)에 별도로 정의되어 있어야 동작한다 — #324
+  annotations:
+    notifications.argoproj.io/subscribe.on-sync-failed.discord: ""
+    notifications.argoproj.io/subscribe.on-health-degraded.discord: ""
 spec:
   project: default
   source:
