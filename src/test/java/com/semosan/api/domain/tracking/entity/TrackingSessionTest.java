@@ -141,6 +141,81 @@ class TrackingSessionTest {
     }
 
     @Test
+    void elapsedSecondsExcludesAccumulatedPausedTimeWhileInProgress() {
+        TrackingSession session = session();
+        ReflectionTestUtils.setField(session, "startedAt", LocalDateTime.now().minusSeconds(600));
+        ReflectionTestUtils.setField(session, "pausedSecondsTotal", 120);
+
+        assertThat(session.elapsedSeconds()).isBetween(478L, 482L);
+    }
+
+    @Test
+    void elapsedSecondsExcludesOngoingPauseWhilePaused() {
+        TrackingSession session = session();
+        ReflectionTestUtils.setField(session, "startedAt", LocalDateTime.now().minusSeconds(600));
+        ReflectionTestUtils.setField(session, "pausedSecondsTotal", 60);
+        session.pause();
+        // 아직 pausedSecondsTotal 에 누적되지 않은 "진행 중인 일시정지" 구간 100초.
+        ReflectionTestUtils.setField(session, "pausedAt", LocalDateTime.now().minusSeconds(100));
+
+        assertThat(session.elapsedSeconds()).isBetween(438L, 442L);
+    }
+
+    @Test
+    void elapsedSecondsStopsGrowingWhilePaused() throws InterruptedException {
+        TrackingSession session = session();
+        ReflectionTestUtils.setField(session, "startedAt", LocalDateTime.now().minusSeconds(600));
+        session.pause();
+
+        long first = session.elapsedSeconds();
+        Thread.sleep(1_100);
+        long second = session.elapsedSeconds();
+
+        // 일시정지 중에는 시간이 흐르지 않아야 한다 — 복원 시 가장 틀리기 쉬운 지점.
+        assertThat(second).isEqualTo(first);
+    }
+
+    @Test
+    void elapsedSecondsUsesEndedAtForTerminatedSession() {
+        TrackingSession session = session();
+        LocalDateTime startedAt = LocalDateTime.now().minusHours(3);
+        ReflectionTestUtils.setField(session, "startedAt", startedAt);
+        session.complete();
+        ReflectionTestUtils.setField(session, "endedAt", startedAt.plusSeconds(3_000));
+        ReflectionTestUtils.setField(session, "pausedSecondsTotal", 300);
+
+        assertThat(session.elapsedSeconds()).isEqualTo(2_700L);
+    }
+
+    @Test
+    void elapsedSecondsIgnoresPausedAtWhenStatusIsNotPaused() {
+        TrackingSession session = session();
+        ReflectionTestUtils.setField(session, "startedAt", LocalDateTime.now().minusSeconds(300));
+        // 상태는 IN_PROGRESS 인데 pausedAt 만 남아 있는 비정상 데이터 — 차감하지 않는다.
+        ReflectionTestUtils.setField(session, "pausedAt", LocalDateTime.now().minusSeconds(100));
+
+        assertThat(session.elapsedSeconds()).isBetween(298L, 302L);
+    }
+
+    @Test
+    void elapsedSecondsNeverReturnsNegative() {
+        TrackingSession session = session();
+        ReflectionTestUtils.setField(session, "startedAt", LocalDateTime.now().minusSeconds(10));
+        ReflectionTestUtils.setField(session, "pausedSecondsTotal", 9_999);
+
+        assertThat(session.elapsedSeconds()).isZero();
+    }
+
+    @Test
+    void elapsedSecondsTreatsNullPausedSecondsTotalAsZero() {
+        TrackingSession session = session();
+        ReflectionTestUtils.setField(session, "startedAt", LocalDateTime.now().minusSeconds(200));
+        ReflectionTestUtils.setField(session, "pausedSecondsTotal", null);
+
+        assertThat(session.elapsedSeconds()).isBetween(198L, 202L);
+    }
+
+    @Test
     void isOwnedByReturnsTrueOnlyForSameUserId() {
         TrackingSession session = session();
 

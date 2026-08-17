@@ -12,10 +12,13 @@ import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.tracking.dto.request.CreateTrackingSessionRequest;
+import com.semosan.api.domain.tracking.dto.response.TrackingRestoreResponse;
 import com.semosan.api.domain.tracking.dto.response.TrackingSessionResponse;
+import com.semosan.api.domain.tracking.dto.response.TrackingTrackResponse;
 import com.semosan.api.domain.tracking.entity.TrackingSession;
 import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
 import com.semosan.api.domain.tracking.event.TrackingSessionTerminatedEvent;
+import com.semosan.api.domain.tracking.repository.TrackingPointRepository;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import com.semosan.api.common.exception.ConstraintViolationUtils;
 import com.semosan.api.domain.user.entity.User;
@@ -40,6 +43,7 @@ public class TrackingSessionService {
     private static final String ACTIVE_SESSION_UNIQUE_INDEX = "uq_tracking_sessions_user_active";
 
     private final TrackingSessionRepository trackingSessionRepository;
+    private final TrackingPointRepository trackingPointRepository;
     private final MountainRepository mountainRepository;
     private final CourseRepository courseRepository;
     private final UserReader userReader;
@@ -91,6 +95,38 @@ public class TrackingSessionService {
 
     public TrackingSessionResponse get(Long userId, Long sessionId) {
         return TrackingSessionResponse.from(findOwnedSession(userId, sessionId));
+    }
+
+    /**
+     * 세션의 이동 경로 조회 — 앱 재실행 후 지도에 지금까지의 경로를 다시 그리는 용도.
+     * 종료된 세션도 조회 가능하다 (상태로 막을 이유가 없음).
+     *
+     * 점이 0~1개면 ST_MakeLine 이 null 을 반환하므로 track/altitudes 를 모두 null 로 내린다.
+     * 이 분기는 HikingRecordService 의 기록 상세 조회와 동일하게 처리한다.
+     */
+    public TrackingTrackResponse getTrack(Long userId, Long sessionId) {
+        findOwnedSession(userId, sessionId);
+        return trackingPointRepository.findTrackBySessionId(sessionId)
+                .filter(path -> path.getTrack() != null)
+                .map(path -> TrackingTrackResponse.of(sessionId, path.getTrack(), path.getAltitudes()))
+                .orElseGet(() -> TrackingTrackResponse.empty(sessionId));
+    }
+
+    /**
+     * 앱 재실행 후 트래킹을 이어서 하기 위한 상태 복원.
+     *
+     * 통계는 Redis Hash 에서 그대로 읽는다 — DB 좌표로 재계산하면 complete 시 HikingRecord 에
+     * 남는 값과 어긋난다 (flush 과정에서 폐기되는 점이 있을 수 있으므로).
+     * 마일스톤 OPEN/CLOSED 는 WebSocket push 로만 나가고 저장되지 않으므로, 앱이 꺼져 있던
+     * 동안 발생한 이벤트를 여기서 되짚어준다.
+     */
+    public TrackingRestoreResponse restore(Long userId, Long sessionId) {
+        TrackingSession session = findOwnedSession(userId, sessionId);
+        return TrackingRestoreResponse.of(
+                session,
+                statsService.getStats(sessionId),
+                milestoneTriggerService.getMilestoneState(sessionId)
+        );
     }
 
     @Transactional

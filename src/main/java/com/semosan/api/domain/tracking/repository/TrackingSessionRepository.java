@@ -2,6 +2,7 @@ package com.semosan.api.domain.tracking.repository;
 
 import com.semosan.api.domain.tracking.entity.TrackingSession;
 import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -64,5 +65,30 @@ public interface TrackingSessionRepository extends JpaRepository<TrackingSession
     List<TrackingSession> findStaleActiveSessions(
             @Param("statuses") Collection<TrackingSessionStatus> statuses,
             @Param("cutoff") LocalDateTime cutoff
+    );
+
+    /**
+     * 고아 좌표 정리 스케줄러용 — 좌표를 지워도 되는 세션 ID 를 배치 단위로 가져온다.
+     *
+     * 조건:
+     *  - ABANDONED (COMPLETED 는 HikingRecord 경로 폴리라인에 쓰이므로 제외)
+     *  - endedAt 이 cutoff 이전 (유예 기간 경과)
+     *  - HikingRecord 에 연결되지 않음 — 안전장치. 정상적으로 ABANDONED 는 기록이 없지만,
+     *    데이터가 어긋난 경우에도 사용자에게 보이는 기록을 건드리지 않도록 방어한다.
+     *  - 아직 좌표가 남아 있음 — 세션 행 자체는 남기는 정책이라, 이 조건이 없으면
+     *    이미 정리된 세션이 매 실행마다 다시 조회되어 루프가 끝나지 않는다.
+     */
+    @Query("""
+            SELECT ts.id FROM TrackingSession ts
+            WHERE ts.status = :status
+              AND ts.endedAt < :cutoff
+              AND NOT EXISTS (SELECT 1 FROM HikingRecord hr WHERE hr.trackingSession = ts)
+              AND EXISTS (SELECT 1 FROM TrackingPoint p WHERE p.trackingSession = ts)
+            ORDER BY ts.id
+            """)
+    List<Long> findSessionIdsForPointCleanup(
+            @Param("status") TrackingSessionStatus status,
+            @Param("cutoff") LocalDateTime cutoff,
+            Pageable pageable
     );
 }

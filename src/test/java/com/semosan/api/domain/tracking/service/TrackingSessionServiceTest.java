@@ -14,11 +14,15 @@ import com.semosan.api.domain.mountain.enums.Difficulty;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.tracking.dto.request.CreateTrackingSessionRequest;
+import com.semosan.api.domain.tracking.dto.response.TrackingRestoreResponse;
 import com.semosan.api.domain.tracking.dto.response.TrackingSessionResponse;
+import com.semosan.api.domain.tracking.dto.response.TrackingTrackResponse;
 import com.semosan.api.domain.tracking.entity.TrackingSession;
 import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
 import com.semosan.api.domain.tracking.event.TrackingSessionTerminatedEvent;
+import com.semosan.api.domain.tracking.repository.TrackingPointRepository;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
+import com.semosan.api.domain.tracking.repository.projection.TrackingPathProjection;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.service.UserReader;
@@ -43,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -82,6 +87,9 @@ class TrackingSessionServiceTest {
 
     @Mock
     private DefaultRecordNameGenerator defaultRecordNameGenerator;
+
+    @Mock
+    private TrackingPointRepository trackingPointRepository;
 
     @InjectMocks
     private TrackingSessionService trackingSessionService;
@@ -418,6 +426,111 @@ class TrackingSessionServiceTest {
         ArgumentCaptor<HikingRecord> captor = ArgumentCaptor.forClass(HikingRecord.class);
         verify(hikingRecordRepository).save(captor.capture());
         return captor.getValue();
+    }
+
+    @Test
+    void getTrackReturnsGeoJsonPath() {
+        TrackingSession session = session(100L, user(1L), mountain(10L), null, true);
+        when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.of(session));
+        TrackingPathProjection projection = mock(TrackingPathProjection.class);
+        when(projection.getTrack()).thenReturn("{\"type\":\"LineString\",\"coordinates\":[[127.0,37.5],[127.1,37.6]]}");
+        when(projection.getAltitudes()).thenReturn("[312.0, 315.5]");
+        when(trackingPointRepository.findTrackBySessionId(100L)).thenReturn(Optional.of(projection));
+
+        TrackingTrackResponse response = trackingSessionService.getTrack(1L, 100L);
+
+        assertThat(response.sessionId()).isEqualTo(100L);
+        assertThat(response.track()).contains("LineString");
+        assertThat(response.altitudes()).isEqualTo("[312.0, 315.5]");
+    }
+
+    @Test
+    void getTrackReturnsEmptyWhenLineStringIsNull() {
+        TrackingSession session = session(100L, user(1L), mountain(10L), null, true);
+        when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.of(session));
+        TrackingPathProjection projection = mock(TrackingPathProjection.class);
+        // 점이 0~1개면 ST_MakeLine 이 null 을 반환한다.
+        when(projection.getTrack()).thenReturn(null);
+        when(trackingPointRepository.findTrackBySessionId(100L)).thenReturn(Optional.of(projection));
+
+        TrackingTrackResponse response = trackingSessionService.getTrack(1L, 100L);
+
+        assertThat(response.sessionId()).isEqualTo(100L);
+        assertThat(response.track()).isNull();
+        assertThat(response.altitudes()).isNull();
+    }
+
+    @Test
+    void getTrackReturnsEmptyWhenProjectionMissing() {
+        TrackingSession session = session(100L, user(1L), mountain(10L), null, true);
+        when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.of(session));
+        when(trackingPointRepository.findTrackBySessionId(100L)).thenReturn(Optional.empty());
+
+        TrackingTrackResponse response = trackingSessionService.getTrack(1L, 100L);
+
+        assertThat(response.track()).isNull();
+    }
+
+    @Test
+    void getTrackThrowsWhenSessionNotOwned() {
+        when(trackingSessionRepository.findByIdWithRelations(100L))
+                .thenReturn(Optional.of(session(100L, user(2L), mountain(10L), null, true)));
+
+        assertThatThrownBy(() -> trackingSessionService.getTrack(1L, 100L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.TRACKING_SESSION_FORBIDDEN);
+    }
+
+    @Test
+    void restoreReturnsStatsAndMilestoneState() {
+        TrackingSession session = session(100L, user(1L), mountain(10L), null, true);
+        when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.of(session));
+        when(statsService.getStats(100L))
+                .thenReturn(new TrackingSessionStatsService.Stats(3241.7, 452.0, 88.3, 781.2, 842L));
+        when(milestoneTriggerService.getMilestoneState(100L)).thenReturn(
+                new TrackingMilestoneTriggerService.MilestoneState(
+                        List.of(812.5, 1625.0), List.of(0, 1), List.of(0), true)
+        );
+
+        TrackingRestoreResponse response = trackingSessionService.restore(1L, 100L);
+
+        assertThat(response.session().sessionId()).isEqualTo(100L);
+        assertThat(response.elapsedSeconds()).isPositive();
+        assertThat(response.stats().distanceMeters()).isEqualTo(3241.7);
+        assertThat(response.stats().maxAltitudeMeters()).isEqualTo(781.2);
+        assertThat(response.stats().pointCount()).isEqualTo(842L);
+        assertThat(response.photoMilestone().openedIndexes()).containsExactly(0, 1);
+        assertThat(response.photoMilestone().closedIndexes()).containsExactly(0);
+        assertThat(response.photoMilestone().summitNotified()).isTrue();
+    }
+
+    @Test
+    void restoreReturnsNullStatsWhenRedisKeyExpired() {
+        TrackingSession session = session(100L, user(1L), mountain(10L), null, true);
+        when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.of(session));
+        // TTL 24h 만료 또는 GPS 점이 한 건도 없던 경우 — 전 필드가 0 으로 나온다.
+        when(statsService.getStats(100L))
+                .thenReturn(new TrackingSessionStatsService.Stats(0.0, 0.0, 0.0, null, 0L));
+        when(milestoneTriggerService.getMilestoneState(100L)).thenReturn(
+                new TrackingMilestoneTriggerService.MilestoneState(List.of(), List.of(), List.of(), false)
+        );
+
+        TrackingRestoreResponse response = trackingSessionService.restore(1L, 100L);
+
+        assertThat(response.stats()).isNull();
+        assertThat(response.photoMilestone().milestones()).isEmpty();
+    }
+
+    @Test
+    void restoreThrowsWhenSessionNotOwned() {
+        when(trackingSessionRepository.findByIdWithRelations(100L))
+                .thenReturn(Optional.of(session(100L, user(2L), mountain(10L), null, true)));
+
+        assertThatThrownBy(() -> trackingSessionService.restore(1L, 100L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.TRACKING_SESSION_FORBIDDEN);
     }
 
     private DataIntegrityViolationException activeSessionUniqueViolation() {

@@ -3,7 +3,9 @@ package com.semosan.api.domain.tracking.controller.docs;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.domain.tracking.dto.request.CompleteTrackingSessionRequest;
 import com.semosan.api.domain.tracking.dto.request.CreateTrackingSessionRequest;
+import com.semosan.api.domain.tracking.dto.response.TrackingRestoreResponse;
 import com.semosan.api.domain.tracking.dto.response.TrackingSessionResponse;
+import com.semosan.api.domain.tracking.dto.response.TrackingTrackResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -52,6 +54,46 @@ public interface TrackingSessionControllerDocs {
                     content = @Content(schema = @Schema(implementation = ApiResponse.class)))
     })
     ResponseEntity<ApiResponse<TrackingSessionResponse>> getSession(
+            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+            @Parameter(description = "세션 ID", required = true) @PathVariable Long sessionId
+    );
+
+    @Operation(
+            summary = "트래킹 세션 이동 경로 조회",
+            description = "지금까지 저장된 GPS 점을 GeoJSON LineString + 고도 배열로 반환합니다. "
+                    + "앱 재실행 후 지도에 경로를 다시 그릴 때 사용합니다. "
+                    + "저장된 점이 0~1개면 track/altitudes 가 응답에서 제외됩니다. 종료된 세션도 조회 가능합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "본인 세션 아님",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "세션 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+    })
+    ResponseEntity<ApiResponse<TrackingTrackResponse>> getSessionTrack(
+            @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
+            @Parameter(description = "세션 ID", required = true) @PathVariable Long sessionId
+    );
+
+    @Operation(
+            summary = "트래킹 세션 복원 정보 조회",
+            description = "앱을 껐다 켠 뒤 트래킹을 이어서 하기 위한 스냅샷입니다. "
+                    + "세션 정보, 일시정지를 제외한 경과 시간(elapsedSeconds), 누적 통계(stats), "
+                    + "사진 마일스톤 진행 상태(photoMilestone)를 함께 반환합니다.\n\n"
+                    + "- 이동 경로는 `GET /api/tracking/sessions/{sessionId}/track` 으로 따로 조회합니다.\n"
+                    + "- 촬영된 사진 목록은 `GET /api/tracking/sessions/{sessionId}/photos` 로 따로 조회합니다.\n"
+                    + "- 통계 Redis 키의 TTL(24h)이 지났거나 GPS 점이 한 건도 없으면 stats 가 응답에서 제외됩니다.\n"
+                    + "- 현재 열려 있는 촬영 창은 `openedIndexes - closedIndexes` 로 계산합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "본인 세션 아님",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "세션 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+    })
+    ResponseEntity<ApiResponse<TrackingRestoreResponse>> restoreSession(
             @Parameter(hidden = true) @AuthenticationPrincipal Long userId,
             @Parameter(description = "세션 ID", required = true) @PathVariable Long sessionId
     );

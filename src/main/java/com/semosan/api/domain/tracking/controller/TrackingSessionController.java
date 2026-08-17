@@ -5,7 +5,9 @@ import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.tracking.controller.docs.TrackingSessionControllerDocs;
 import com.semosan.api.domain.tracking.dto.request.CompleteTrackingSessionRequest;
 import com.semosan.api.domain.tracking.dto.request.CreateTrackingSessionRequest;
+import com.semosan.api.domain.tracking.dto.response.TrackingRestoreResponse;
 import com.semosan.api.domain.tracking.dto.response.TrackingSessionResponse;
+import com.semosan.api.domain.tracking.dto.response.TrackingTrackResponse;
 import com.semosan.api.domain.tracking.service.TrackingSessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +52,33 @@ public class TrackingSessionController implements TrackingSessionControllerDocs 
     ) {
         TrackingSessionResponse response = trackingSessionService.get(userId, sessionId);
         return ApiResponse.success(SuccessStatus.TRACKING_SESSION_GET_SUCCESS, response);
+    }
+
+    /**
+     * 앱 재실행 후 지도에 지금까지의 경로를 다시 그리기 위한 조회.
+     */
+    @GetMapping("/{sessionId}/track")
+    @Override
+    public ResponseEntity<ApiResponse<TrackingTrackResponse>> getSessionTrack(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long sessionId
+    ) {
+        TrackingTrackResponse response = trackingSessionService.getTrack(userId, sessionId);
+        return ApiResponse.success(SuccessStatus.TRACKING_SESSION_GET_TRACK_SUCCESS, response);
+    }
+
+    /**
+     * 앱 재실행 후 트래킹을 이어서 하기 위한 상태 복원.
+     * 경로는 /track, 사진 목록은 /photos 로 따로 조회한다.
+     */
+    @GetMapping("/{sessionId}/restore")
+    @Override
+    public ResponseEntity<ApiResponse<TrackingRestoreResponse>> restoreSession(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long sessionId
+    ) {
+        TrackingRestoreResponse response = trackingSessionService.restore(userId, sessionId);
+        return ApiResponse.success(SuccessStatus.TRACKING_SESSION_RESTORE_SUCCESS, response);
     }
 
     @PostMapping("/{sessionId}/pause")

@@ -284,6 +284,39 @@ class TrackingMilestoneTriggerServiceTest {
         when(setOperations.members("tracking:session:1:photo:closed")).thenReturn(closed);
     }
 
+    @Test
+    void getMilestoneStateReturnsSortedIndexesAndSummitFlag() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("tracking:session:1:milestones")).thenReturn("100.0,200.0,300.0");
+        when(redisTemplate.opsForSet()).thenReturn(setOperations);
+        // Redis Set 은 순서를 보장하지 않으므로 일부러 뒤섞어 반환한다.
+        when(setOperations.members("tracking:session:1:photo:opened")).thenReturn(Set.of("2", "0", "1"));
+        when(setOperations.members("tracking:session:1:photo:closed")).thenReturn(Set.of("1", "0"));
+        when(setOperations.members("tracking:session:1:summit:notified")).thenReturn(Set.of("1"));
+
+        TrackingMilestoneTriggerService.MilestoneState state = service().getMilestoneState(1L);
+
+        assertThat(state.milestones()).containsExactly(100.0, 200.0, 300.0);
+        assertThat(state.openedIndexes()).containsExactly(0, 1, 2);
+        assertThat(state.closedIndexes()).containsExactly(0, 1);
+        assertThat(state.summitNotified()).isTrue();
+    }
+
+    @Test
+    void getMilestoneStateReturnsEmptyStateWhenNothingStored() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.get("tracking:session:1:milestones")).thenReturn(null);
+        when(redisTemplate.opsForSet()).thenReturn(setOperations);
+        when(setOperations.members(any())).thenReturn(null);
+
+        TrackingMilestoneTriggerService.MilestoneState state = service().getMilestoneState(1L);
+
+        assertThat(state.milestones()).isEmpty();
+        assertThat(state.openedIndexes()).isEmpty();
+        assertThat(state.closedIndexes()).isEmpty();
+        assertThat(state.summitNotified()).isFalse();
+    }
+
     private TrackingMilestoneTriggerService service() {
         return new TrackingMilestoneTriggerService(
                 redisTemplate,

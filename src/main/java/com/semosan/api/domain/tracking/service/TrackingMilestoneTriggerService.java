@@ -192,6 +192,47 @@ public class TrackingMilestoneTriggerService {
         }
     }
 
+    /**
+     * 앱 재실행 후 복원용 — 현재 마일스톤 진행 상태 스냅샷.
+     *
+     * OPEN/CLOSED 는 WebSocket push 로만 전달되고 어디에도 저장되지 않으므로,
+     * 앱이 꺼져 있는 동안 발생한 이벤트는 클라이언트가 영영 받지 못한다.
+     * 그 공백을 메우기 위해 Redis 에 남아 있는 상태를 그대로 읽어 돌려준다.
+     *
+     * 마일스톤이 초기화되지 않은 세션(계산 결과가 비어 있던 경우)이나 TTL 24h 가 지난
+     * 세션은 milestones 가 빈 목록으로 나간다.
+     */
+    public MilestoneState getMilestoneState(Long sessionId) {
+        return new MilestoneState(
+                loadMilestones(sessionId),
+                toSortedIndexes(membersOrEmpty(openedKey(sessionId))),
+                toSortedIndexes(membersOrEmpty(closedKey(sessionId))),
+                !membersOrEmpty(summitNotifiedKey(sessionId)).isEmpty()
+        );
+    }
+
+    /**
+     * @param milestones     마일스톤 거리 목록 (m)
+     * @param openedIndexes  촬영 창이 열린 적 있는 마일스톤 인덱스
+     * @param closedIndexes  촬영 창이 닫힌 마일스톤 인덱스. openedIndexes - closedIndexes 가 현재 열린 창.
+     * @param summitNotified 정상(코스 50% 지점) 알림 발송 여부
+     */
+    public record MilestoneState(
+            List<Double> milestones,
+            List<Integer> openedIndexes,
+            List<Integer> closedIndexes,
+            boolean summitNotified
+    ) {
+    }
+
+    /** Redis Set 은 순서를 보장하지 않으므로 인덱스로 파싱 후 정렬해 돌려준다. */
+    private static List<Integer> toSortedIndexes(Set<String> members) {
+        return members.stream()
+                .map(Integer::parseInt)
+                .sorted()
+                .toList();
+    }
+
     private static String summitNotifiedKey(Long sessionId) {
         return "tracking:session:" + sessionId + ":summit:notified";
     }
