@@ -19,7 +19,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.lang.reflect.Constructor;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -58,7 +58,8 @@ class TrackingSessionExpirySchedulerTest {
         TrackingSession session = session(10L, TrackingSessionStatus.IN_PROGRESS);
         when(trackingSessionRepository.findStaleActiveSessions(eq(TrackingSessionStatus.ACTIVE_STATES), any()))
                 .thenReturn(List.of(session));
-        when(activityService.getLastActive(10L)).thenReturn(Optional.of(LocalDateTime.now()));
+        when(activityService.getLastActiveBySessionIds(List.of(10L)))
+                .thenReturn(Map.of(10L, LocalDateTime.now()));
 
         scheduler.expireStaleSessions();
 
@@ -71,11 +72,28 @@ class TrackingSessionExpirySchedulerTest {
         TrackingSession session = session(10L, TrackingSessionStatus.PAUSED);
         when(trackingSessionRepository.findStaleActiveSessions(eq(TrackingSessionStatus.ACTIVE_STATES), any()))
                 .thenReturn(List.of(session));
-        when(activityService.getLastActive(10L)).thenReturn(Optional.empty());
+        when(activityService.getLastActiveBySessionIds(List.of(10L))).thenReturn(Map.of());
 
         scheduler.expireStaleSessions();
 
         assertThat(session.getStatus()).isEqualTo(TrackingSessionStatus.ABANDONED);
+        verify(eventPublisher).publishEvent(any(TrackingSessionTerminatedEvent.class));
+    }
+
+    @Test
+    void expireStaleSessionsFetchesRedisActivityInBatch() {
+        TrackingSession recent = session(10L, TrackingSessionStatus.IN_PROGRESS);
+        TrackingSession stale = session(11L, TrackingSessionStatus.IN_PROGRESS);
+        when(trackingSessionRepository.findStaleActiveSessions(eq(TrackingSessionStatus.ACTIVE_STATES), any()))
+                .thenReturn(List.of(recent, stale));
+        when(activityService.getLastActiveBySessionIds(List.of(10L, 11L)))
+                .thenReturn(Map.of(10L, LocalDateTime.now()));
+
+        scheduler.expireStaleSessions();
+
+        assertThat(recent.getStatus()).isEqualTo(TrackingSessionStatus.IN_PROGRESS);
+        assertThat(stale.getStatus()).isEqualTo(TrackingSessionStatus.ABANDONED);
+        verify(activityService).getLastActiveBySessionIds(List.of(10L, 11L));
         verify(eventPublisher).publishEvent(any(TrackingSessionTerminatedEvent.class));
     }
 

@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -34,6 +37,33 @@ public class TrackingSessionActivityService {
     /** 마지막 활동 시각 조회. 키 없거나 파싱 실패 시 empty. */
     public Optional<LocalDateTime> getLastActive(Long sessionId) {
         String value = redisTemplate.opsForValue().get(activityKey(sessionId));
+        return parseLastActive(value);
+    }
+
+    /** 여러 세션의 마지막 활동 시각을 한 번에 조회. 키 없거나 파싱 실패 시 결과에서 제외. */
+    public Map<Long, LocalDateTime> getLastActiveBySessionIds(List<Long> sessionIds) {
+        if (sessionIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<String> keys = sessionIds.stream()
+                .map(TrackingSessionActivityService::activityKey)
+                .toList();
+        List<String> values = redisTemplate.opsForValue().multiGet(keys);
+        if (values == null || values.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, LocalDateTime> lastActiveBySessionId = new LinkedHashMap<>();
+        for (int i = 0; i < sessionIds.size() && i < values.size(); i++) {
+            Long sessionId = sessionIds.get(i);
+            parseLastActive(values.get(i))
+                    .ifPresent(lastActive -> lastActiveBySessionId.put(sessionId, lastActive));
+        }
+        return lastActiveBySessionId;
+    }
+
+    private Optional<LocalDateTime> parseLastActive(String value) {
         if (value == null || value.isEmpty()) {
             return Optional.empty();
         }
