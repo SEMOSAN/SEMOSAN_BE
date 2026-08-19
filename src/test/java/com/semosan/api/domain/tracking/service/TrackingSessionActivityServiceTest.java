@@ -10,9 +10,13 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -60,5 +64,46 @@ class TrackingSessionActivityServiceTest {
 
         assertThat(activityService.getLastActive(1L)).isEmpty();
         assertThat(activityService.getLastActive(2L)).isEmpty();
+    }
+
+    @Test
+    void getLastActiveBySessionIdsReturnsParsedValuesBySessionId() {
+        LocalDateTime first = LocalDateTime.now().minusMinutes(3).withNano(0);
+        LocalDateTime second = LocalDateTime.now().minusMinutes(1).withNano(0);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.multiGet(List.of(
+                "tracking:session:1:lastActive",
+                "tracking:session:2:lastActive"
+        ))).thenReturn(List.of(first.toString(), second.toString()));
+
+        Map<Long, LocalDateTime> result = activityService.getLastActiveBySessionIds(List.of(1L, 2L));
+
+        assertThat(result).containsExactly(
+                Map.entry(1L, first),
+                Map.entry(2L, second)
+        );
+    }
+
+    @Test
+    void getLastActiveBySessionIdsExcludesMissingAndInvalidValues() {
+        LocalDateTime lastActive = LocalDateTime.now().minusMinutes(3).withNano(0);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.multiGet(List.of(
+                "tracking:session:1:lastActive",
+                "tracking:session:2:lastActive",
+                "tracking:session:3:lastActive"
+        ))).thenReturn(Arrays.asList(lastActive.toString(), "not-date", null));
+
+        Map<Long, LocalDateTime> result = activityService.getLastActiveBySessionIds(List.of(1L, 2L, 3L));
+
+        assertThat(result).containsExactly(Map.entry(1L, lastActive));
+    }
+
+    @Test
+    void getLastActiveBySessionIdsReturnsEmptyWithoutRedisCallWhenSessionIdsEmpty() {
+        Map<Long, LocalDateTime> result = activityService.getLastActiveBySessionIds(List.of());
+
+        assertThat(result).isEmpty();
+        verify(redisTemplate, never()).opsForValue();
     }
 }

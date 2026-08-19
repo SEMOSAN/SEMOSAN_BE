@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 /**
  * 24h 동안 어떤 업데이트도 없는 활성(IN_PROGRESS/PAUSED) 세션을 자동으로 ABANDONED 처리한다.
@@ -44,11 +44,16 @@ public class TrackingSessionExpiryScheduler {
         if (candidates.isEmpty()) {
             return;
         }
+        Map<Long, LocalDateTime> lastActiveBySessionId = activityService.getLastActiveBySessionIds(
+                candidates.stream()
+                        .map(TrackingSession::getId)
+                        .toList()
+        );
         int expired = 0;
         for (TrackingSession session : candidates) {
             // DB updatedAt 은 GPS 수신 시 갱신되지 않으므로 Redis 의 마지막 활동 시각으로 재검증.
-            Optional<LocalDateTime> lastActive = activityService.getLastActive(session.getId());
-            if (lastActive.isPresent() && lastActive.get().isAfter(cutoff)) {
+            LocalDateTime lastActive = lastActiveBySessionId.get(session.getId());
+            if (lastActive != null && lastActive.isAfter(cutoff)) {
                 continue;
             }
             session.abandon();
