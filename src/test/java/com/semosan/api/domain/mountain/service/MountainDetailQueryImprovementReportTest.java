@@ -194,13 +194,14 @@ class MountainDetailQueryImprovementReportTest {
 
                 Before values are fixed measurements from the pre-optimization path.
                 After values are measured by this test against the current optimized path.
+                Run command: `QUERY_IMPROVEMENT_REPORT=true ./gradlew test --tests com.semosan.api.domain.mountain.service.MountainDetailQueryImprovementReportTest --rerun-tasks`
 
                 | Metric | Before | After | Improvement |
                 | --- | ---: | ---: | ---: |
-                | SQL statements | %d | %d | %.1f%% fewer |
-                | Average elapsed time | %.1fms | %.1fms | %.1f%% faster |
-                | Min elapsed time | %dms | %dms | %.1f%% faster |
-                | Max elapsed time | %dms | %dms | %.1f%% faster |
+                | SQL statements | %d | %d | %s |
+                | Average elapsed time | %.1fms | %.1fms | %s |
+                | Min elapsed time | %dms | %dms | %s |
+                | Max elapsed time | %dms | %dms | %s |
 
                 | Data scope | Count |
                 | --- | ---: |
@@ -214,16 +215,16 @@ class MountainDetailQueryImprovementReportTest {
                 """,
                 BEFORE_STATEMENTS,
                 statements,
-                reductionRate(BEFORE_STATEMENTS, statements),
+                changeLabel(BEFORE_STATEMENTS, statements, "fewer", "more"),
                 BEFORE_AVG_MS,
                 avgElapsedMs,
-                reductionRate(BEFORE_AVG_MS, avgElapsedMs),
+                changeLabel(BEFORE_AVG_MS, avgElapsedMs, "faster", "slower"),
                 BEFORE_MIN_MS,
                 minElapsedMs,
-                reductionRate(BEFORE_MIN_MS, minElapsedMs),
+                changeLabel(BEFORE_MIN_MS, minElapsedMs, "faster", "slower"),
                 BEFORE_MAX_MS,
                 maxElapsedMs,
-                reductionRate(BEFORE_MAX_MS, maxElapsedMs),
+                changeLabel(BEFORE_MAX_MS, maxElapsedMs, "faster", "slower"),
                 mountainId,
                 courseCount,
                 transportPublicDirectionCount,
@@ -250,7 +251,18 @@ class MountainDetailQueryImprovementReportTest {
                 .orElse(0);
     }
 
-    private double reductionRate(double before, double after) {
+    private String changeLabel(double before, double after, String improvedLabel, String regressedLabel) {
+        double changeRate = changeRate(before, after);
+        if (changeRate > 0) {
+            return String.format(Locale.US, "%.1f%% %s", changeRate, improvedLabel);
+        }
+        if (changeRate < 0) {
+            return String.format(Locale.US, "%.1f%% %s", Math.abs(changeRate), regressedLabel);
+        }
+        return "no change";
+    }
+
+    private double changeRate(double before, double after) {
         if (before == 0) {
             return 0;
         }
