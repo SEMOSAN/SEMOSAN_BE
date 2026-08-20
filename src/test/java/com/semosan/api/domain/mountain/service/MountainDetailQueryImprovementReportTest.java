@@ -27,10 +27,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
 @ActiveProfiles("test")
-@EnabledIfEnvironmentVariable(named = "BASELINE", matches = "true")
-class MountainDetailQueryBaselineTest {
+@EnabledIfEnvironmentVariable(named = "QUERY_IMPROVEMENT_REPORT", matches = "true")
+class MountainDetailQueryImprovementReportTest {
 
-    private static final Logger log = LoggerFactory.getLogger(MountainDetailQueryBaselineTest.class);
+    private static final Logger log = LoggerFactory.getLogger(MountainDetailQueryImprovementReportTest.class);
+    // Measured on the pre-optimization path using the same local dataset and command.
     private static final long BEFORE_STATEMENTS = 7;
     private static final double BEFORE_AVG_MS = 29.5;
     private static final long BEFORE_MIN_MS = 19;
@@ -49,7 +50,7 @@ class MountainDetailQueryBaselineTest {
     private EntityManagerFactory entityManagerFactory;
 
     @Test
-    void measureMountainDetailQueryBaseline() {
+    void measureMountainDetailQueryImprovement() {
         Long mountainId = resolveMountainId();
         Long userId = createTemporaryUser();
         try {
@@ -76,14 +77,14 @@ class MountainDetailQueryBaselineTest {
             }
 
             assertThat(lastResponse).isNotNull();
-            printBaseline(mountainId, statementCounts, hibernateStatementCounts, elapsedMs, lastResponse);
+            printImprovementReport(mountainId, statementCounts, hibernateStatementCounts, elapsedMs, lastResponse);
         } finally {
             jdbcTemplate.update("DELETE FROM users WHERE id = ?", userId);
         }
     }
 
     private Long resolveMountainId() {
-        Long requestedMountainId = parseLong(System.getenv("BASELINE_MOUNTAIN_ID"));
+        Long requestedMountainId = parseLong(System.getenv("QUERY_IMPROVEMENT_REPORT_MOUNTAIN_ID"));
         if (requestedMountainId != null) {
             return requestedMountainId;
         }
@@ -104,7 +105,7 @@ class MountainDetailQueryBaselineTest {
     }
 
     private Long createTemporaryUser() {
-        String oauthId = "baseline-temp-user-" + System.nanoTime();
+        String oauthId = "query-improvement-report-temp-user-" + System.nanoTime();
         return jdbcTemplate.queryForObject("""
                 INSERT INTO users (
                     created_at, updated_at, device_type, onboarding_status, oauth_id, oauth_provider, is_deleted
@@ -114,7 +115,7 @@ class MountainDetailQueryBaselineTest {
                 """, Long.class, oauthId);
     }
 
-    private void printBaseline(
+    private void printImprovementReport(
             Long mountainId,
             List<Long> statementCounts,
             List<Long> hibernateStatementCounts,
@@ -131,21 +132,21 @@ class MountainDetailQueryBaselineTest {
         int restaurantSectionCount = response.restaurantSections().size();
         int reviewCount = response.reviews().size();
 
-        log.info("BASELINE mountainId={}", mountainId);
-        log.info("BASELINE statementCounts={}", statementCounts);
-        log.info("BASELINE hibernateStatementCounts={}", hibernateStatementCounts);
-        log.info("BASELINE jdbcTemplateStatementCounts=[1 per call]");
-        log.info("BASELINE elapsedMs={}", elapsedMs);
-        log.info("BASELINE avgElapsedMs={}", avgElapsedMs);
-        log.info("BASELINE minElapsedMs={}", minElapsedMs);
-        log.info("BASELINE maxElapsedMs={}", maxElapsedMs);
-        log.info("BASELINE sections courses={}"
+        log.info("QUERY_IMPROVEMENT mountainId={}", mountainId);
+        log.info("QUERY_IMPROVEMENT statementCounts={}", statementCounts);
+        log.info("QUERY_IMPROVEMENT hibernateStatementCounts={}", hibernateStatementCounts);
+        log.info("QUERY_IMPROVEMENT jdbcTemplateStatementCounts=[1 per call]");
+        log.info("QUERY_IMPROVEMENT elapsedMs={}", elapsedMs);
+        log.info("QUERY_IMPROVEMENT avgElapsedMs={}", avgElapsedMs);
+        log.info("QUERY_IMPROVEMENT minElapsedMs={}", minElapsedMs);
+        log.info("QUERY_IMPROVEMENT maxElapsedMs={}", maxElapsedMs);
+        log.info("QUERY_IMPROVEMENT sections courses={}"
                 + " transportPublicDirections=" + transportPublicDirectionCount
                 + " parkingDirections=" + parkingDirectionCount
                 + " amenityDirections=" + amenityDirectionCount
                 + " restaurantSections=" + restaurantSectionCount
                 + " reviews=" + reviewCount, courseCount);
-        log.info("BASELINE summary mountainId={} statements={} hibernateStatements={} jdbcTemplateStatements=1"
+        log.info("QUERY_IMPROVEMENT summary mountainId={} statements={} hibernateStatements={} jdbcTemplateStatements=1"
                         + " avgMs={} minMs={} maxMs={} courses={} transportPublicDirections={}"
                         + " parkingDirections={} amenityDirections={} restaurantSections={} reviews={}",
                 mountainId,
@@ -191,6 +192,9 @@ class MountainDetailQueryBaselineTest {
         String markdown = String.format(Locale.US, """
                 # Mountain Detail Query Improvement
 
+                Before values are fixed measurements from the pre-optimization path.
+                After values are measured by this test against the current optimized path.
+
                 | Metric | Before | After | Improvement |
                 | --- | ---: | ---: | ---: |
                 | SQL statements | %d | %d | %.1f%% fewer |
@@ -229,14 +233,14 @@ class MountainDetailQueryBaselineTest {
                 reviewCount
         );
 
-        Path reportPath = Path.of("build/reports/baseline/mountain-detail-query-summary.md");
+        Path reportPath = Path.of("build/reports/query-improvement/mountain-detail-query-improvement.md");
         try {
             Files.createDirectories(reportPath.getParent());
             Files.writeString(reportPath, markdown);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        log.info("BASELINE report={}", reportPath.toAbsolutePath());
+        log.info("QUERY_IMPROVEMENT report={}", reportPath.toAbsolutePath());
     }
 
     private double average(List<Long> values) {
