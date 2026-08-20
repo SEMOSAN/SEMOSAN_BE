@@ -3,18 +3,15 @@ package com.semosan.api.domain.mountain.service;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
-import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse.*;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainMapResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainRecommendationResponse;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.Mountain;
-import com.semosan.api.domain.mountain.enums.AmenityType;
 import com.semosan.api.domain.mountain.enums.FitnessLevel;
 import com.semosan.api.domain.mountain.repository.*;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
-import com.semosan.api.domain.review.service.ReviewService;
 import com.semosan.api.domain.mountain.service.recommendation.FitnessLevelCalculator;
 import com.semosan.api.domain.mountain.service.recommendation.TrackScorer;
 import com.semosan.api.domain.mountain.service.recommendation.TrackScorer.TrackEvaluation;
@@ -48,10 +45,7 @@ public class MountainService {
 
     private final MountainRepository mountainRepository;
     private final CourseRepository courseRepository;
-    private final TransportationRepository transportationRepository;
-    private final AmenityRepository amenityRepository;
-    private final RestaurantSectionRepository restaurantSectionRepository;
-    private final ReviewService reviewService;
+    private final MountainDetailQueryRepository mountainDetailQueryRepository;
     private final HikingMemberRepository hikingMemberRepository;
     private final UserReader userReader;
     private final FitnessLevelCalculator fitnessLevelCalculator;
@@ -175,46 +169,12 @@ public class MountainService {
 
     public MountainDetailResponse getMountainDetail(Long userId, Long mountainId) {
         userReader.findActiveUserById(userId);
-        Mountain mountain = findMountainById(mountainId);
-
-        return new MountainDetailResponse(
-                MountainInfo.from(mountain),
-                findCourses(mountainId),
-                findTransportationGroup(mountainId),
-                findAmenitiesByDirection(mountainId),
-                findRestaurantSections(mountainId),
-                findReviews(mountainId)
-        );
+        return mountainDetailQueryRepository.findDetailByMountainId(mountainId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.MOUNTAIN_NOT_FOUND));
     }
 
     private Mountain findMountainById(Long mountainId) {
         return mountainRepository.findById(mountainId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MOUNTAIN_NOT_FOUND));
-    }
-
-    private List<CourseInfo> findCourses(Long mountainId) {
-        return courseRepository.findByMountainId(mountainId).stream()
-                .map(CourseInfo::from)
-                .toList();
-    }
-
-    private TransportationGroup findTransportationGroup(Long mountainId) {
-        return TransportationGroup.from(transportationRepository.findByMountainId(mountainId));
-    }
-
-    private Map<String, List<AmenityType>> findAmenitiesByDirection(Long mountainId) {
-        return MountainDetailResponse.groupAmenities(amenityRepository.findByMountainId(mountainId));
-    }
-
-    private List<RestaurantSectionInfo> findRestaurantSections(Long mountainId) {
-        return restaurantSectionRepository.findByMountainIdWithRestaurants(mountainId).stream()
-                .map(RestaurantSectionInfo::from)
-                .toList();
-    }
-
-    private List<ReviewInfo> findReviews(Long mountainId) {
-        return reviewService.getReviewsByMountainId(mountainId).stream()
-                .map(ReviewInfo::from)
-                .toList();
     }
 }
