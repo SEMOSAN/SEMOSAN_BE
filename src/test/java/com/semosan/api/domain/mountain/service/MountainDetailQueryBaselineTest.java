@@ -15,8 +15,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,6 +31,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MountainDetailQueryBaselineTest {
 
     private static final Logger log = LoggerFactory.getLogger(MountainDetailQueryBaselineTest.class);
+    private static final long BEFORE_STATEMENTS = 7;
+    private static final double BEFORE_AVG_MS = 29.5;
+    private static final long BEFORE_MIN_MS = 19;
+    private static final long BEFORE_MAX_MS = 46;
 
     @MockitoBean
     private FirebaseConfig firebaseConfig;
@@ -112,20 +121,122 @@ class MountainDetailQueryBaselineTest {
             List<Long> elapsedMs,
             MountainDetailResponse response
     ) {
+        double avgElapsedMs = average(elapsedMs);
+        long minElapsedMs = elapsedMs.stream().mapToLong(Long::longValue).min().orElse(0);
+        long maxElapsedMs = elapsedMs.stream().mapToLong(Long::longValue).max().orElse(0);
+        int courseCount = response.courses().size();
+        int transportPublicDirectionCount = response.transportations().publicTransport().size();
+        int parkingDirectionCount = response.transportations().parking().size();
+        int amenityDirectionCount = response.amenities().size();
+        int restaurantSectionCount = response.restaurantSections().size();
+        int reviewCount = response.reviews().size();
+
         log.info("BASELINE mountainId={}", mountainId);
         log.info("BASELINE statementCounts={}", statementCounts);
         log.info("BASELINE hibernateStatementCounts={}", hibernateStatementCounts);
         log.info("BASELINE jdbcTemplateStatementCounts=[1 per call]");
         log.info("BASELINE elapsedMs={}", elapsedMs);
-        log.info("BASELINE avgElapsedMs={}", average(elapsedMs));
-        log.info("BASELINE minElapsedMs={}", elapsedMs.stream().mapToLong(Long::longValue).min().orElse(0));
-        log.info("BASELINE maxElapsedMs={}", elapsedMs.stream().mapToLong(Long::longValue).max().orElse(0));
+        log.info("BASELINE avgElapsedMs={}", avgElapsedMs);
+        log.info("BASELINE minElapsedMs={}", minElapsedMs);
+        log.info("BASELINE maxElapsedMs={}", maxElapsedMs);
         log.info("BASELINE sections courses={}"
-                + " transportPublicDirections=" + response.transportations().publicTransport().size()
-                + " parkingDirections=" + response.transportations().parking().size()
-                + " amenityDirections=" + response.amenities().size()
-                + " restaurantSections=" + response.restaurantSections().size()
-                + " reviews=" + response.reviews().size(), response.courses().size());
+                + " transportPublicDirections=" + transportPublicDirectionCount
+                + " parkingDirections=" + parkingDirectionCount
+                + " amenityDirections=" + amenityDirectionCount
+                + " restaurantSections=" + restaurantSectionCount
+                + " reviews=" + reviewCount, courseCount);
+        log.info("BASELINE summary mountainId={} statements={} hibernateStatements={} jdbcTemplateStatements=1"
+                        + " avgMs={} minMs={} maxMs={} courses={} transportPublicDirections={}"
+                        + " parkingDirections={} amenityDirections={} restaurantSections={} reviews={}",
+                mountainId,
+                statementCounts.stream().mapToLong(Long::longValue).max().orElse(0),
+                hibernateStatementCounts.stream().mapToLong(Long::longValue).max().orElse(0),
+                avgElapsedMs,
+                minElapsedMs,
+                maxElapsedMs,
+                courseCount,
+                transportPublicDirectionCount,
+                parkingDirectionCount,
+                amenityDirectionCount,
+                restaurantSectionCount,
+                reviewCount);
+        writeSummaryReport(
+                mountainId,
+                statementCounts.stream().mapToLong(Long::longValue).max().orElse(0),
+                avgElapsedMs,
+                minElapsedMs,
+                maxElapsedMs,
+                courseCount,
+                transportPublicDirectionCount,
+                parkingDirectionCount,
+                amenityDirectionCount,
+                restaurantSectionCount,
+                reviewCount
+        );
+    }
+
+    private void writeSummaryReport(
+            Long mountainId,
+            long statements,
+            double avgElapsedMs,
+            long minElapsedMs,
+            long maxElapsedMs,
+            int courseCount,
+            int transportPublicDirectionCount,
+            int parkingDirectionCount,
+            int amenityDirectionCount,
+            int restaurantSectionCount,
+            int reviewCount
+    ) {
+        String markdown = String.format(Locale.US, """
+                # Mountain Detail Query Improvement
+
+                | Metric | Before | After | Improvement |
+                | --- | ---: | ---: | ---: |
+                | SQL statements | %d | %d | %.1f%% fewer |
+                | Average elapsed time | %.1fms | %.1fms | %.1f%% faster |
+                | Min elapsed time | %dms | %dms | %.1f%% faster |
+                | Max elapsed time | %dms | %dms | %.1f%% faster |
+
+                | Data scope | Count |
+                | --- | ---: |
+                | mountainId | %d |
+                | courses | %d |
+                | transportPublicDirections | %d |
+                | parkingDirections | %d |
+                | amenityDirections | %d |
+                | restaurantSections | %d |
+                | reviews | %d |
+                """,
+                BEFORE_STATEMENTS,
+                statements,
+                reductionRate(BEFORE_STATEMENTS, statements),
+                BEFORE_AVG_MS,
+                avgElapsedMs,
+                reductionRate(BEFORE_AVG_MS, avgElapsedMs),
+                BEFORE_MIN_MS,
+                minElapsedMs,
+                reductionRate(BEFORE_MIN_MS, minElapsedMs),
+                BEFORE_MAX_MS,
+                maxElapsedMs,
+                reductionRate(BEFORE_MAX_MS, maxElapsedMs),
+                mountainId,
+                courseCount,
+                transportPublicDirectionCount,
+                parkingDirectionCount,
+                amenityDirectionCount,
+                restaurantSectionCount,
+                reviewCount
+        );
+
+        Path reportPath = Path.of("build/reports/baseline/mountain-detail-query-summary.md");
+        try {
+            Files.createDirectories(reportPath.getParent());
+            Files.writeString(reportPath, markdown);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        log.info("BASELINE report={}", reportPath.toAbsolutePath());
     }
 
     private double average(List<Long> values) {
@@ -133,6 +244,13 @@ class MountainDetailQueryBaselineTest {
                 .mapToLong(Long::longValue)
                 .average()
                 .orElse(0);
+    }
+
+    private double reductionRate(double before, double after) {
+        if (before == 0) {
+            return 0;
+        }
+        return ((before - after) / before) * 100;
     }
 
     private Long parseLong(String value) {
