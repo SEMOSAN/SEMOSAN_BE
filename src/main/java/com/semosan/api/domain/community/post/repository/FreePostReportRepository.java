@@ -10,7 +10,7 @@ public interface FreePostReportRepository extends JpaRepository<FreePostReport, 
 
     boolean existsByReporter_IdAndPost_Id(Long reporterId, Long postId);
 
-    @Query("""
+    @Query(value = """
             SELECT r.post.id AS postId, r.post.title AS title, r.post.content AS content,
                    r.post.author.id AS authorId, r.post.author.nickname AS authorNickname,
                    COUNT(r) AS reportCount, r.post.deleted AS deleted, r.post.createdAt AS createdAt
@@ -19,6 +19,9 @@ public interface FreePostReportRepository extends JpaRepository<FreePostReport, 
                      r.post.author.id, r.post.author.nickname,
                      r.post.deleted, r.post.createdAt
             ORDER BY COUNT(r) DESC, r.post.createdAt DESC
+            """,
+            countQuery = """
+            SELECT COUNT(DISTINCT r.post.id) FROM FreePostReport r
             """)
     Page<ReportedPostProjection> findReportedPosts(Pageable pageable);
 }
