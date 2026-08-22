@@ -2,7 +2,7 @@ package com.semosan.api.domain.admin.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
-import com.semosan.api.domain.admin.dto.request.AdminMountainSummitRequest;
+import com.semosan.api.domain.admin.dto.request.AdminCourseSummitRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
@@ -10,6 +10,7 @@ import com.semosan.api.domain.admin.dto.request.AdminRestaurantSectionRequest;
 import com.semosan.api.domain.admin.dto.request.AdminTransportationRequest;
 import com.semosan.api.domain.admin.dto.response.AdminCourseWaypointsResponse;
 import com.semosan.api.domain.admin.dto.response.AdminMountainListResponse;
+import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.entity.Restaurant;
 import com.semosan.api.domain.mountain.entity.RestaurantSection;
@@ -118,9 +119,10 @@ public class AdminMountainService {
     }
 
     @Transactional
-    public void updateSummit(Long mountainId, AdminMountainSummitRequest request) {
-        Mountain mountain = findMountainById(mountainId);
-        mountain.updateSummit(request.latitude(), request.longitude(), request.altitude());
+    public void updateSummit(Long courseId, AdminCourseSummitRequest request) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.COURSE_NOT_FOUND));
+        course.updateSummit(request.latitude(), request.longitude(), request.altitude());
     }
 
     @Transactional

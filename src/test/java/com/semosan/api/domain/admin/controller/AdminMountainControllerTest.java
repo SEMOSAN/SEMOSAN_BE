@@ -3,7 +3,7 @@ package com.semosan.api.domain.admin.controller;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
-import com.semosan.api.domain.admin.dto.request.AdminMountainSummitRequest;
+import com.semosan.api.domain.admin.dto.request.AdminCourseSummitRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
@@ -70,7 +70,7 @@ class AdminMountainControllerTest {
     @Test
     void getWaypointsReturnsSuccessResponse() {
         List<AdminCourseWaypointsResponse> waypoints = List.of(
-                new AdminCourseWaypointsResponse(5L, "정상 코스", List.of()));
+                new AdminCourseWaypointsResponse(5L, "정상 코스", null, null, null, List.of()));
         when(adminMountainService.getWaypoints(1L)).thenReturn(waypoints);
 
         ResponseEntity<ApiResponse<List<AdminCourseWaypointsResponse>>> response =
@@ -83,11 +83,11 @@ class AdminMountainControllerTest {
 
     @Test
     void updateSummitDelegatesAndReturnsSuccessResponse() {
-        AdminMountainSummitRequest request = new AdminMountainSummitRequest(37.5, 127.0, 836.5);
+        AdminCourseSummitRequest request = new AdminCourseSummitRequest(37.5, 127.0, 836.5);
 
-        assertThat(adminMountainController.updateSummit(1L, request).getStatusCode())
-                .isEqualTo(SuccessStatus.ADMIN_MOUNTAIN_SUMMIT_UPDATE_SUCCESS.getHttpStatus());
-        verify(adminMountainService).updateSummit(1L, request);
+        assertThat(adminMountainController.updateSummit(5L, request).getStatusCode())
+                .isEqualTo(SuccessStatus.ADMIN_COURSE_SUMMIT_UPDATE_SUCCESS.getHttpStatus());
+        verify(adminMountainService).updateSummit(5L, request);
     }
 
     @Test

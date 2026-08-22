@@ -2,7 +2,7 @@ package com.semosan.api.domain.admin.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
-import com.semosan.api.domain.admin.dto.request.AdminMountainSummitRequest;
+import com.semosan.api.domain.admin.dto.request.AdminCourseSummitRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
@@ -178,6 +178,7 @@ class AdminMountainServiceTest {
         Mountain mountain = mountain(1L);
         Course course = course(5L, "정상 코스",
                 List.of(new Course.CourseWaypoint(37.5, 127.0, 632.2, "연주대", "PEAK")));
+        course.updateSummit(37.5, 127.0, 632.2);
         when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
         when(courseRepository.findByMountainId(1L)).thenReturn(List.of(course));
 
@@ -187,6 +188,9 @@ class AdminMountainServiceTest {
         AdminCourseWaypointsResponse response = result.getFirst();
         assertThat(response.courseId()).isEqualTo(5L);
         assertThat(response.courseName()).isEqualTo("정상 코스");
+        assertThat(response.summitLat()).isEqualTo(37.5);
+        assertThat(response.summitLng()).isEqualTo(127.0);
+        assertThat(response.summitEle()).isEqualTo(632.2);
         assertThat(response.waypoints()).containsExactly(
                 new AdminCourseWaypointsResponse.WaypointInfo(37.5, 127.0, 632.2, "연주대", "PEAK"));
     }
@@ -204,29 +208,28 @@ class AdminMountainServiceTest {
     }
 
     @Test
-    void updateSummitUpdatesCoordinatesAndAltitude() {
-        Mountain mountain = mountain(1L);
-        when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
+    void updateSummitUpdatesCourseSummitCoordinates() {
+        Course course = course(5L, "정상 코스", null);
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(course));
 
-        adminMountainService.updateSummit(1L, new AdminMountainSummitRequest(37.5, 127.0, 836.5));
+        adminMountainService.updateSummit(5L, new AdminCourseSummitRequest(37.5, 127.0, 836.5));
 
-        assertThat(mountain.getLatitude()).isEqualTo(37.5);
-        assertThat(mountain.getLongitude()).isEqualTo(127.0);
-        assertThat(mountain.getAltitude()).isEqualTo(836.5);
-        assertThat(mountain.getLocation().getY()).isEqualTo(37.5);
-        assertThat(mountain.getLocation().getX()).isEqualTo(127.0);
+        assertThat(course.getSummitLat()).isEqualTo(37.5);
+        assertThat(course.getSummitLng()).isEqualTo(127.0);
+        assertThat(course.getSummitEle()).isEqualTo(836.5);
     }
 
     @Test
-    void updateSummitKeepsExistingAltitudeWhenAltitudeIsNull() {
-        Mountain mountain = mountain(1L);
-        when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
+    void updateSummitOverwritesSummitEleWithNullWhenAltitudeMissing() {
+        Course course = course(5L, "정상 코스", null);
+        course.updateSummit(37.0, 126.0, 632.2);
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(course));
 
-        adminMountainService.updateSummit(1L, new AdminMountainSummitRequest(37.5, 127.0, null));
+        adminMountainService.updateSummit(5L, new AdminCourseSummitRequest(37.5, 127.0, null));
 
-        assertThat(mountain.getLatitude()).isEqualTo(37.5);
-        assertThat(mountain.getLongitude()).isEqualTo(127.0);
-        assertThat(mountain.getAltitude()).isEqualTo(632.2);
+        assertThat(course.getSummitLat()).isEqualTo(37.5);
+        assertThat(course.getSummitLng()).isEqualTo(127.0);
+        assertThat(course.getSummitEle()).isNull();
     }
 
     @Test
@@ -414,14 +417,14 @@ class AdminMountainServiceTest {
     }
 
     @Test
-    void updateSummitThrowsWhenMountainMissing() {
-        when(mountainRepository.findById(1L)).thenReturn(Optional.empty());
+    void updateSummitThrowsWhenCourseMissing() {
+        when(courseRepository.findById(5L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> adminMountainService.updateSummit(1L,
-                new AdminMountainSummitRequest(37.5, 127.0, null)))
+        assertThatThrownBy(() -> adminMountainService.updateSummit(5L,
+                new AdminCourseSummitRequest(37.5, 127.0, null)))
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
-                .isEqualTo(ErrorStatus.MOUNTAIN_NOT_FOUND);
+                .isEqualTo(ErrorStatus.COURSE_NOT_FOUND);
     }
 
     @Test
