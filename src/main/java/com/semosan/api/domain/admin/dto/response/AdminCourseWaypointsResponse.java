@@ -7,6 +7,9 @@ import java.util.List;
 public record AdminCourseWaypointsResponse(
         Long courseId,
         String courseName,
+        Double summitLat,
+        Double summitLng,
+        Double summitEle,
         List<WaypointInfo> waypoints
 ) {
 
@@ -14,7 +17,8 @@ public record AdminCourseWaypointsResponse(
         List<WaypointInfo> waypoints = course.getWaypoints() == null
                 ? List.of()
                 : course.getWaypoints().stream().map(WaypointInfo::from).toList();
-        return new AdminCourseWaypointsResponse(course.getId(), course.getName(), waypoints);
+        return new AdminCourseWaypointsResponse(course.getId(), course.getName(),
+                course.getSummitLat(), course.getSummitLng(), course.getSummitEle(), waypoints);
     }
 
     public record WaypointInfo(

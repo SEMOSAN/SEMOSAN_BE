@@ -2,7 +2,7 @@ package com.semosan.api.domain.admin.controller.docs;
 
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
-import com.semosan.api.domain.admin.dto.request.AdminMountainSummitRequest;
+import com.semosan.api.domain.admin.dto.request.AdminCourseSummitRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
@@ -61,14 +61,14 @@ public interface AdminMountainControllerDocs {
     })
     ResponseEntity<ApiResponse<List<AdminCourseWaypointsResponse>>> getWaypoints(@PathVariable Long mountainId);
 
-    @Operation(summary = "산 정상 좌표 반영", description = "선택한 웨이포인트 좌표(위도/경도, 선택적 고도)를 산의 정상 좌표로 반영합니다.")
+    @Operation(summary = "코스 정상 좌표 반영", description = "선택한 웨이포인트 좌표(위도/경도, 선택적 고도)를 해당 코스의 정상 좌표로 반영합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "정상 좌표 반영 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "산을 찾을 수 없음")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "코스를 찾을 수 없음")
     })
     ResponseEntity<ApiResponse<Void>> updateSummit(
-            @PathVariable Long mountainId,
-            @Valid @RequestBody AdminMountainSummitRequest request
+            @PathVariable Long courseId,
+            @Valid @RequestBody AdminCourseSummitRequest request
     );
 
     @Operation(summary = "산 공개/비공개 처리", description = "산의 공개 상태를 변경합니다.")

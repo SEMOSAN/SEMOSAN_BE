@@ -70,6 +70,23 @@ public class Course extends BaseEntity {
     @Column(name = "waypoints", columnDefinition = "jsonb")
     private List<CourseWaypoint> waypoints;
 
+    /** 관리자가 waypoint 중에서 선택해 반영한 코스 정상 좌표. 미반영 시 null. */
+    @Column(name = "summit_lat")
+    private Double summitLat;
+
+    @Column(name = "summit_lng")
+    private Double summitLng;
+
+    @Column(name = "summit_ele")
+    private Double summitEle;
+
+    /** 선택한 waypoint 를 그대로 스냅샷 — 고도 없는 waypoint 면 summitEle 도 null 로 덮어쓴다. */
+    public void updateSummit(Double summitLat, Double summitLng, Double summitEle) {
+        this.summitLat = summitLat;
+        this.summitLng = summitLng;
+        this.summitEle = summitEle;
+    }
+
     public record CourseWaypoint(
             Double lat,
             Double lng,

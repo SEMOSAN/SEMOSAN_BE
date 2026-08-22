@@ -4,7 +4,7 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.admin.controller.docs.AdminMountainControllerDocs;
-import com.semosan.api.domain.admin.dto.request.AdminMountainSummitRequest;
+import com.semosan.api.domain.admin.dto.request.AdminCourseSummitRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainUpdateRequest;
 import com.semosan.api.domain.admin.dto.request.AdminMountainVisibilityRequest;
 import com.semosan.api.domain.admin.dto.request.AdminRestaurantRequest;
@@ -71,14 +71,14 @@ public class AdminMountainController implements AdminMountainControllerDocs {
         return ApiResponse.success(SuccessStatus.ADMIN_MOUNTAIN_WAYPOINT_LIST_SUCCESS, response);
     }
 
-    @PatchMapping("/mountains/{mountainId}/summit")
+    @PatchMapping("/courses/{courseId}/summit")
     @Override
     public ResponseEntity<ApiResponse<Void>> updateSummit(
-            @PathVariable Long mountainId,
-            @Valid @RequestBody AdminMountainSummitRequest request
+            @PathVariable Long courseId,
+            @Valid @RequestBody AdminCourseSummitRequest request
     ) {
-        adminMountainService.updateSummit(mountainId, request);
-        return ApiResponse.success(SuccessStatus.ADMIN_MOUNTAIN_SUMMIT_UPDATE_SUCCESS);
+        adminMountainService.updateSummit(courseId, request);
+        return ApiResponse.success(SuccessStatus.ADMIN_COURSE_SUMMIT_UPDATE_SUCCESS);
     }
 
     @PatchMapping("/mountains/{mountainId}/visibility")
