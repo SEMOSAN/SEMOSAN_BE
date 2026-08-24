@@ -83,7 +83,7 @@
 
 ### Backend
 - **Java 21**
-- **Spring Boot 3.5.13**
+- **Spring Boot 4.1.0**
 - **Spring Web MVC** - REST API
 - **Spring Security** - 인증/인가
 - **Spring Data JPA** - ORM
@@ -118,8 +118,9 @@
 ```text
 src/main/java/com/semosan/api/
   ApiApplication.java
-  common/                 # 공통 설정, 응답, 예외, JWT, FCM
+  common/                 # 공통 설정, 응답, 예외, JWT, FCM, Discord 에러 알림(alert), 날씨 API 연동(weather)
   domain/
+    admin/                # 관리자 인증, 산 관리, 커뮤니티 관리
     appversion/           # 앱 버전 관리
     auth/                 # 인증, 회원 탈퇴 정리
     oauth/                # 카카오 OAuth 연동
@@ -182,6 +183,19 @@ cd SEMOSAN_BE
 ```bash
 ./gradlew test --tests com.semosan.api.domain.mountain.service.MountainServiceTest
 ```
+
+`./gradlew check` 실행 시 Jacoco 커버리지 검증이 함께 수행되며, 전체 라인 커버리지가 **90% 미만이면 빌드가 실패**합니다.
+
+<br />
+
+## CI/CD
+
+GitHub Actions로 테스트와 배포를 자동화합니다.
+
+| 워크플로우 | 트리거 | 내용 |
+|-----------|--------|------|
+| `test.yml` | `develop`, `main` 대상 PR | PostGIS·Redis·MinIO 서비스 컨테이너 기동 → `./gradlew test jacocoTestReport` 실행 → PR에 Jacoco 커버리지 코멘트(전체/변경 파일 최소 90%) |
+| `deploy.yml` | `develop`, `main` push | Gradle 빌드 → Docker 이미지 빌드 후 GHCR(`ghcr.io/semosan/semosan_be`, 저장소명 소문자 변환)에 푸시 → `develop` 브랜치는 `k8s/kustomization.yaml`의 이미지 태그를 자동 커밋(ArgoCD가 감지해 배포) |
 
 <br />
 
