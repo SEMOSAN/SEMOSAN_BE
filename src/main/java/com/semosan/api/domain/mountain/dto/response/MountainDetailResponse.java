@@ -115,11 +115,13 @@ public record MountainDetailResponse(
     }
 
     public record RestaurantSectionInfo(
+            Long sectionId,
             String title,
             List<RestaurantInfo> restaurants
     ) {
         public static RestaurantSectionInfo from(RestaurantSection section) {
             return new RestaurantSectionInfo(
+                    section.getId(),
                     section.getTitle(),
                     section.getRestaurants().stream()
                             .map(RestaurantInfo::from)
