@@ -168,6 +168,7 @@ class MountainServiceTest {
                 ),
                 Map.of("입구", List.of(AmenityType.RESTROOM)),
                 List.of(new MountainDetailResponse.RestaurantSectionInfo(
+                        20L,
                         "근처 맛집",
                         List.of(new MountainDetailResponse.RestaurantInfo(30L, "식당", "한식", "image", "map"))
                 )),

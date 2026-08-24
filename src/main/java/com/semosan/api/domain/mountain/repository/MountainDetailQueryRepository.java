@@ -84,6 +84,7 @@ public class MountainDetailQueryRepository {
                     ), '[]'::jsonb)::text AS amenities_json,
                     COALESCE((
                         SELECT jsonb_agg(jsonb_build_object(
+                            'sectionId', rs.id,
                             'title', rs.title,
                             'restaurants', COALESCE((
                                 SELECT jsonb_agg(jsonb_build_object(
@@ -219,7 +220,11 @@ public class MountainDetailQueryRepository {
                         textOrNull(restaurantNode, "mapUrl")
                 ));
             }
-            sections.add(new RestaurantSectionInfo(textOrNull(sectionNode, "title"), restaurants));
+            sections.add(new RestaurantSectionInfo(
+                    sectionNode.path("sectionId").asLong(),
+                    textOrNull(sectionNode, "title"),
+                    restaurants
+            ));
         }
         return sections;
     }
