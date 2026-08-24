@@ -24,7 +24,9 @@ import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.mountain.repository.RestaurantRepository;
 import com.semosan.api.domain.mountain.repository.RestaurantSectionRepository;
 import com.semosan.api.domain.mountain.repository.TransportationRepository;
+import com.semosan.api.domain.review.entity.Review;
 import com.semosan.api.domain.review.service.ReviewService;
+import com.semosan.api.domain.user.entity.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -261,6 +263,69 @@ class AdminMountainServiceTest {
         assertThat(response.amenities()).isEmpty();
         assertThat(response.restaurantSections()).isEmpty();
         assertThat(response.reviews()).isEmpty();
+    }
+
+    @Test
+    void getMountainDetailMapsAllDetailSections() {
+        Mountain mountain = mountain(1L);
+
+        Course course = course(10L, "정상 코스", List.of());
+        ReflectionTestUtils.setField(course, "difficulty", Difficulty.NORMAL);
+        ReflectionTestUtils.setField(course, "distance", 1500.0);
+        ReflectionTestUtils.setField(course, "duration", 90);
+        ReflectionTestUtils.setField(course, "startName", "입구");
+        ReflectionTestUtils.setField(course, "endName", "정상");
+
+        Transportation bus = Transportation.create(mountain, TransportationType.BUS, "상행", "버스", "버스 설명");
+        ReflectionTestUtils.setField(bus, "id", 40L);
+        Transportation parking = Transportation.create(mountain, TransportationType.PARKING, "입구", "주차장", "주차 설명");
+        ReflectionTestUtils.setField(parking, "id", 41L);
+
+        RestaurantSection section = RestaurantSection.create(mountain, "근처 맛집");
+        ReflectionTestUtils.setField(section, "id", 20L);
+        Restaurant restaurant = Restaurant.create(
+                section, "식당", "한식", "메뉴", "설명", "image", "map", "blog"
+        );
+        ReflectionTestUtils.setField(restaurant, "id", 30L);
+        section.getRestaurants().add(restaurant);
+
+        User reviewer = newInstance(User.class);
+        ReflectionTestUtils.setField(reviewer, "name", "리뷰어");
+        Review review = newInstance(Review.class);
+        ReflectionTestUtils.setField(review, "id", 50L);
+        ReflectionTestUtils.setField(review, "user", reviewer);
+        ReflectionTestUtils.setField(review, "course", course);
+        ReflectionTestUtils.setField(review, "content", "좋아요");
+        ReflectionTestUtils.setField(review, "difficulty", Difficulty.NORMAL);
+        ReflectionTestUtils.setField(review, "imageUrl", "review-image");
+
+        when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
+        when(courseRepository.findByMountainId(1L)).thenReturn(List.of(course));
+        when(transportationRepository.findByMountainId(1L)).thenReturn(List.of(bus, parking));
+        when(amenityRepository.findByMountainId(1L)).thenReturn(List.of());
+        when(restaurantSectionRepository.findByMountainIdWithRestaurants(1L)).thenReturn(List.of(section));
+        when(reviewService.getReviewsByMountainId(1L)).thenReturn(List.of(review));
+
+        MountainDetailResponse response = adminMountainService.getMountainDetail(1L);
+
+        MountainDetailResponse.CourseInfo courseInfo = response.courses().getFirst();
+        assertThat(courseInfo.courseId()).isEqualTo(10L);
+        assertThat(courseInfo.startName()).isEqualTo("입구");
+        assertThat(courseInfo.endName()).isEqualTo("정상");
+
+        assertThat(response.transportations().publicTransport().get("상행").getFirst().transportationId()).isEqualTo(40L);
+        assertThat(response.transportations().parking().get("입구").getFirst().transportationId()).isEqualTo(41L);
+
+        MountainDetailResponse.RestaurantSectionInfo sectionInfo = response.restaurantSections().getFirst();
+        assertThat(sectionInfo.sectionId()).isEqualTo(20L);
+        assertThat(sectionInfo.title()).isEqualTo("근처 맛집");
+        assertThat(sectionInfo.restaurants().getFirst().restaurantId()).isEqualTo(30L);
+        assertThat(sectionInfo.restaurants().getFirst().name()).isEqualTo("식당");
+
+        MountainDetailResponse.ReviewInfo reviewInfo = response.reviews().getFirst();
+        assertThat(reviewInfo.reviewId()).isEqualTo(50L);
+        assertThat(reviewInfo.authorName()).isEqualTo("리뷰어");
+        assertThat(reviewInfo.courseName()).isEqualTo("정상 코스");
     }
 
     @Test
