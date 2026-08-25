@@ -3,12 +3,14 @@ package com.semosan.api.domain.community.post.repository;
 import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.entity.RecordPost;
+import com.semosan.api.common.config.FirebaseConfig;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,6 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 @Transactional
 class PostRepositoryTest {
+
+    @MockitoBean
+    private FirebaseConfig firebaseConfig;
 
     @Autowired
     private PostRepository postRepository;
