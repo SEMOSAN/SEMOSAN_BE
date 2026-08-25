@@ -12,11 +12,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -57,6 +59,23 @@ class FcmTokenServiceTest {
         assertThat(token.getUserId()).isEqualTo(2L);
         assertThat(token.getDeviceType()).isEqualTo(DeviceType.ANDROID);
         verify(fcmTokenRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void registerReassignsTokenWhenConcurrentDuplicateDetected() {
+        FcmToken token = FcmToken.create(2L, "token", DeviceType.ANDROID);
+        when(fcmTokenRepository.findByToken("token"))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(token));
+        when(fcmTokenRepository.save(any(FcmToken.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate"));
+
+        fcmTokenService.register(1L, "token", DeviceType.IOS);
+
+        assertThat(token.getUserId()).isEqualTo(1L);
+        assertThat(token.getDeviceType()).isEqualTo(DeviceType.IOS);
+        verify(userReader).findActiveUserById(1L);
+        verify(fcmTokenRepository).save(any(FcmToken.class));
     }
 
     @Test
