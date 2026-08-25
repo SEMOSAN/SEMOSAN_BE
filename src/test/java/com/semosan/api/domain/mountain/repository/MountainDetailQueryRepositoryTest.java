@@ -99,7 +99,20 @@ class MountainDetailQueryRepositoryTest {
         assertThat(result).isEmpty();
     }
 
+    @Test
+    void findDetailByMountainIdReturnsEmptyWhenMountainIsPrivate() {
+        Long mountainId = insertMountain(false);
+
+        Optional<MountainDetailResponse> result = mountainDetailQueryRepository.findDetailByMountainId(mountainId);
+
+        assertThat(result).isEmpty();
+    }
+
     private Long insertMountain() {
+        return insertMountain(true);
+    }
+
+    private Long insertMountain(boolean isPublic) {
         return jdbcTemplate.queryForObject("""
                 INSERT INTO mountains (
                     created_at, updated_at, name, address, altitude, difficulty, duration,
@@ -108,10 +121,10 @@ class MountainDetailQueryRepositoryTest {
                 VALUES (
                     now(), now(), '테스트산', '서울 테스트구', 123.4, 'NORMAL', 90,
                     '["https://example.com/1.jpg", "https://example.com/2.jpg"]'::jsonb,
-                    37.5, 127.0, true
+                    37.5, 127.0, ?
                 )
                 RETURNING id
-                """, Long.class);
+                """, Long.class, isPublic);
     }
 
     private Long insertCourse(Long mountainId) {

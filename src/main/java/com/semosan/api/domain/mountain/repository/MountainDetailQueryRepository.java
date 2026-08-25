@@ -122,6 +122,7 @@ public class MountainDetailQueryRepository {
                     ), '[]'::jsonb)::text AS reviews_json
                 FROM mountains m
                 WHERE m.id = ?
+                  AND m.is_public = true
                 """, (rs, rowNum) -> mapDetail(rs), REVIEW_LIMIT, mountainId);
 
         return responses.stream().findFirst();
