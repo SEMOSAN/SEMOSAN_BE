@@ -2,12 +2,14 @@ package com.semosan.api.domain.notification.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.common.util.LikeConflictHandler;
 import com.semosan.api.domain.notification.entity.FcmToken;
 import com.semosan.api.domain.notification.repository.FcmTokenRepository;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,12 +25,19 @@ public class FcmTokenService {
      * 토큰 등록
      * 같은 토큰이 이미 있으면 (다른 유저로 로그인 등) 소유자/디바이스 갱신
      */
-    @Transactional
+    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
     public void register(Long userId, String token, DeviceType deviceType) {
         userReader.findActiveUserById(userId);
         fcmTokenRepository.findByToken(token).ifPresentOrElse(
                 existing -> existing.reassignTo(userId, deviceType),
-                () -> fcmTokenRepository.save(FcmToken.create(userId, token, deviceType))
+                () -> createToken(userId, token, deviceType)
+        );
+    }
+
+    private void createToken(Long userId, String token, DeviceType deviceType) {
+        LikeConflictHandler.handleConcurrentCreate(
+                () -> fcmTokenRepository.save(FcmToken.create(userId, token, deviceType)),
+                () -> log.warn("FCM 토큰 동시 등록 충돌 감지: userId={}, deviceType={}", userId, deviceType)
         );
     }
 
