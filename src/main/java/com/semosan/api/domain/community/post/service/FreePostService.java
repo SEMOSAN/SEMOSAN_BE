@@ -100,10 +100,15 @@ public class FreePostService {
     public FreePostDetailResponse getDetail(Long viewerId, Long postId) {
         FreePost post = findActivePostOrThrow(postId);
         postAccessPolicy.validateReadable(viewerId, post);
-        postRepository.increaseViewCount(postId);
 
+        // increaseViewCount()는 clearAutomatically=true라 영속성 컨텍스트를 비운다.
+        // author 등 LAZY 연관관계를 다 읽어 응답을 만든 뒤 마지막에 호출해야
+        // detach된 프록시 초기화로 인한 LazyInitializationException을 피할 수 있다.
         List<PostImage> images = postImageRepository.findByPostOrderBySortOrderAsc(post);
-        return toDetailResponse(post, images, viewerId, post.getViewCount() + 1);
+        FreePostDetailResponse response = toDetailResponse(post, images, viewerId, post.getViewCount() + 1);
+
+        postRepository.increaseViewCount(postId);
+        return response;
     }
 
     @Transactional
