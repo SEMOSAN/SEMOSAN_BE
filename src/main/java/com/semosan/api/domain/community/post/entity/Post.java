@@ -37,10 +37,6 @@ public abstract class Post extends BaseEntity {
         this.content = content;
     }
 
-    public void increaseViewCount() {
-        this.viewCount++;
-    }
-
     public void softDelete() {
         this.deleted = true;
     }

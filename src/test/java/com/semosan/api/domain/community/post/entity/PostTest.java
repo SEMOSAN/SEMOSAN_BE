@@ -10,16 +10,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PostTest {
 
     @Test
-    void increaseViewCountIncrementsCurrentValue() {
-        FreePost post = FreePost.create(user(1L, "author"), "제목", "본문");
-        ReflectionTestUtils.setField(post, "viewCount", 4);
-
-        post.increaseViewCount();
-
-        assertThat(post.getViewCount()).isEqualTo(5);
-    }
-
-    @Test
     void softDeleteMarksPostDeleted() {
         FreePost post = FreePost.create(user(1L, "author"), "제목", "본문");
 

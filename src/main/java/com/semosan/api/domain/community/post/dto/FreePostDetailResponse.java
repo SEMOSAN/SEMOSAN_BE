@@ -25,13 +25,24 @@ public record FreePostDetailResponse(
             long commentCount,
             boolean likedByMe
     ) {
+        return of(post, images, post.getViewCount(), likeCount, commentCount, likedByMe);
+    }
+
+    public static FreePostDetailResponse of(
+            FreePost post,
+            List<PostImage> images,
+            int viewCount,
+            long likeCount,
+            long commentCount,
+            boolean likedByMe
+    ) {
         return new FreePostDetailResponse(
                 post.getId(),
                 AuthorResponse.from(post.getAuthor()),
                 post.getTitle(),
                 post.getContent(),
                 images.stream().map(PostImageResponse::from).toList(),
-                post.getViewCount(),
+                viewCount,
                 likeCount,
                 likedByMe,
                 commentCount,

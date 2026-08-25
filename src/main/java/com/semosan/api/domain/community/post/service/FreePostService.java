@@ -10,6 +10,7 @@ import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.entity.PostImage;
 import com.semosan.api.domain.community.post.repository.FreePostRepository;
 import com.semosan.api.domain.community.post.repository.PostImageRepository;
+import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 public class FreePostService {
 
     private final FreePostRepository freePostRepository;
+    private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
@@ -98,10 +100,15 @@ public class FreePostService {
     public FreePostDetailResponse getDetail(Long viewerId, Long postId) {
         FreePost post = findActivePostOrThrow(postId);
         postAccessPolicy.validateReadable(viewerId, post);
-        post.increaseViewCount();
 
+        // increaseViewCount()는 clearAutomatically=true라 영속성 컨텍스트를 비운다.
+        // author 등 LAZY 연관관계를 다 읽어 응답을 만든 뒤 마지막에 호출해야
+        // detach된 프록시 초기화로 인한 LazyInitializationException을 피할 수 있다.
         List<PostImage> images = postImageRepository.findByPostOrderBySortOrderAsc(post);
-        return toDetailResponse(post, images, viewerId);
+        FreePostDetailResponse response = toDetailResponse(post, images, viewerId, post.getViewCount() + 1);
+
+        postRepository.increaseViewCount(postId);
+        return response;
     }
 
     @Transactional
@@ -120,11 +127,15 @@ public class FreePostService {
     }
 
     private FreePostDetailResponse toDetailResponse(FreePost post, List<PostImage> images, Long viewerId) {
+        return toDetailResponse(post, images, viewerId, post.getViewCount());
+    }
+
+    private FreePostDetailResponse toDetailResponse(FreePost post, List<PostImage> images, Long viewerId, int viewCount) {
         long likeCount = postLikeRepository.countByPost(post);
         long commentCount = commentRepository.countByPostAndDeletedFalse(post);
         boolean likedByMe = postLikeRepository.existsByPostIdAndUserId(post.getId(), viewerId);
 
-        return FreePostDetailResponse.of(post, images, likeCount, commentCount, likedByMe);
+        return FreePostDetailResponse.of(post, images, viewCount, likeCount, commentCount, likedByMe);
     }
 
     private List<PostImage> saveImages(FreePost post, List<String> imageUrls, Integer mainImageIndex) {

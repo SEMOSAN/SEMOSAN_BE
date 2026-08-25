@@ -14,12 +14,16 @@ public record RecordPostResponse(
         LocalDateTime createdAt
 ) {
     public static RecordPostResponse from(RecordPost post) {
+        return from(post, post.getViewCount());
+    }
+
+    public static RecordPostResponse from(RecordPost post, int viewCount) {
         return new RecordPostResponse(
                 post.getId(),
                 AuthorResponse.from(post.getAuthor()),
                 post.getContent(),
                 HikingRecordSummaryResponse.from(post.getHikingRecord()),
-                post.getViewCount(),
+                viewCount,
                 post.getCreatedAt()
         );
     }

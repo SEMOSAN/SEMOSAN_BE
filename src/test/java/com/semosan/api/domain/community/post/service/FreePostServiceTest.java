@@ -10,6 +10,7 @@ import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.entity.PostImage;
 import com.semosan.api.domain.community.post.repository.FreePostRepository;
 import com.semosan.api.domain.community.post.repository.PostImageRepository;
+import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.service.UserReader;
@@ -42,6 +43,9 @@ class FreePostServiceTest {
 
     @Mock
     private FreePostRepository freePostRepository;
+
+    @Mock
+    private PostRepository postRepository;
 
     @Mock
     private PostImageRepository postImageRepository;
@@ -251,6 +255,7 @@ class FreePostServiceTest {
     void getDetailReturnsLikedByMe() throws Exception {
         User author = user(2L, "author");
         FreePost post = freePost(10L, author, "제목", "본문");
+        ReflectionTestUtils.setField(post, "viewCount", 4);
 
         when(freePostRepository.findById(10L)).thenReturn(Optional.of(post));
         when(postImageRepository.findByPostOrderBySortOrderAsc(post)).thenReturn(List.of());
@@ -263,7 +268,10 @@ class FreePostServiceTest {
         assertThat(result.likedByMe()).isTrue();
         assertThat(result.likeCount()).isEqualTo(3L);
         assertThat(result.commentCount()).isEqualTo(2L);
+        assertThat(result.viewCount()).isEqualTo(5);
+        assertThat(post.getViewCount()).isEqualTo(4);
         verify(postAccessPolicy).validateReadable(1L, post);
+        verify(postRepository).increaseViewCount(10L);
     }
 
     @Test
@@ -413,6 +421,7 @@ class FreePostServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_AUTHOR_BLOCKED);
+        verify(postRepository, never()).increaseViewCount(10L);
         verify(postImageRepository, never()).findByPostOrderBySortOrderAsc(post);
     }
 
@@ -425,6 +434,7 @@ class FreePostServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_NOT_FOUND);
         verify(postAccessPolicy, never()).validateReadable(eq(1L), org.mockito.ArgumentMatchers.any());
+        verify(postRepository, never()).increaseViewCount(10L);
     }
 
     @Test
@@ -440,6 +450,7 @@ class FreePostServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_DELETED);
         verify(postAccessPolicy, never()).validateReadable(1L, post);
+        verify(postRepository, never()).increaseViewCount(10L);
     }
 
     @Test

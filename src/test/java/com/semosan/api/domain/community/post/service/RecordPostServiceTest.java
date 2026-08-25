@@ -4,6 +4,7 @@ import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.post.dto.RecordPostResponse;
 import com.semosan.api.domain.community.post.entity.RecordPost;
+import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.community.post.repository.RecordPostRepository;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
@@ -40,6 +41,9 @@ class RecordPostServiceTest {
 
     @Mock
     private RecordPostRepository recordPostRepository;
+
+    @Mock
+    private PostRepository postRepository;
 
     @Mock
     private HikingRecordRepository hikingRecordRepository;
@@ -153,14 +157,16 @@ class RecordPostServiceTest {
     @Test
     void getDetailValidatesBlockPolicyBeforeIncreasingViewCount() throws Exception {
         RecordPost post = recordPost(10L, user(2L, "author"));
+        ReflectionTestUtils.setField(post, "viewCount", 4);
 
         when(recordPostRepository.findById(10L)).thenReturn(Optional.of(post));
 
         RecordPostResponse result = recordPostService.getDetail(1L, 10L);
 
-        assertThat(result.viewCount()).isEqualTo(1);
-        assertThat(post.getViewCount()).isEqualTo(1);
+        assertThat(result.viewCount()).isEqualTo(5);
+        assertThat(post.getViewCount()).isEqualTo(4);
         verify(postAccessPolicy).validateReadable(1L, post);
+        verify(postRepository).increaseViewCount(10L);
     }
 
     @Test
@@ -176,6 +182,7 @@ class RecordPostServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_AUTHOR_BLOCKED);
         assertThat(post.getViewCount()).isZero();
+        verify(postRepository, never()).increaseViewCount(10L);
     }
 
     @Test
@@ -187,6 +194,7 @@ class RecordPostServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_NOT_FOUND);
         verify(postAccessPolicy, never()).validateReadable(eq(1L), any());
+        verify(postRepository, never()).increaseViewCount(10L);
     }
 
     @Test
@@ -201,6 +209,7 @@ class RecordPostServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_DELETED);
         verify(postAccessPolicy, never()).validateReadable(1L, post);
+        verify(postRepository, never()).increaseViewCount(10L);
     }
 
     @Test

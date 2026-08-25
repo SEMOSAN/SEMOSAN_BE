@@ -4,6 +4,7 @@ import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.post.dto.RecordPostResponse;
 import com.semosan.api.domain.community.post.entity.RecordPost;
+import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.community.post.repository.RecordPostRepository;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RecordPostService {
 
     private final RecordPostRepository recordPostRepository;
+    private final PostRepository postRepository;
     private final HikingRecordRepository hikingRecordRepository;
     private final HikingMemberRepository hikingMemberRepository;
     private final PostAccessPolicy postAccessPolicy;
@@ -56,8 +58,14 @@ public class RecordPostService {
     public RecordPostResponse getDetail(Long viewerId, Long postId) {
         RecordPost post = findActivePostOrThrow(postId);
         postAccessPolicy.validateReadable(viewerId, post);
-        post.increaseViewCount();
-        return RecordPostResponse.from(post);
+
+        // increaseViewCount()는 clearAutomatically=true라 영속성 컨텍스트를 비운다.
+        // hikingRecord 등 LAZY 연관관계를 다 읽어 응답을 만든 뒤 마지막에 호출해야
+        // detach된 프록시 초기화로 인한 LazyInitializationException을 피할 수 있다.
+        RecordPostResponse response = RecordPostResponse.from(post, post.getViewCount() + 1);
+
+        postRepository.increaseViewCount(postId);
+        return response;
     }
 
     @Transactional
