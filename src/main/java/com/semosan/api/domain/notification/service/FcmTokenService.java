@@ -2,7 +2,6 @@ package com.semosan.api.domain.notification.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
-import com.semosan.api.common.util.LikeConflictHandler;
 import com.semosan.api.domain.notification.entity.FcmToken;
 import com.semosan.api.domain.notification.repository.FcmTokenRepository;
 import com.semosan.api.domain.user.enums.user.DeviceType;
@@ -30,15 +29,18 @@ public class FcmTokenService {
         userReader.findActiveUserById(userId);
         fcmTokenRepository.findByToken(token).ifPresentOrElse(
                 existing -> existing.reassignTo(userId, deviceType),
-                () -> createToken(userId, token, deviceType)
+                () -> createOrReassign(userId, token, deviceType)
         );
     }
 
-    private void createToken(Long userId, String token, DeviceType deviceType) {
-        LikeConflictHandler.handleConcurrentCreate(
-                () -> fcmTokenRepository.save(FcmToken.create(userId, token, deviceType)),
-                () -> log.warn("FCM 토큰 동시 등록 충돌 감지: userId={}, deviceType={}", userId, deviceType)
-        );
+    private void createOrReassign(Long userId, String token, DeviceType deviceType) {
+        try {
+            fcmTokenRepository.save(FcmToken.create(userId, token, deviceType));
+        } catch (DataIntegrityViolationException e) {
+            log.warn("FCM 토큰 동시 등록 충돌 감지: userId={}, deviceType={}", userId, deviceType);
+            fcmTokenRepository.findByToken(token)
+                    .ifPresent(existing -> existing.reassignTo(userId, deviceType));
+        }
     }
 
     /**

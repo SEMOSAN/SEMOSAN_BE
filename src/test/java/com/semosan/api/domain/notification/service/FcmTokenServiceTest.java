@@ -18,7 +18,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -63,14 +62,18 @@ class FcmTokenServiceTest {
     }
 
     @Test
-    void registerDoesNotThrowWhenConcurrentDuplicateDetected() {
-        when(fcmTokenRepository.findByToken("token")).thenReturn(Optional.empty());
+    void registerReassignsTokenWhenConcurrentDuplicateDetected() {
+        FcmToken token = FcmToken.create(2L, "token", DeviceType.ANDROID);
+        when(fcmTokenRepository.findByToken("token"))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(token));
         when(fcmTokenRepository.save(any(FcmToken.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate"));
 
-        assertThatCode(() -> fcmTokenService.register(1L, "token", DeviceType.IOS))
-                .doesNotThrowAnyException();
+        fcmTokenService.register(1L, "token", DeviceType.IOS);
 
+        assertThat(token.getUserId()).isEqualTo(1L);
+        assertThat(token.getDeviceType()).isEqualTo(DeviceType.IOS);
         verify(userReader).findActiveUserById(1L);
         verify(fcmTokenRepository).save(any(FcmToken.class));
     }
