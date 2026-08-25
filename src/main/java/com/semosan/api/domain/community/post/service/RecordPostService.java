@@ -4,6 +4,7 @@ import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.post.dto.RecordPostResponse;
 import com.semosan.api.domain.community.post.entity.RecordPost;
+import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.community.post.repository.RecordPostRepository;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
 import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RecordPostService {
 
     private final RecordPostRepository recordPostRepository;
+    private final PostRepository postRepository;
     private final HikingRecordRepository hikingRecordRepository;
     private final HikingMemberRepository hikingMemberRepository;
     private final PostAccessPolicy postAccessPolicy;
@@ -56,8 +58,8 @@ public class RecordPostService {
     public RecordPostResponse getDetail(Long viewerId, Long postId) {
         RecordPost post = findActivePostOrThrow(postId);
         postAccessPolicy.validateReadable(viewerId, post);
-        post.increaseViewCount();
-        return RecordPostResponse.from(post);
+        postRepository.increaseViewCount(postId);
+        return RecordPostResponse.from(post, post.getViewCount() + 1);
     }
 
     @Transactional

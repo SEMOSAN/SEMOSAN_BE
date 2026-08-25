@@ -10,6 +10,7 @@ import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.entity.PostImage;
 import com.semosan.api.domain.community.post.repository.FreePostRepository;
 import com.semosan.api.domain.community.post.repository.PostImageRepository;
+import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 public class FreePostService {
 
     private final FreePostRepository freePostRepository;
+    private final PostRepository postRepository;
     private final PostImageRepository postImageRepository;
     private final PostLikeRepository postLikeRepository;
     private final CommentRepository commentRepository;
@@ -98,10 +100,10 @@ public class FreePostService {
     public FreePostDetailResponse getDetail(Long viewerId, Long postId) {
         FreePost post = findActivePostOrThrow(postId);
         postAccessPolicy.validateReadable(viewerId, post);
-        post.increaseViewCount();
+        postRepository.increaseViewCount(postId);
 
         List<PostImage> images = postImageRepository.findByPostOrderBySortOrderAsc(post);
-        return toDetailResponse(post, images, viewerId);
+        return toDetailResponse(post, images, viewerId, post.getViewCount() + 1);
     }
 
     @Transactional
@@ -120,11 +122,15 @@ public class FreePostService {
     }
 
     private FreePostDetailResponse toDetailResponse(FreePost post, List<PostImage> images, Long viewerId) {
+        return toDetailResponse(post, images, viewerId, post.getViewCount());
+    }
+
+    private FreePostDetailResponse toDetailResponse(FreePost post, List<PostImage> images, Long viewerId, int viewCount) {
         long likeCount = postLikeRepository.countByPost(post);
         long commentCount = commentRepository.countByPostAndDeletedFalse(post);
         boolean likedByMe = postLikeRepository.existsByPostIdAndUserId(post.getId(), viewerId);
 
-        return FreePostDetailResponse.of(post, images, likeCount, commentCount, likedByMe);
+        return FreePostDetailResponse.of(post, images, viewCount, likeCount, commentCount, likedByMe);
     }
 
     private List<PostImage> saveImages(FreePost post, List<String> imageUrls, Integer mainImageIndex) {
