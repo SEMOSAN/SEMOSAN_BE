@@ -12,8 +12,6 @@ import java.util.Optional;
 
 public interface TrackingPointRepository extends JpaRepository<TrackingPoint, Long> {
 
-    List<TrackingPoint> findByTrackingSession_IdOrderByRecordedAtAsc(Long sessionId);
-
     /**
      * 세션의 GPS 점들을 시간순 LineString(GeoJSON) + 고도 배열(JSON) 로 묶어 한 번에 가져온다.
      * 점이 0~1개면 ST_MakeLine 이 null 을 반환해 track 이 null 로 응답된다.
