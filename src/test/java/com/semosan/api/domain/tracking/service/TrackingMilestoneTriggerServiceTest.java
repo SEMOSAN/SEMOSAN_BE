@@ -96,6 +96,7 @@ class TrackingMilestoneTriggerServiceTest {
     @Test
     void evaluateOpensPhotoWindowAndSendsCourseModeNotification() {
         mockLoadedMilestones("100.0,200.0,300.0,400.0", Set.of(), Set.of());
+        when(setOperations.add("tracking:session:1:photo:opened", "0")).thenReturn(1L);
 
         service().evaluate(1L, 10L, 90.0);
 
@@ -118,6 +119,7 @@ class TrackingMilestoneTriggerServiceTest {
     @Test
     void evaluateUsesDistanceBodyWhenMilestoneCountIsNotCourseMode() {
         mockLoadedMilestones("100.0,200.0,300.0,400.0,500.0,600.0", Set.of(), Set.of());
+        when(setOperations.add("tracking:session:1:photo:opened", "0")).thenReturn(1L);
 
         service().evaluate(1L, 10L, 90.0);
 
@@ -168,6 +170,7 @@ class TrackingMilestoneTriggerServiceTest {
         when(valueOperations.get("tracking:session:1:milestones")).thenReturn("100.0,200.0,300.0,400.0");
         when(setOperations.members("tracking:session:1:photo:opened")).thenReturn(null);
         when(setOperations.members("tracking:session:1:photo:closed")).thenReturn(null);
+        when(setOperations.add("tracking:session:1:photo:opened", "0")).thenReturn(1L);
 
         service().evaluate(1L, 10L, 90.0);
 
@@ -178,6 +181,7 @@ class TrackingMilestoneTriggerServiceTest {
     @Test
     void evaluateKeepsOpeningPhotoWindowWhenNotificationFails() {
         mockLoadedMilestones("100.0,200.0,300.0,400.0", Set.of(), Set.of());
+        when(setOperations.add("tracking:session:1:photo:opened", "0")).thenReturn(1L);
         doThrow(new RuntimeException("fcm fail"))
                 .when(notificationService)
                 .send(eq(10L), eq(NotificationType.TRACKING_PHOTO_MILESTONE), any(), any());
@@ -191,6 +195,7 @@ class TrackingMilestoneTriggerServiceTest {
     @Test
     void evaluateClosesPhotoWindowWhenOpenedWindowPassedExitDistance() {
         mockLoadedMilestones("100.0,200.0,300.0,400.0", Set.of("0"), Set.of());
+        when(setOperations.add("tracking:session:1:photo:closed", "0")).thenReturn(1L);
 
         service().evaluate(1L, 10L, 111.0);
 
@@ -202,6 +207,30 @@ class TrackingMilestoneTriggerServiceTest {
                 .containsEntry("status", "CLOSED");
         verify(setOperations).add("tracking:session:1:photo:closed", "0");
         verify(redisTemplate).expire("tracking:session:1:photo:closed", Duration.ofHours(24));
+    }
+
+    @Test
+    void evaluateSkipsOpenNotificationWhenRedisAddReturnsZero() {
+        mockLoadedMilestones("100.0,200.0,300.0,400.0", Set.of(), Set.of());
+        when(setOperations.add("tracking:session:1:photo:opened", "0")).thenReturn(0L);
+
+        service().evaluate(1L, 10L, 90.0);
+
+        verify(setOperations).add("tracking:session:1:photo:opened", "0");
+        verify(redisTemplate, never()).expire("tracking:session:1:photo:opened", Duration.ofHours(24));
+        verifyNoInteractions(messagingTemplate, notificationService);
+    }
+
+    @Test
+    void evaluateSkipsClosedNotificationWhenRedisAddReturnsZero() {
+        mockLoadedMilestones("100.0,200.0,300.0,400.0", Set.of("0"), Set.of());
+        when(setOperations.add("tracking:session:1:photo:closed", "0")).thenReturn(0L);
+
+        service().evaluate(1L, 10L, 111.0);
+
+        verify(setOperations).add("tracking:session:1:photo:closed", "0");
+        verify(redisTemplate, never()).expire("tracking:session:1:photo:closed", Duration.ofHours(24));
+        verifyNoInteractions(messagingTemplate, notificationService);
     }
 
     @Test
