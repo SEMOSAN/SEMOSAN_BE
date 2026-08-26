@@ -29,8 +29,6 @@ import java.util.stream.Collectors;
  *    코스 정상 좌표를 정확히 식별 못해 임시 정책으로 "코스 절반" 을 정상 근처로 본다.
  *    채널: WebSocket(/topic/.../summit) + FCM. Redis Set 으로 1회 idempotent 보장.
  *
- * TODO: 다중 인스턴스 동시성 — 같은 마일스톤에 대해 두 인스턴스가 동시 OPEN 발송할 가능성.
- *       Lua 스크립트 또는 분산 락으로 보강 필요.
  * TODO: 푸시 본문 단위 — 현재 m 단위 정수. 코스 마일스톤이 정수가 아닐 때 km 단위 포맷 고려.
  */
 @Slf4j
@@ -78,14 +76,18 @@ public class TrackingMilestoneTriggerService {
             boolean isClosed = closed.contains(idxStr);
 
             if (!isOpened && distanceTotal >= entry && distanceTotal <= exit) {
-                sendOpen(sessionId, userId, i, mi, milestones.size());
-                redisTemplate.opsForSet().add(openedKey(sessionId), idxStr);
-                redisTemplate.expire(openedKey(sessionId), TTL);
+                Long added = redisTemplate.opsForSet().add(openedKey(sessionId), idxStr);
+                if (added != null && added == 1L) {
+                    redisTemplate.expire(openedKey(sessionId), TTL);
+                    sendOpen(sessionId, userId, i, mi, milestones.size());
+                }
             }
             if (isOpened && !isClosed && distanceTotal > exit) {
-                sendClosed(sessionId, i, mi);
-                redisTemplate.opsForSet().add(closedKey(sessionId), idxStr);
-                redisTemplate.expire(closedKey(sessionId), TTL);
+                Long added = redisTemplate.opsForSet().add(closedKey(sessionId), idxStr);
+                if (added != null && added == 1L) {
+                    redisTemplate.expire(closedKey(sessionId), TTL);
+                    sendClosed(sessionId, i, mi);
+                }
             }
         }
 
