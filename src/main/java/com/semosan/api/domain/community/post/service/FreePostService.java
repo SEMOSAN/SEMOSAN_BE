@@ -164,7 +164,7 @@ public class FreePostService {
         Map<Long, Long> commentCountMap = commentRepository.countByPostIdsGrouped(postIds).stream()
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
         Map<Long, String> mainImageMap = postImageRepository.findMainImagesByPostIds(postIds).stream()
-                .collect(Collectors.toMap(img -> img.getPost().getId(), PostImage::getImageUrl));
+                .collect(Collectors.toMap(row -> (Long) row[0], row -> (String) row[1]));
         Map<Long, Long> imageCountMap = postImageRepository.countByPostIdsGrouped(postIds).stream()
                 .collect(Collectors.toMap(row -> (Long) row[0], row -> (Long) row[1]));
 

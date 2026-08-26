@@ -7,7 +7,6 @@ import com.semosan.api.domain.community.like.repository.PostLikeRepository;
 import com.semosan.api.domain.community.post.dto.FreePostDetailResponse;
 import com.semosan.api.domain.community.post.dto.FreePostListResponse;
 import com.semosan.api.domain.community.post.entity.FreePost;
-import com.semosan.api.domain.community.post.entity.PostImage;
 import com.semosan.api.domain.community.post.repository.FreePostRepository;
 import com.semosan.api.domain.community.post.repository.PostImageRepository;
 import com.semosan.api.domain.community.post.repository.PostRepository;
@@ -177,14 +176,14 @@ class FreePostServiceTest {
     void getListEnrichesThumbnailExtraImageCountAndDefaultCounts() throws Exception {
         User author = user(2L, "author");
         FreePost post = freePost(10L, author, "제목", "본문");
-        PostImage mainImage = PostImage.create(post, "https://example.com/main.png", 0, true);
         PageRequest pageable = PageRequest.of(0, 10);
 
         when(freePostRepository.findVisibleByViewerId(1L, pageable))
                 .thenReturn(new PageImpl<>(List.of(post), pageable, 1));
         when(postLikeRepository.countByPostIdsGrouped(List.of(10L))).thenReturn(List.of());
         when(commentRepository.countByPostIdsGrouped(List.of(10L))).thenReturn(List.of());
-        when(postImageRepository.findMainImagesByPostIds(List.of(10L))).thenReturn(List.of(mainImage));
+        when(postImageRepository.findMainImagesByPostIds(List.of(10L)))
+                .thenReturn(List.<Object[]>of(new Object[]{10L, "https://example.com/main.png"}));
         when(postImageRepository.countByPostIdsGrouped(List.of(10L)))
                 .thenReturn(List.<Object[]>of(new Object[]{10L, 3L}));
 
