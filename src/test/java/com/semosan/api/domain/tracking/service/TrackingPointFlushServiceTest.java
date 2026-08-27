@@ -1,6 +1,5 @@
 package com.semosan.api.domain.tracking.service;
 
-import com.semosan.api.domain.tracking.entity.TrackingSession;
 import com.semosan.api.domain.tracking.repository.TrackingPointJdbcRepository;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import org.junit.jupiter.api.Test;
@@ -12,7 +11,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,13 +37,13 @@ class TrackingPointFlushServiceTest {
         int saved = flushService.flush(1L, List.of());
 
         assertThat(saved).isZero();
-        verify(trackingSessionRepository, never()).findById(1L);
+        verify(trackingSessionRepository, never()).existsById(1L);
         verify(trackingPointJdbcRepository, never()).saveAllInBatch(eq(1L), anyList(), any());
     }
 
     @Test
     void flushReturnsZeroWhenSessionDoesNotExist() {
-        when(trackingSessionRepository.findById(1L)).thenReturn(Optional.empty());
+        when(trackingSessionRepository.existsById(1L)).thenReturn(false);
 
         int saved = flushService.flush(1L, List.of(point(LocalDateTime.now())));
 
@@ -55,9 +53,8 @@ class TrackingPointFlushServiceTest {
 
     @Test
     void flushSavesOnlyPointsWithinAllowedRecordedAtRange() {
-        TrackingSession session = org.mockito.Mockito.mock(TrackingSession.class);
         LocalDateTime now = LocalDateTime.now();
-        when(trackingSessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        when(trackingSessionRepository.existsById(1L)).thenReturn(true);
         when(trackingPointJdbcRepository.saveAllInBatch(eq(1L), anyList(), any())).thenReturn(1);
         ArgumentCaptor<List<TrackingPointFlushService.PendingPoint>> captor = ArgumentCaptor.forClass(List.class);
 
@@ -79,8 +76,7 @@ class TrackingPointFlushServiceTest {
 
     @Test
     void flushReturnsZeroWhenAllPointsAreInvalid() {
-        TrackingSession session = org.mockito.Mockito.mock(TrackingSession.class);
-        when(trackingSessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        when(trackingSessionRepository.existsById(1L)).thenReturn(true);
 
         int saved = flushService.flush(1L, List.of(
                 point(null),
@@ -95,4 +91,3 @@ class TrackingPointFlushServiceTest {
         return new TrackingPointFlushService.PendingPoint(37.5, 127.0, 123.4, recordedAt);
     }
 }
-

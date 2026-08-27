@@ -1,6 +1,5 @@
 package com.semosan.api.domain.tracking.service;
 
-import com.semosan.api.domain.tracking.entity.TrackingSession;
 import com.semosan.api.domain.tracking.repository.TrackingPointJdbcRepository;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * 누적된 GPS 점 배치를 tracking_points 테이블에 저장한다.
@@ -43,8 +41,7 @@ public class TrackingPointFlushService {
         if (pendings == null || pendings.isEmpty()) {
             return 0;
         }
-        Optional<TrackingSession> sessionOpt = trackingSessionRepository.findById(sessionId);
-        if (sessionOpt.isEmpty()) {
+        if (!trackingSessionRepository.existsById(sessionId)) {
             log.warn("Tracking session {} not found while flushing; discarding {} points",
                     sessionId, pendings.size());
             return 0;
