@@ -50,6 +50,10 @@ public class SemoFeed extends BaseEntity {
         this.isPublic = !this.isPublic;
     }
 
+    public void updatePublic(boolean isPublic) {
+        this.isPublic = isPublic;
+    }
+
     public boolean isOwnedBy(Long userId) {
         return this.user.getId().equals(userId);
     }

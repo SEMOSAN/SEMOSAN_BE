@@ -18,4 +18,10 @@ public interface SemoFeedRepository extends JpaRepository<SemoFeed, Long> {
 
     @Query("SELECT s FROM SemoFeed s JOIN FETCH s.user WHERE s.user.id = :userId ORDER BY s.createdAt DESC")
     List<SemoFeed> findByUserId(Long userId);
+
+    @Query(
+            value = "SELECT s FROM SemoFeed s JOIN FETCH s.user ORDER BY s.createdAt DESC",
+            countQuery = "SELECT COUNT(s) FROM SemoFeed s"
+    )
+    Page<SemoFeed> findAllForAdmin(Pageable pageable);
 }
