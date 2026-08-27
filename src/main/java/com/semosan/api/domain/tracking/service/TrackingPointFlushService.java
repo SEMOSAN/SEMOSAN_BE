@@ -1,15 +1,10 @@
 package com.semosan.api.domain.tracking.service;
 
-import com.semosan.api.domain.tracking.entity.TrackingPoint;
 import com.semosan.api.domain.tracking.entity.TrackingSession;
-import com.semosan.api.domain.tracking.repository.TrackingPointRepository;
+import com.semosan.api.domain.tracking.repository.TrackingPointJdbcRepository;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,18 +26,15 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TrackingPointFlushService {
 
-    private static final GeometryFactory GEOMETRY_FACTORY =
-            new GeometryFactory(new PrecisionModel(), 4326);
-
     /** 클라 시계 오차 허용 — 이 폭 이상으로 미래/과거이면 점 폐기. */
     private static final Duration FUTURE_TOLERANCE = Duration.ofMinutes(5);
     private static final Duration PAST_TOLERANCE = Duration.ofHours(24);
 
-    private final TrackingPointRepository trackingPointRepository;
+    private final TrackingPointJdbcRepository trackingPointJdbcRepository;
     private final TrackingSessionRepository trackingSessionRepository;
 
     /**
-     * 주어진 점들을 단일 트랜잭션 안에서 저장한다.
+     * 주어진 점들을 단일 트랜잭션 안에서 JDBC batch insert 로 저장한다.
      * 세션이 이미 사라진 경우 0 을 반환 (호출자가 점을 폐기하도록).
      * 반환값 = 저장된 점 수.
      */
@@ -57,22 +49,16 @@ public class TrackingPointFlushService {
                     sessionId, pendings.size());
             return 0;
         }
-        TrackingSession session = sessionOpt.get();
 
         LocalDateTime now = LocalDateTime.now();
-        List<TrackingPoint> batch = pendings.stream()
+        List<PendingPoint> validPoints = pendings.stream()
                 .filter(p -> isValidRecordedAt(sessionId, p.recordedAt(), now))
-                .map(p -> {
-                    Point location = GEOMETRY_FACTORY.createPoint(new Coordinate(p.lng(), p.lat()));
-                    location.setSRID(4326);
-                    return TrackingPoint.create(session, location, p.altitude(), p.recordedAt());
-                })
                 .toList();
-        if (batch.isEmpty()) {
+        if (validPoints.isEmpty()) {
             return 0;
         }
-        trackingPointRepository.saveAll(batch);
-        return batch.size();
+
+        return trackingPointJdbcRepository.saveAllInBatch(sessionId, validPoints, now);
     }
 
     /** recordedAt 이 null 이거나 허용 범위(과거 24h ~ 미래 5분)를 벗어나면 false. */
