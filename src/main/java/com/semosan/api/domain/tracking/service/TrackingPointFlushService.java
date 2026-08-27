@@ -1,22 +1,16 @@
 package com.semosan.api.domain.tracking.service;
 
-import com.semosan.api.domain.tracking.entity.TrackingPoint;
-import com.semosan.api.domain.tracking.entity.TrackingSession;
-import com.semosan.api.domain.tracking.repository.TrackingPointRepository;
+import com.semosan.api.domain.tracking.dto.command.PendingPointCommand;
+import com.semosan.api.domain.tracking.repository.TrackingPointJdbcRepository;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * 누적된 GPS 점 배치를 tracking_points 테이블에 저장한다.
@@ -31,48 +25,38 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class TrackingPointFlushService {
 
-    private static final GeometryFactory GEOMETRY_FACTORY =
-            new GeometryFactory(new PrecisionModel(), 4326);
-
     /** 클라 시계 오차 허용 — 이 폭 이상으로 미래/과거이면 점 폐기. */
     private static final Duration FUTURE_TOLERANCE = Duration.ofMinutes(5);
     private static final Duration PAST_TOLERANCE = Duration.ofHours(24);
 
-    private final TrackingPointRepository trackingPointRepository;
+    private final TrackingPointJdbcRepository trackingPointJdbcRepository;
     private final TrackingSessionRepository trackingSessionRepository;
 
     /**
-     * 주어진 점들을 단일 트랜잭션 안에서 저장한다.
+     * 주어진 점들을 단일 트랜잭션 안에서 JDBC batch insert 로 저장한다.
      * 세션이 이미 사라진 경우 0 을 반환 (호출자가 점을 폐기하도록).
      * 반환값 = 저장된 점 수.
      */
     @Transactional
-    public int flush(Long sessionId, List<PendingPoint> pendings) {
+    public int flush(Long sessionId, List<PendingPointCommand> pendings) {
         if (pendings == null || pendings.isEmpty()) {
             return 0;
         }
-        Optional<TrackingSession> sessionOpt = trackingSessionRepository.findById(sessionId);
-        if (sessionOpt.isEmpty()) {
+        if (!trackingSessionRepository.existsById(sessionId)) {
             log.warn("Tracking session {} not found while flushing; discarding {} points",
                     sessionId, pendings.size());
             return 0;
         }
-        TrackingSession session = sessionOpt.get();
 
         LocalDateTime now = LocalDateTime.now();
-        List<TrackingPoint> batch = pendings.stream()
+        List<PendingPointCommand> validPoints = pendings.stream()
                 .filter(p -> isValidRecordedAt(sessionId, p.recordedAt(), now))
-                .map(p -> {
-                    Point location = GEOMETRY_FACTORY.createPoint(new Coordinate(p.lng(), p.lat()));
-                    location.setSRID(4326);
-                    return TrackingPoint.create(session, location, p.altitude(), p.recordedAt());
-                })
                 .toList();
-        if (batch.isEmpty()) {
+        if (validPoints.isEmpty()) {
             return 0;
         }
-        trackingPointRepository.saveAll(batch);
-        return batch.size();
+
+        return trackingPointJdbcRepository.saveAllInBatch(sessionId, validPoints, now);
     }
 
     /** recordedAt 이 null 이거나 허용 범위(과거 24h ~ 미래 5분)를 벗어나면 false. */
@@ -92,14 +76,5 @@ public class TrackingPointFlushService {
             return false;
         }
         return true;
-    }
-
-    /** Consumer 메모리 버퍼에 누적되는 점 단위 — 외부에서 참조 가능하도록 노출. */
-    public record PendingPoint(
-            double lat,
-            double lng,
-            Double altitude,
-            LocalDateTime recordedAt
-    ) {
     }
 }
