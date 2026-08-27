@@ -45,13 +45,4 @@ public class TrackingPoint extends BaseEntity {
 
     @Column(name = "recorded_at", nullable = false)
     private LocalDateTime recordedAt;
-
-    public static TrackingPoint create(TrackingSession session, Point location, Double altitude, LocalDateTime recordedAt) {
-        return TrackingPoint.builder()
-                .trackingSession(session)
-                .location(location)
-                .altitude(altitude)
-                .recordedAt(recordedAt)
-                .build();
-    }
 }
