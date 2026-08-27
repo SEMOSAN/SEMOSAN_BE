@@ -1,5 +1,6 @@
 package com.semosan.api.domain.tracking.service;
 
+import com.semosan.api.domain.tracking.dto.command.PendingPointCommand;
 import com.semosan.api.domain.tracking.repository.TrackingPointJdbcRepository;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import org.junit.jupiter.api.Test;
@@ -56,7 +57,7 @@ class TrackingPointFlushServiceTest {
         LocalDateTime now = LocalDateTime.now();
         when(trackingSessionRepository.existsById(1L)).thenReturn(true);
         when(trackingPointJdbcRepository.saveAllInBatch(eq(1L), anyList(), any())).thenReturn(1);
-        ArgumentCaptor<List<TrackingPointFlushService.PendingPoint>> captor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List<PendingPointCommand>> captor = ArgumentCaptor.forClass(List.class);
 
         int saved = flushService.flush(1L, List.of(
                 point(now.minusMinutes(1)),
@@ -67,7 +68,7 @@ class TrackingPointFlushServiceTest {
 
         assertThat(saved).isEqualTo(1);
         verify(trackingPointJdbcRepository).saveAllInBatch(eq(1L), captor.capture(), any());
-        TrackingPointFlushService.PendingPoint point = captor.getValue().getFirst();
+        PendingPointCommand point = captor.getValue().getFirst();
         assertThat(point.lat()).isEqualTo(37.5);
         assertThat(point.lng()).isEqualTo(127.0);
         assertThat(point.altitude()).isEqualTo(123.4);
@@ -87,7 +88,7 @@ class TrackingPointFlushServiceTest {
         verify(trackingPointJdbcRepository, never()).saveAllInBatch(eq(1L), anyList(), any());
     }
 
-    private TrackingPointFlushService.PendingPoint point(LocalDateTime recordedAt) {
-        return new TrackingPointFlushService.PendingPoint(37.5, 127.0, 123.4, recordedAt);
+    private PendingPointCommand point(LocalDateTime recordedAt) {
+        return new PendingPointCommand(37.5, 127.0, 123.4, recordedAt);
     }
 }

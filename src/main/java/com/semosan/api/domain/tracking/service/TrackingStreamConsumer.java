@@ -1,5 +1,6 @@
 package com.semosan.api.domain.tracking.service;
 
+import com.semosan.api.domain.tracking.dto.command.PendingPointCommand;
 import com.semosan.api.domain.tracking.event.TrackingSessionTerminatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +49,7 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
     private static final String F_ALTITUDE = "altitude";
     private static final String F_RECORDED_AT = "recordedAt";
 
-    private final Map<Long, Queue<TrackingPointFlushService.PendingPoint>> buffers = new ConcurrentHashMap<>();
+    private final Map<Long, Queue<PendingPointCommand>> buffers = new ConcurrentHashMap<>();
     private final Map<Long, TrackingSessionStatsService.LastPosition> lastPositions = new ConcurrentHashMap<>();
 
     private final TrackingSessionStatsService statsService;
@@ -81,9 +82,9 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
             lastPositions.put(sessionId, new TrackingSessionStatsService.LastPosition(lat, lng, altitude));
             milestoneTriggerService.evaluate(sessionId, userId, distanceTotal);
 
-            Queue<TrackingPointFlushService.PendingPoint> queue =
+            Queue<PendingPointCommand> queue =
                     buffers.computeIfAbsent(sessionId, k -> new ConcurrentLinkedQueue<>());
-            queue.offer(new TrackingPointFlushService.PendingPoint(lat, lng, altitude, recordedAt));
+            queue.offer(new PendingPointCommand(lat, lng, altitude, recordedAt));
 
             if (queue.size() >= FLUSH_THRESHOLD) {
                 flushSession(sessionId);
@@ -105,12 +106,12 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
     }
 
     private void flushSession(Long sessionId) {
-        Queue<TrackingPointFlushService.PendingPoint> queue = buffers.get(sessionId);
+        Queue<PendingPointCommand> queue = buffers.get(sessionId);
         if (queue == null || queue.isEmpty()) {
             return;
         }
-        List<TrackingPointFlushService.PendingPoint> batch = new ArrayList<>();
-        TrackingPointFlushService.PendingPoint p;
+        List<PendingPointCommand> batch = new ArrayList<>();
+        PendingPointCommand p;
         while ((p = queue.poll()) != null) {
             batch.add(p);
             if (batch.size() >= FLUSH_THRESHOLD) {
@@ -142,13 +143,13 @@ public class TrackingStreamConsumer implements StreamListener<String, MapRecord<
     public void onSessionTerminated(TrackingSessionTerminatedEvent event) {
         Long sessionId = event.sessionId();
         lastPositions.remove(sessionId);
-        Queue<TrackingPointFlushService.PendingPoint> queue = buffers.remove(sessionId);
+        Queue<PendingPointCommand> queue = buffers.remove(sessionId);
         if (queue == null || queue.isEmpty()) {
             return;
         }
-        List<TrackingPointFlushService.PendingPoint> remaining = new ArrayList<>(queue);
+        List<PendingPointCommand> remaining = new ArrayList<>(queue);
         for (int i = 0; i < remaining.size(); i += FLUSH_THRESHOLD) {
-            List<TrackingPointFlushService.PendingPoint> chunk =
+            List<PendingPointCommand> chunk =
                     remaining.subList(i, Math.min(i + FLUSH_THRESHOLD, remaining.size()));
             try {
                 flushService.flush(sessionId, chunk);

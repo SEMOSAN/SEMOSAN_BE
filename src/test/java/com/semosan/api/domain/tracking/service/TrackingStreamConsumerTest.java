@@ -1,5 +1,6 @@
 package com.semosan.api.domain.tracking.service;
 
+import com.semosan.api.domain.tracking.dto.command.PendingPointCommand;
 import com.semosan.api.domain.tracking.event.TrackingSessionTerminatedEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,7 +53,7 @@ class TrackingStreamConsumerTest {
         verify(activityService).markActive(1L);
         verify(statsService).recordPoint(1L, 37.5, 127.0, 100.0, recordedAt);
         verify(milestoneTriggerService).evaluate(1L, 10L, 120.0);
-        ArgumentCaptor<List<TrackingPointFlushService.PendingPoint>> captor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List<PendingPointCommand>> captor = ArgumentCaptor.forClass(List.class);
         verify(flushService).flush(eq(1L), captor.capture());
         assertThat(captor.getValue()).singleElement()
                 .satisfies(point -> {

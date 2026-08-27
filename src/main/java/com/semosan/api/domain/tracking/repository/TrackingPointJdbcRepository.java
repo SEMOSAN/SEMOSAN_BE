@@ -1,6 +1,6 @@
 package com.semosan.api.domain.tracking.repository;
 
-import com.semosan.api.domain.tracking.service.TrackingPointFlushService.PendingPoint;
+import com.semosan.api.domain.tracking.dto.command.PendingPointCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -47,7 +47,7 @@ public class TrackingPointJdbcRepository {
      * @param now 생성/수정 일시
      * @return 저장된 점 수
      */
-    public int saveAllInBatch(Long sessionId, List<PendingPoint> points, LocalDateTime now) {
+    public int saveAllInBatch(Long sessionId, List<PendingPointCommand> points, LocalDateTime now) {
         if (points == null || points.isEmpty()) {
             return 0;
         }
@@ -57,7 +57,7 @@ public class TrackingPointJdbcRepository {
         jdbcTemplate.batchUpdate(INSERT_SQL, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
-                PendingPoint point = points.get(i);
+                PendingPointCommand point = points.get(i);
                 ps.setLong(1, sessionId);
                 ps.setDouble(2, point.lng());
                 ps.setDouble(3, point.lat());

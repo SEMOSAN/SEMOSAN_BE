@@ -1,5 +1,6 @@
 package com.semosan.api.domain.tracking.service;
 
+import com.semosan.api.domain.tracking.dto.command.PendingPointCommand;
 import com.semosan.api.domain.tracking.repository.TrackingPointJdbcRepository;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class TrackingPointFlushService {
      * 반환값 = 저장된 점 수.
      */
     @Transactional
-    public int flush(Long sessionId, List<PendingPoint> pendings) {
+    public int flush(Long sessionId, List<PendingPointCommand> pendings) {
         if (pendings == null || pendings.isEmpty()) {
             return 0;
         }
@@ -48,7 +49,7 @@ public class TrackingPointFlushService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        List<PendingPoint> validPoints = pendings.stream()
+        List<PendingPointCommand> validPoints = pendings.stream()
                 .filter(p -> isValidRecordedAt(sessionId, p.recordedAt(), now))
                 .toList();
         if (validPoints.isEmpty()) {
@@ -75,14 +76,5 @@ public class TrackingPointFlushService {
             return false;
         }
         return true;
-    }
-
-    /** Consumer 메모리 버퍼에 누적되는 점 단위 — 외부에서 참조 가능하도록 노출. */
-    public record PendingPoint(
-            double lat,
-            double lng,
-            Double altitude,
-            LocalDateTime recordedAt
-    ) {
     }
 }

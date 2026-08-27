@@ -1,9 +1,9 @@
 package com.semosan.api.domain.tracking.repository;
 
 import com.semosan.api.common.config.FirebaseConfig;
+import com.semosan.api.domain.tracking.dto.command.PendingPointCommand;
 import com.semosan.api.domain.tracking.entity.TrackingPoint;
 import com.semosan.api.domain.tracking.entity.TrackingSession;
-import com.semosan.api.domain.tracking.service.TrackingPointFlushService.PendingPoint;
 import jakarta.persistence.EntityManager;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
@@ -72,10 +72,10 @@ class TrackingPointJdbcRepositoryTest {
         Long sessionId = insertTrackingSession(userId, mountainId);
 
         LocalDateTime now = LocalDateTime.now();
-        List<PendingPoint> points = List.of(
-                new PendingPoint(37.5665, 126.9780, 150.0, now.minusSeconds(10)),
-                new PendingPoint(37.5666, 126.9781, 155.0, now.minusSeconds(5)),
-                new PendingPoint(37.5667, 126.9782, null, now) // altitude null 케이스
+        List<PendingPointCommand> points = List.of(
+                new PendingPointCommand(37.5665, 126.9780, 150.0, now.minusSeconds(10)),
+                new PendingPointCommand(37.5666, 126.9781, 155.0, now.minusSeconds(5)),
+                new PendingPointCommand(37.5667, 126.9782, null, now) // altitude null 케이스
         );
 
         int savedCount = trackingPointJdbcRepository.saveAllInBatch(sessionId, points, now);
@@ -117,9 +117,9 @@ class TrackingPointJdbcRepositoryTest {
         Long sessionIdAfter = insertTrackingSession(userIdAfter, mountainId);
 
         LocalDateTime now = LocalDateTime.now();
-        List<PendingPoint> points = new ArrayList<>(pointCount);
+        List<PendingPointCommand> points = new ArrayList<>(pointCount);
         for (int i = 0; i < pointCount; i++) {
-            points.add(new PendingPoint(37.5 + (i * 0.0001), 127.0 + (i * 0.0001), 100.0 + i, now.minusSeconds(pointCount - i)));
+            points.add(new PendingPointCommand(37.5 + (i * 0.0001), 127.0 + (i * 0.0001), 100.0 + i, now.minusSeconds(pointCount - i)));
         }
 
         // ----------------------------------------------------
