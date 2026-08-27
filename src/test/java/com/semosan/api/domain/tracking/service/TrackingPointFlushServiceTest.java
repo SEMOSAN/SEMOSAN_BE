@@ -1,8 +1,7 @@
 package com.semosan.api.domain.tracking.service;
 
-import com.semosan.api.domain.tracking.entity.TrackingPoint;
 import com.semosan.api.domain.tracking.entity.TrackingSession;
-import com.semosan.api.domain.tracking.repository.TrackingPointRepository;
+import com.semosan.api.domain.tracking.repository.TrackingPointJdbcRepository;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,7 +15,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,7 +26,7 @@ import static org.mockito.Mockito.when;
 class TrackingPointFlushServiceTest {
 
     @Mock
-    private TrackingPointRepository trackingPointRepository;
+    private TrackingPointJdbcRepository trackingPointJdbcRepository;
 
     @Mock
     private TrackingSessionRepository trackingSessionRepository;
@@ -39,7 +40,7 @@ class TrackingPointFlushServiceTest {
 
         assertThat(saved).isZero();
         verify(trackingSessionRepository, never()).findById(1L);
-        verify(trackingPointRepository, never()).saveAll(anyList());
+        verify(trackingPointJdbcRepository, never()).saveAllInBatch(eq(1L), anyList(), any());
     }
 
     @Test
@@ -49,7 +50,7 @@ class TrackingPointFlushServiceTest {
         int saved = flushService.flush(1L, List.of(point(LocalDateTime.now())));
 
         assertThat(saved).isZero();
-        verify(trackingPointRepository, never()).saveAll(anyList());
+        verify(trackingPointJdbcRepository, never()).saveAllInBatch(eq(1L), anyList(), any());
     }
 
     @Test
@@ -57,7 +58,8 @@ class TrackingPointFlushServiceTest {
         TrackingSession session = org.mockito.Mockito.mock(TrackingSession.class);
         LocalDateTime now = LocalDateTime.now();
         when(trackingSessionRepository.findById(1L)).thenReturn(Optional.of(session));
-        ArgumentCaptor<List<TrackingPoint>> captor = ArgumentCaptor.forClass(List.class);
+        when(trackingPointJdbcRepository.saveAllInBatch(eq(1L), anyList(), any())).thenReturn(1);
+        ArgumentCaptor<List<TrackingPointFlushService.PendingPoint>> captor = ArgumentCaptor.forClass(List.class);
 
         int saved = flushService.flush(1L, List.of(
                 point(now.minusMinutes(1)),
@@ -67,14 +69,12 @@ class TrackingPointFlushServiceTest {
         ));
 
         assertThat(saved).isEqualTo(1);
-        verify(trackingPointRepository).saveAll(captor.capture());
-        TrackingPoint trackingPoint = captor.getValue().getFirst();
-        assertThat(trackingPoint.getTrackingSession()).isSameAs(session);
-        assertThat(trackingPoint.getLocation().getY()).isEqualTo(37.5);
-        assertThat(trackingPoint.getLocation().getX()).isEqualTo(127.0);
-        assertThat(trackingPoint.getLocation().getSRID()).isEqualTo(4326);
-        assertThat(trackingPoint.getAltitude()).isEqualTo(123.4);
-        assertThat(trackingPoint.getRecordedAt()).isEqualToIgnoringNanos(now.minusMinutes(1));
+        verify(trackingPointJdbcRepository).saveAllInBatch(eq(1L), captor.capture(), any());
+        TrackingPointFlushService.PendingPoint point = captor.getValue().getFirst();
+        assertThat(point.lat()).isEqualTo(37.5);
+        assertThat(point.lng()).isEqualTo(127.0);
+        assertThat(point.altitude()).isEqualTo(123.4);
+        assertThat(point.recordedAt()).isEqualToIgnoringNanos(now.minusMinutes(1));
     }
 
     @Test
@@ -88,10 +88,11 @@ class TrackingPointFlushServiceTest {
         ));
 
         assertThat(saved).isZero();
-        verify(trackingPointRepository, never()).saveAll(anyList());
+        verify(trackingPointJdbcRepository, never()).saveAllInBatch(eq(1L), anyList(), any());
     }
 
     private TrackingPointFlushService.PendingPoint point(LocalDateTime recordedAt) {
         return new TrackingPointFlushService.PendingPoint(37.5, 127.0, 123.4, recordedAt);
     }
 }
+
