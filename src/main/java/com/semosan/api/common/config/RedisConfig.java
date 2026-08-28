@@ -27,6 +27,7 @@ public class RedisConfig {
                 .entryTtl(Duration.ofMinutes(30));
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
+                .transactionAware() // @Transactional 커밋 후에만 evict/put 반영 — 커밋 전 evict로 인한 stale 재캐싱 방지
                 .build();
     }
 }
