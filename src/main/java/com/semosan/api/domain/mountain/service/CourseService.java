@@ -26,7 +26,7 @@ public class CourseService {
         CourseDetailProjection course = courseRepository.findCourseDetailById(courseId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.COURSE_NOT_FOUND));
         boolean likedByMe = userId != null && courseLikeRepository.existsByUser_IdAndCourse_Id(userId, courseId);
-        List<SlopeSegmentResponse> segments = slopeSegmentCalculator.calculate(course.getPolyline(), course.getAltitudes());
+        List<SlopeSegmentResponse> segments = slopeSegmentCalculator.calculate(courseId, course.getPolyline(), course.getAltitudes());
         return CourseDetailResponse.of(course, likedByMe, segments);
     }
 }

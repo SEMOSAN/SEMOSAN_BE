@@ -15,27 +15,27 @@ class CourseSlopeSegmentCalculatorTest {
 
     @Test
     void calculateReturnsEmptyWhenPolylineOrAltitudesAreNull() {
-        assertThat(calculator.calculate(null, "[1,2]")).isEmpty();
-        assertThat(calculator.calculate(lineString(2), null)).isEmpty();
+        assertThat(calculator.calculate(1L, null, "[1,2]")).isEmpty();
+        assertThat(calculator.calculate(1L, lineString(2), null)).isEmpty();
     }
 
     @Test
     void calculateReturnsEmptyWhenCoordinatesAreMissingInvalidOrTooShort() {
-        assertThat(calculator.calculate("{}", "[1,2]")).isEmpty();
-        assertThat(calculator.calculate("{\"coordinates\":{}}", "[1,2]")).isEmpty();
-        assertThat(calculator.calculate(lineString(1), "[1]")).isEmpty();
+        assertThat(calculator.calculate(1L, "{}", "[1,2]")).isEmpty();
+        assertThat(calculator.calculate(1L, "{\"coordinates\":{}}", "[1,2]")).isEmpty();
+        assertThat(calculator.calculate(1L, lineString(1), "[1]")).isEmpty();
     }
 
     @Test
     void calculateReturnsEmptyWhenAltitudesAreNullOrSizeMismatch() {
-        assertThat(calculator.calculate(lineString(2), "null")).isEmpty();
-        assertThat(calculator.calculate(lineString(3), "[100,110]")).isEmpty();
+        assertThat(calculator.calculate(1L, lineString(2), "null")).isEmpty();
+        assertThat(calculator.calculate(1L, lineString(3), "[100,110]")).isEmpty();
     }
 
     @Test
     void calculateReturnsEmptyWhenJsonParsingFails() {
-        assertThat(calculator.calculate("{invalid", "[100,110]")).isEmpty();
-        assertThat(calculator.calculate(lineString(2), "[invalid")).isEmpty();
+        assertThat(calculator.calculate(1L, "{invalid", "[100,110]")).isEmpty();
+        assertThat(calculator.calculate(1L, lineString(2), "[invalid")).isEmpty();
     }
 
     @Test
@@ -47,9 +47,9 @@ class CourseSlopeSegmentCalculatorTest {
                 {"coordinates":[[127.0,37.0],[127.001,37.0]]}
                 """;
 
-        assertThat(calculator.calculate(sameLocation, "[100,200]"))
+        assertThat(calculator.calculate(1L, sameLocation, "[100,200]"))
                 .containsExactly(new SlopeSegmentResponse(0, 1, SlopeGrade.FLAT));
-        assertThat(calculator.calculate(withNullAltitude, "[100,null]"))
+        assertThat(calculator.calculate(1L, withNullAltitude, "[100,null]"))
                 .containsExactly(new SlopeSegmentResponse(0, 1, SlopeGrade.FLAT));
     }
 
@@ -72,7 +72,7 @@ class CourseSlopeSegmentCalculatorTest {
                 ]}
                 """;
 
-        List<SlopeSegmentResponse> result = calculator.calculate(
+        List<SlopeSegmentResponse> result = calculator.calculate(1L, 
                 polyline,
                 "[0,0,0,0,1000,1000,1000,1000,0,0,0,0]"
         );

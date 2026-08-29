@@ -7,6 +7,7 @@ import com.semosan.api.domain.mountain.dto.response.SlopeSegmentResponse;
 import com.semosan.api.domain.mountain.enums.SlopeGrade;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -22,6 +23,9 @@ import java.util.List;
  *  4) 같은 등급 연속 segment 묶기.
  *
  * 응답 좌표 인덱스(startIdx, endIdx) 는 polyline.coordinates 의 양 끝 포함(inclusive).
+ *
+ * 코스의 polyline/altitudes 는 생성 후 수정 API가 없어 사실상 불변이므로, courseId 기준으로
+ * 결과를 캐싱한다 (evict 트리거 없이 공통 TTL만으로 충분).
  */
 @Slf4j
 @Component
@@ -33,7 +37,8 @@ public class CourseSlopeSegmentCalculator {
 
     private final ObjectMapper objectMapper;
 
-    public List<SlopeSegmentResponse> calculate(String polylineJson, String altitudesJson) {
+    @Cacheable(cacheNames = "courseSlopeSegments", key = "#courseId")
+    public List<SlopeSegmentResponse> calculate(Long courseId, String polylineJson, String altitudesJson) {
         if (polylineJson == null || altitudesJson == null) {
             return List.of();
         }

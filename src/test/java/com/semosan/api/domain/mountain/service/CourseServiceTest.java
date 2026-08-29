@@ -44,7 +44,7 @@ class CourseServiceTest {
     void getCourseDetailIncludesLikedByMe() {
         when(courseRepository.findCourseDetailById(10L)).thenReturn(Optional.of(projection));
         when(courseLikeRepository.existsByUser_IdAndCourse_Id(1L, 10L)).thenReturn(true);
-        when(slopeSegmentCalculator.calculate(any(), any())).thenReturn(List.of());
+        when(slopeSegmentCalculator.calculate(any(), any(), any())).thenReturn(List.of());
         stubProjection();
 
         CourseDetailResponse response = courseService.getCourseDetail(1L, 10L);
@@ -57,7 +57,7 @@ class CourseServiceTest {
     @Test
     void getCourseDetailSkipsLikeLookupWhenUserIdIsNull() {
         when(courseRepository.findCourseDetailById(10L)).thenReturn(Optional.of(projection));
-        when(slopeSegmentCalculator.calculate(any(), any())).thenReturn(List.of());
+        when(slopeSegmentCalculator.calculate(any(), any(), any())).thenReturn(List.of());
         stubProjection();
 
         CourseDetailResponse response = courseService.getCourseDetail(null, 10L);
