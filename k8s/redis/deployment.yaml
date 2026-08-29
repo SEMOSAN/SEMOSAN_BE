@@ -16,8 +16,6 @@ spec:
       containers:
         - name: redis
           image: redis:7-alpine
-          # AOF 영속화 — Redis 재시작/장애 시 GPS Stream 등 데이터 유실 방지. everysec은 최대 1초분 유실 감수.
-          command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
           ports:
             - containerPort: 6379
           volumeMounts:
