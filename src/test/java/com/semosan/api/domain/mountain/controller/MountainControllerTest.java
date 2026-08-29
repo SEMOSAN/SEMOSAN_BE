@@ -5,6 +5,7 @@ import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainDetailResponse;
+import com.semosan.api.domain.mountain.dto.response.MountainLikeToggleResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainMapListResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainRecommendationResponse;
@@ -117,19 +118,14 @@ class MountainControllerTest {
     }
 
     @Test
-    void likeMountainDelegatesAndReturnsSuccessResponse() {
-        ResponseEntity<ApiResponse<Void>> response = mountainController.likeMountain(1L, 10L);
+    void toggleMountainLikeDelegatesAndReturnsSuccessResponse() {
+        MountainLikeToggleResponse toggleResponse = new MountainLikeToggleResponse(true);
+        when(mountainLikeService.toggleMountainLike(1L, 10L)).thenReturn(toggleResponse);
 
-        assertThat(response.getStatusCode()).isEqualTo(SuccessStatus.MOUNTAIN_LIKE_SUCCESS.getHttpStatus());
-        verify(mountainLikeService).likeMountain(1L, 10L);
-    }
+        ResponseEntity<ApiResponse<MountainLikeToggleResponse>> response = mountainController.toggleMountainLike(1L, 10L);
 
-    @Test
-    void unlikeMountainDelegatesAndReturnsSuccessResponse() {
-        ResponseEntity<ApiResponse<Void>> response = mountainController.unlikeMountain(1L, 10L);
-
-        assertThat(response.getStatusCode()).isEqualTo(SuccessStatus.MOUNTAIN_UNLIKE_SUCCESS.getHttpStatus());
-        verify(mountainLikeService).unlikeMountain(1L, 10L);
+        assertThat(response.getStatusCode()).isEqualTo(SuccessStatus.MOUNTAIN_LIKE_TOGGLE_SUCCESS.getHttpStatus());
+        assertThat(response.getBody().getData()).isSameAs(toggleResponse);
     }
 
     private MountainListResponse mountainListResponse() {
