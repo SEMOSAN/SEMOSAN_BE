@@ -1,6 +1,7 @@
 package com.semosan.api.common.alert;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.MDC;
 import org.springframework.util.StringUtils;
 
 public record RequestContext(
@@ -8,7 +9,8 @@ public record RequestContext(
         String url,
         String ip,
         String userId,
-        String userAgent
+        String userAgent,
+        String traceId
 ) {
 
     public static RequestContext from(HttpServletRequest request) {
@@ -17,7 +19,9 @@ public record RequestContext(
                 request.getRequestURL().toString(),
                 clientIp(request),
                 userId(request),
-                request.getHeader("User-Agent")
+                request.getHeader("User-Agent"),
+                // notify()가 @Async로 다른 스레드에서 실행되므로 MDC는 여기서 미리 꺼내둔다
+                MDC.get("traceId")
         );
     }
 

@@ -33,7 +33,8 @@ class ServerErrorAlertServiceTest {
                 "https://api.example.com/fail",
                 "127.0.0.1",
                 "1",
-                "JUnit token=secret"
+                "JUnit token=secret",
+                "trace-1"
         );
         IllegalStateException exception = new IllegalStateException("password=raw leaked");
         ArgumentCaptor<DiscordMessage> captor = ArgumentCaptor.forClass(DiscordMessage.class);
@@ -62,7 +63,7 @@ class ServerErrorAlertServiceTest {
     void notifyUsesDefaultProfilesWhenNoActiveProfileExists() {
         when(environment.getActiveProfiles()).thenReturn(new String[]{});
         when(environment.getDefaultProfiles()).thenReturn(new String[]{"default"});
-        RequestContext requestContext = new RequestContext("POST", "https://api.example.com/fail", "127.0.0.1", null, null);
+        RequestContext requestContext = new RequestContext("POST", "https://api.example.com/fail", "127.0.0.1", null, null, "trace-2");
         ArgumentCaptor<DiscordMessage> captor = ArgumentCaptor.forClass(DiscordMessage.class);
 
         alertService.notify(500, new RuntimeException(), requestContext);
