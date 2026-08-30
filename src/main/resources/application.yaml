@@ -91,3 +91,12 @@ discord:
     enabled: ${DISCORD_ALERT_ENABLED}
     webhook-url: ${DISCORD_WEBHOOK_URL}
     report-webhook-url: ${DISCORD_REPORT_WEBHOOK_URL}
+
+rate-limit:
+  enabled: ${RATE_LIMIT_ENABLED:true}
+  global:
+    limit: ${RATE_LIMIT_GLOBAL_LIMIT:300}
+    window-seconds: ${RATE_LIMIT_GLOBAL_WINDOW:60}
+  auth:
+    limit: ${RATE_LIMIT_AUTH_LIMIT:30}
+    window-seconds: ${RATE_LIMIT_AUTH_WINDOW:60}

@@ -1,5 +1,6 @@
 package com.semosan.api;
 
+import com.semosan.api.common.ratelimit.RateLimitProperties;
 import com.semosan.api.domain.oauth.properties.KakaoProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -10,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableJpaAuditing
 @EnableScheduling
 @SpringBootApplication
-@EnableConfigurationProperties(KakaoProperties.class)
+@EnableConfigurationProperties({KakaoProperties.class, RateLimitProperties.class})
 public class ApiApplication {
 
     public static void main(String[] args) {
