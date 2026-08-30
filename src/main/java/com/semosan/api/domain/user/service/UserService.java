@@ -156,12 +156,14 @@ public class UserService {
 
     // 로그인한 사용자를 탈퇴 처리하고 하위 데이터를 삭제합니다.
     // 다른 도메인의 하위 데이터 정리는 UserWithdrawnEvent를 구독하는 각 도메인 리스너가 담당한다.
+    // saveAndFlush: 이벤트 발행 뒤 실행되는 리스너들의 clearAutomatically=true가
+    // 아직 flush 안 된 이 변경을 지워버리는 걸 막기 위해 여기서 확정 flush한다(#393).
     @Transactional
     public void withdrawUser(User user) {
         userOnboardingRepository.deleteByUser_Id(user.getId());
         userNotificationSettingRepository.deleteByUser_Id(user.getId());
         user.withdraw();
-        userRepository.save(user);
+        userRepository.saveAndFlush(user);
         eventPublisher.publishEvent(new UserWithdrawnEvent(user.getId()));
     }
 

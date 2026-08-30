@@ -421,7 +421,7 @@ class UserServiceTest {
 
         verify(userOnboardingRepository).deleteByUser_Id(1L);
         verify(userNotificationSettingRepository).deleteByUser_Id(1L);
-        verify(userRepository).save(user);
+        verify(userRepository).saveAndFlush(user);
         verify(eventPublisher).publishEvent(new UserWithdrawnEvent(1L));
 
         assertThat(user.isDeleted()).isTrue();
