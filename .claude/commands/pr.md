@@ -29,12 +29,16 @@
 
 ## 각 항목 작성 규칙
 
-### PR 제목 형식
-- `[Feat] ~기능 추가` — 새로운 기능
-- `[Fix] ~버그 수정` — 버그 수정
-- `[Refactor] ~개선` — 리팩토링
-- `[Chore] ~` — 설정, 빌드, 기타
-- `[Docs] ~` — 문서
+### PR 제목 형식 및 라벨
+
+| 제목 형식 | 용도 | 라벨 |
+|---|---|---|
+| `[Feat] ~기능 추가` | 새로운 기능 | `enhancement` |
+| `[Fix] ~버그 수정` | 버그 수정 | `bug` |
+| `[Refactor] ~개선` | 리팩토링 | `refactor` |
+| `[Chore] ~` | 설정, 빌드, 기타 | `chore` |
+| `[Docs] ~` | 문서 | `documentation` |
+| `[Test] ~` | 테스트 코드 | `test` |
 
 ### 🧾 요약
 - 이 PR이 무엇을 왜 하는지 한 줄로 작성
@@ -66,11 +70,13 @@ cat > /tmp/pr_body.md << 'EOF'
 <채워진 템플릿 내용>
 EOF
 
-# 2. PR 생성
+# 2. PR 생성 (라벨은 위 표에서 타입에 맞는 것, 담당자는 @me로 현재 gh 인증 계정 지정)
 gh pr create \
   --title "[<타입>] <한글 제목>" \
   --body-file /tmp/pr_body.md \
-  --base develop
+  --base develop \
+  --label "<라벨>" \
+  --assignee @me
 
 # 3. 임시 파일 삭제
 rm /tmp/pr_body.md
