@@ -2,15 +2,14 @@ package com.semosan.api.domain.user.event;
 
 import com.semosan.api.common.alert.DiscordAlertClient;
 import com.semosan.api.common.alert.dto.DiscordMessage;
+import com.semosan.api.domain.user.enums.user.DeviceType;
+import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.semosan.api.domain.user.enums.user.DeviceType;
-import com.semosan.api.domain.user.enums.user.OAuthProvider;
 
 import java.time.LocalDateTime;
 
