@@ -92,6 +92,11 @@ discord:
     webhook-url: ${DISCORD_WEBHOOK_URL}
     report-webhook-url: ${DISCORD_REPORT_WEBHOOK_URL}
 
+grafana:
+  base-url: ${GRAFANA_BASE_URL:}
+  loki:
+    datasource-uid: ${GRAFANA_LOKI_DATASOURCE_UID:loki}
+
 rate-limit:
   enabled: ${RATE_LIMIT_ENABLED:true}
   global:
