@@ -17,9 +17,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
@@ -47,9 +45,6 @@ class PostLikeServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
-    @Mock
-    private EntityManager entityManager;
-
     @InjectMocks
     private PostLikeService postLikeService;
 
@@ -62,6 +57,7 @@ class PostLikeServiceTest {
         when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
         when(userReader.findActiveUserById(2L)).thenReturn(liker);
         when(postLikeRepository.findByPostAndUser(post, liker)).thenReturn(Optional.empty());
+        when(postLikeRepository.insertIgnoreConflict(10L, 2L)).thenReturn(1);
         when(postLikeRepository.countByPost(post)).thenReturn(1L);
 
         PostLikeToggleResponse result = postLikeService.toggleWithCount(10L, 2L);
@@ -94,6 +90,7 @@ class PostLikeServiceTest {
         verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
+    // ON CONFLICT DO NOTHING이라 동시 요청이 겹치면 insert row가 0개라 예외 없이 liked=true로 흡수된다.
     @Test
     void toggleWithCountDoesNotPublishEventWhenConcurrentDuplicateDetected() throws Exception {
         User postAuthor = user(1L, "post-author");
@@ -103,16 +100,14 @@ class PostLikeServiceTest {
         when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
         when(userReader.findActiveUserById(2L)).thenReturn(liker);
         when(postLikeRepository.findByPostAndUser(post, liker)).thenReturn(Optional.empty());
-        when(postLikeRepository.save(any(PostLike.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+        when(postLikeRepository.insertIgnoreConflict(10L, 2L)).thenReturn(0);
         when(postLikeRepository.countByPost(post)).thenReturn(1L);
-        ReflectionTestUtils.setField(postLikeService, "entityManager", entityManager);
 
         PostLikeToggleResponse result = postLikeService.toggleWithCount(10L, 2L);
 
         assertThat(result.liked()).isTrue();
         assertThat(result.count()).isEqualTo(1L);
         verify(eventPublisher, never()).publishEvent(any(Object.class));
-        verify(entityManager).clear();
     }
 
     @Test
@@ -152,7 +147,7 @@ class PostLikeServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.POST_NOT_FOUND);
         verify(userReader, never()).findActiveUserById(2L);
-        verify(postLikeRepository, never()).save(any(PostLike.class));
+        verify(postLikeRepository, never()).insertIgnoreConflict(any(), any());
         verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
