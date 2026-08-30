@@ -20,7 +20,7 @@ public class NicknamePolicy {
     private static final Pattern NUMBER_ONLY_PATTERN = Pattern.compile("^[0-9]+$");
     private static final Pattern CONTACT_PATTERN = Pattern.compile(".*(\\d{2,4}[- ]?\\d{3,4}[- ]?\\d{4}).*");
     private static final Pattern URL_PATTERN = Pattern.compile(".*(https?://|www\\.|\\.com|\\.net|\\.kr|\\.org).*", Pattern.CASE_INSENSITIVE);
-    private static final Set<String> RESERVED_NICKNAME_WORDS = Set.of("admin", "official", "운영자", "관리자", "사업자");
+    private static final Set<String> RESERVED_NICKNAME_WORDS = Set.of("admin", "official", "운영자", "관리자", "사업자", "세모산");
     private static final Set<String> BLOCKED_WORDS = Set.of(
             "시발",
             "씨발",

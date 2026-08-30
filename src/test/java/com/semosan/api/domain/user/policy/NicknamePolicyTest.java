@@ -39,6 +39,7 @@ class NicknamePolicyTest {
     void checkStaticRulesRejectsReservedAndBlockedWords() {
         assertThat(nicknamePolicy.checkStaticRules("admin1")).isEqualTo(NicknameCheckResult.RESERVED);
         assertThat(nicknamePolicy.checkStaticRules("Official1")).isEqualTo(NicknameCheckResult.RESERVED);
+        assertThat(nicknamePolicy.checkStaticRules("세모산")).isEqualTo(NicknameCheckResult.RESERVED);
         assertThat(nicknamePolicy.checkStaticRules("01012345678")).isEqualTo(NicknameCheckResult.INVALID_FORMAT);
         assertThat(nicknamePolicy.checkStaticRules("fuckyou")).isEqualTo(NicknameCheckResult.BLOCKED_WORD);
     }
