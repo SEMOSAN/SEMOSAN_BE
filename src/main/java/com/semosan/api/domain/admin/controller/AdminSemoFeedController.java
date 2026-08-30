@@ -7,6 +7,7 @@ import com.semosan.api.domain.admin.controller.docs.AdminSemoFeedControllerDocs;
 import com.semosan.api.domain.admin.dto.request.AdminSemoFeedVisibilityRequest;
 import com.semosan.api.domain.admin.dto.response.AdminSemoFeedResponse;
 import com.semosan.api.domain.admin.service.AdminSemoFeedService;
+import com.semosan.api.domain.semofeed.dto.SemoFeedCreateRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,15 @@ import org.springframework.web.bind.annotation.*;
 public class AdminSemoFeedController implements AdminSemoFeedControllerDocs {
 
     private final AdminSemoFeedService adminSemoFeedService;
+
+    @PostMapping("/semofeed")
+    @Override
+    public ResponseEntity<ApiResponse<AdminSemoFeedResponse>> create(
+            @Valid @RequestBody SemoFeedCreateRequest request
+    ) {
+        AdminSemoFeedResponse response = adminSemoFeedService.create(request.imageUrl());
+        return ApiResponse.success(SuccessStatus.ADMIN_SEMOFEED_CREATE_SUCCESS, response);
+    }
 
     @GetMapping("/semofeed")
     @Override

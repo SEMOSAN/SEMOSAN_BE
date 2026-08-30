@@ -31,6 +31,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static com.semosan.api.common.constant.OfficialAccountConstants.SEMOSAN_OFFICIAL_OAUTH_ID;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -87,6 +89,11 @@ public class UserService {
     // 테스트 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
     public User findOrCreateTestUser(String testUserId, DeviceType deviceType) {
+        // 테스트 로그인으로 공식 계정 토큰이 발급되지 않도록 예약 oauth_id 는 거부합니다.
+        if (SEMOSAN_OFFICIAL_OAUTH_ID.equals(testUserId)) {
+            throw new GeneralException(ErrorStatus.FORBIDDEN);
+        }
+
         return userRepository.findByOauthIdAndOauthProvider(testUserId, OAuthProvider.TEST)
                 .filter(user -> !user.isDeleted())
                 .orElseGet(() -> saveNewUserWithNotificationSetting(User.createTestUser(testUserId, deviceType)));
