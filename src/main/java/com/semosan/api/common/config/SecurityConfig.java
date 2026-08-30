@@ -101,13 +101,14 @@ public class SecurityConfig {
         restConfig.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8081", "https://lgenius.site", "https://semosan-admin.vercel.app"));
         restConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
         restConfig.setAllowedHeaders(List.of("*"));
-        restConfig.setAllowCredentials(true);
+        // Authorization Header 방식으로 쿠키를 쓰지 않으므로 credentials 미허용
+        restConfig.setAllowCredentials(false);
 
         CorsConfiguration wsConfig = new CorsConfiguration();
         wsConfig.setAllowedOriginPatterns(List.of("http://localhost:*", "https://lgenius.site"));
         wsConfig.setAllowedMethods(List.of("GET"));
         wsConfig.setAllowedHeaders(List.of("*"));
-        wsConfig.setAllowCredentials(true);
+        wsConfig.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/ws/**", wsConfig);
