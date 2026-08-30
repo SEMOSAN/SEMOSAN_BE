@@ -202,6 +202,17 @@ class UserServiceTest {
     }
 
     @Test
+    void findOrCreateTestUserRejectsOfficialAccountOauthId() {
+        assertThatThrownBy(() -> userService.findOrCreateTestUser("semosan_official", DeviceType.IOS))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.FORBIDDEN);
+
+        verify(userRepository, never()).findByOauthIdAndOauthProvider(any(), any());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
     void checkNicknameValidatesAfterActiveUserLookup() {
         User user = User.createTestUser("nickname-check-user", DeviceType.IOS);
         when(userReader.findActiveUserById(1L)).thenReturn(user);
