@@ -36,7 +36,8 @@ public class PostLikeService {
 
         Optional<PostLike> existing = postLikeRepository.findByPostAndUser(post, user);
         if (existing.isPresent()) {
-            postLikeRepository.delete(existing.get());
+            // bulk delete라 동시 취소 요청이 겹쳐 0 row로 끝나도 예외 없이 흡수된다.
+            postLikeRepository.deleteByPostIdAndUserId(postId, userId);
             return false;
         }
 

@@ -86,7 +86,28 @@ class PostLikeServiceTest {
 
         assertThat(result.liked()).isFalse();
         assertThat(result.count()).isZero();
-        verify(postLikeRepository).delete(existing);
+        verify(postLikeRepository).deleteByPostIdAndUserId(10L, 2L);
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    // bulk delete라 동시 취소 요청이 겹쳐 0 row가 삭제돼도 예외 없이 liked=false로 흡수된다.
+    @Test
+    void toggleWithCountAbsorbsConcurrentUnlikeWithZeroRowsDeleted() throws Exception {
+        User postAuthor = user(1L, "post-author");
+        User liker = user(2L, "liker");
+        FreePost post = freePost(10L, postAuthor, "제목", "본문");
+        PostLike existing = PostLike.create(post, liker);
+
+        when(postRepository.findByIdAndDeletedFalse(10L)).thenReturn(Optional.of(post));
+        when(userReader.findActiveUserById(2L)).thenReturn(liker);
+        when(postLikeRepository.findByPostAndUser(post, liker)).thenReturn(Optional.of(existing));
+        when(postLikeRepository.deleteByPostIdAndUserId(10L, 2L)).thenReturn(0);
+        when(postLikeRepository.countByPost(post)).thenReturn(0L);
+
+        PostLikeToggleResponse result = postLikeService.toggleWithCount(10L, 2L);
+
+        assertThat(result.liked()).isFalse();
+        assertThat(result.count()).isZero();
         verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
