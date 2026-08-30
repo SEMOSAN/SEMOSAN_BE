@@ -4,6 +4,7 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.domain.admin.dto.request.AdminSemoFeedVisibilityRequest;
 import com.semosan.api.domain.admin.dto.response.AdminSemoFeedResponse;
+import com.semosan.api.domain.semofeed.dto.SemoFeedCreateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +16,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Admin SemoFeed", description = "관리자 세모피드 관리 API")
 public interface AdminSemoFeedControllerDocs {
+
+    @Operation(summary = "세모피드 업로드", description = "관리자가 공식 계정(세모산)으로 세모피드 사진을 업로드합니다. 기본 공개.")
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "세모피드 업로드 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "공식 계정을 찾을 수 없음")
+    })
+    ResponseEntity<ApiResponse<AdminSemoFeedResponse>> create(@Valid @RequestBody SemoFeedCreateRequest request);
 
     @Operation(summary = "세모피드 목록 조회", description = "공개/비공개 포함 전체 세모피드 목록을 조회합니다.")
     @ApiResponses({
