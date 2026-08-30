@@ -6,7 +6,6 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.admin.dto.request.AdminLoginRequest;
 import com.semosan.api.domain.admin.dto.response.AdminLoginResponse;
 import com.semosan.api.domain.admin.entity.Admin;
-import com.semosan.api.domain.admin.repository.AdminLoginLogRepository;
 import com.semosan.api.domain.admin.repository.AdminRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +33,7 @@ class AdminAuthServiceTest {
     private AdminRepository adminRepository;
 
     @Mock
-    private AdminLoginLogRepository adminLoginLogRepository;
+    private AdminLoginLockoutService adminLoginLockoutService;
 
     @Mock
     private AdminLoginLogService adminLoginLogService;
@@ -103,10 +102,10 @@ class AdminAuthServiceTest {
     }
 
     @Test
-    void loginThrowsTooManyRequestsWhenRecentFailuresReachThreshold() {
+    void loginThrowsTooManyRequestsWhenAttemptCountExceedsThreshold() {
         AdminLoginRequest request = new AdminLoginRequest("admin", "password");
-        when(adminLoginLogRepository.countFailuresSinceLastSuccessOrWindowStart(eq("admin"), any()))
-                .thenReturn(10L);
+        when(adminLoginLockoutService.recordAttempt(eq("admin"), any()))
+                .thenReturn(11);
 
         assertThatThrownBy(() -> adminAuthService.login(request, "127.0.0.1", "JUnit"))
                 .isInstanceOf(GeneralException.class)
@@ -117,11 +116,11 @@ class AdminAuthServiceTest {
     }
 
     @Test
-    void loginProceedsWhenRecentFailuresBelowThreshold() {
+    void loginProceedsWhenAttemptCountAtThreshold() {
         Admin admin = mock(Admin.class);
         AdminLoginRequest request = new AdminLoginRequest("admin", "password");
-        when(adminLoginLogRepository.countFailuresSinceLastSuccessOrWindowStart(eq("admin"), any()))
-                .thenReturn(9L);
+        when(adminLoginLockoutService.recordAttempt(eq("admin"), any()))
+                .thenReturn(10);
         when(adminRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
         when(admin.getPassword()).thenReturn("encoded");
         when(passwordEncoder.matches("password", "encoded")).thenReturn(true);
@@ -132,5 +131,6 @@ class AdminAuthServiceTest {
         AdminLoginResponse response = adminAuthService.login(request, "127.0.0.1", "JUnit");
 
         assertThat(response.accessToken()).isEqualTo("access-token");
+        verify(adminLoginLockoutService).reset("admin");
     }
 }
