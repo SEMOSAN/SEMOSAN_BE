@@ -6,6 +6,7 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.admin.dto.request.AdminLoginRequest;
 import com.semosan.api.domain.admin.dto.response.AdminLoginResponse;
 import com.semosan.api.domain.admin.entity.Admin;
+import com.semosan.api.domain.admin.repository.AdminLoginLogRepository;
 import com.semosan.api.domain.admin.repository.AdminRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +19,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,6 +32,9 @@ class AdminAuthServiceTest {
 
     @Mock
     private AdminRepository adminRepository;
+
+    @Mock
+    private AdminLoginLogRepository adminLoginLogRepository;
 
     @Mock
     private AdminLoginLogService adminLoginLogService;
@@ -93,5 +100,37 @@ class AdminAuthServiceTest {
                 .isEqualTo(ErrorStatus.ADMIN_LOGIN_FAILED);
         verify(adminLoginLogService).saveFailLog("admin", "127.0.0.1", "JUnit", "비밀번호 불일치");
         verify(jwtService, never()).generateAdminAccessToken(admin);
+    }
+
+    @Test
+    void loginThrowsTooManyRequestsWhenRecentFailuresReachThreshold() {
+        AdminLoginRequest request = new AdminLoginRequest("admin", "password");
+        when(adminLoginLogRepository.countFailuresSinceLastSuccessOrWindowStart(eq("admin"), any()))
+                .thenReturn(10L);
+
+        assertThatThrownBy(() -> adminAuthService.login(request, "127.0.0.1", "JUnit"))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.TOO_MANY_REQUESTS);
+        verify(adminRepository, never()).findByUsername(anyString());
+        verify(adminLoginLogService, never()).saveFailLog(anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void loginProceedsWhenRecentFailuresBelowThreshold() {
+        Admin admin = mock(Admin.class);
+        AdminLoginRequest request = new AdminLoginRequest("admin", "password");
+        when(adminLoginLogRepository.countFailuresSinceLastSuccessOrWindowStart(eq("admin"), any()))
+                .thenReturn(9L);
+        when(adminRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+        when(admin.getPassword()).thenReturn("encoded");
+        when(passwordEncoder.matches("password", "encoded")).thenReturn(true);
+        when(jwtService.generateAdminAccessToken(admin)).thenReturn("access-token");
+        when(admin.getId()).thenReturn(1L);
+        when(admin.getName()).thenReturn("관리자");
+
+        AdminLoginResponse response = adminAuthService.login(request, "127.0.0.1", "JUnit");
+
+        assertThat(response.accessToken()).isEqualTo("access-token");
     }
 }
