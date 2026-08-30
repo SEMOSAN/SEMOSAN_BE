@@ -2,6 +2,7 @@ package com.semosan.api.common.config;
 
 import com.semosan.api.common.filter.MdcFilter;
 import com.semosan.api.common.jwt.JwtFilter;
+import com.semosan.api.common.ratelimit.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,7 @@ public class SecurityConfig {
 
     private final MdcFilter mdcFilter;
     private final JwtFilter jwtFilter;
+    private final RateLimitFilter rateLimitFilter;
 
     /**
      * 스웨거 관련 경로
@@ -87,7 +89,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(mdcFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterAfter(rateLimitFilter, MdcFilter.class)
+                .addFilterAfter(jwtFilter, RateLimitFilter.class);
 
         return http.build();
     }
