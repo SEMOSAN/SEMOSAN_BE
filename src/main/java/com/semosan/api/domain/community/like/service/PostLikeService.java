@@ -2,7 +2,6 @@ package com.semosan.api.domain.community.like.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
-import com.semosan.api.common.util.LikeConflictHandler;
 import com.semosan.api.domain.community.like.dto.PostLikeToggleResponse;
 import com.semosan.api.domain.community.like.entity.PostLike;
 import com.semosan.api.domain.community.like.event.PostLikedEvent;
@@ -12,15 +11,12 @@ import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -44,10 +40,11 @@ public class PostLikeService {
             return false;
         }
 
-        return LikeConflictHandler.handleConcurrentCreate(() -> {
-            postLikeRepository.save(PostLike.create(post, user));
+        // ON CONFLICT DO NOTHING이라 동시 요청이 겹쳐도 예외 없이 0 row로 끝난다.
+        if (postLikeRepository.insertIgnoreConflict(postId, userId) > 0) {
             eventPublisher.publishEvent(new PostLikedEvent(post.getId(), user.getId()));
-        }, () -> log.warn("PostLike 동시 요청 감지: postId={}, userId={}", postId, userId));
+        }
+        return true;
     }
 
     public long count(Long postId) {
@@ -55,7 +52,7 @@ public class PostLikeService {
         return postLikeRepository.countByPost(post);
     }
 
-    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
+    @Transactional
     public PostLikeToggleResponse toggleWithCount(Long postId, Long userId) {
         boolean liked = this.toggle(postId, userId);
         long count = this.count(postId);

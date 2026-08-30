@@ -15,7 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
@@ -23,7 +22,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,7 +53,7 @@ class CourseLikeServiceTest {
         CourseLikeToggleResponse response = courseLikeService.toggleCourseLike(1L, 10L);
 
         assertThat(response.liked()).isTrue();
-        verify(courseLikeRepository).save(any(CourseLike.class));
+        verify(courseLikeRepository).insertIgnoreConflict(1L, 10L);
     }
 
     @Test
@@ -74,6 +72,7 @@ class CourseLikeServiceTest {
         verify(courseLikeRepository).delete(courseLike);
     }
 
+    // ON CONFLICT DO NOTHING이라 동시 요청이 겹치면 insert row가 0개라 예외 없이 liked=true로 흡수된다.
     @Test
     void toggleCourseLikeReturnsLikedWhenConcurrentDuplicateDetected() throws Exception {
         User user = user(1L);
@@ -82,7 +81,7 @@ class CourseLikeServiceTest {
         when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.empty());
-        when(courseLikeRepository.save(any(CourseLike.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+        when(courseLikeRepository.insertIgnoreConflict(1L, 10L)).thenReturn(0);
 
         CourseLikeToggleResponse response = courseLikeService.toggleCourseLike(1L, 10L);
 

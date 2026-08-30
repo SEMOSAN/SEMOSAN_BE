@@ -2,24 +2,18 @@ package com.semosan.api.domain.mountain.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
-import com.semosan.api.common.util.LikeConflictHandler;
 import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainLikeToggleResponse;
 import com.semosan.api.domain.mountain.entity.Mountain;
-import com.semosan.api.domain.mountain.entity.MountainLike;
 import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
-import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MountainLikeService {
@@ -28,17 +22,21 @@ public class MountainLikeService {
     private final MountainRepository mountainRepository;
     private final UserReader userReader;
 
-    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
+    @Transactional
     public MountainLikeToggleResponse toggleMountainLike(Long userId, Long mountainId) {
-        User user = userReader.findActiveUserById(userId);
-        Mountain mountain = findMountainById(mountainId);
+        userReader.findActiveUserById(userId);
+        findMountainById(mountainId);
 
         boolean liked = mountainLikeRepository.findByUser_IdAndMountain_Id(userId, mountainId)
                 .map(existing -> {
                     mountainLikeRepository.delete(existing);
                     return false;
                 })
-                .orElseGet(() -> createMountainLike(user, mountain));
+                // ON CONFLICT DO NOTHING이라 동시 요청이 겹쳐도 예외 없이 0 row로 끝난다.
+                .orElseGet(() -> {
+                    mountainLikeRepository.insertIgnoreConflict(userId, mountainId);
+                    return true;
+                });
         return new MountainLikeToggleResponse(liked);
     }
 
@@ -55,12 +53,5 @@ public class MountainLikeService {
     private Mountain findMountainById(Long mountainId) {
         return mountainRepository.findById(mountainId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MOUNTAIN_NOT_FOUND));
-    }
-
-    private boolean createMountainLike(User user, Mountain mountain) {
-        return LikeConflictHandler.handleConcurrentCreate(
-                () -> mountainLikeRepository.save(MountainLike.create(user, mountain)),
-                () -> log.warn("MountainLike 동시 요청 감지: mountainId={}, userId={}", mountain.getId(), user.getId())
-        );
     }
 }
