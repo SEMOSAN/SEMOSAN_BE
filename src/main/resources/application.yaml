@@ -96,6 +96,8 @@ grafana:
   base-url: ${GRAFANA_BASE_URL:}
   loki:
     datasource-uid: ${GRAFANA_LOKI_DATASOURCE_UID:loki}
+    namespace: ${GRAFANA_LOKI_NAMESPACE:semosan}
+    app: ${GRAFANA_LOKI_APP:semosan-api}
 
 rate-limit:
   enabled: ${RATE_LIMIT_ENABLED:true}

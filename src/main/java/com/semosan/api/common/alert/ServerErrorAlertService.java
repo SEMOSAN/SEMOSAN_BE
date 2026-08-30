@@ -31,9 +31,6 @@ public class ServerErrorAlertService {
     private static final int ERROR_COLOR = 0xED4245;
     private static final int MAX_STACK_TRACE_LENGTH = 1000;
     private static final int MAX_EMBED_DESCRIPTION_LENGTH = 4000;
-    // k8s 배포가 고정된 namespace/app 라벨을 쓰므로 설정값이 아닌 상수로 둔다
-    private static final String LOKI_NAMESPACE = "semosan";
-    private static final String LOKI_APP = "semosan-api";
     private static final Duration LOG_WINDOW = Duration.ofMinutes(5);
 
     private final DiscordAlertClient discordAlertClient;
@@ -44,6 +41,12 @@ public class ServerErrorAlertService {
 
     @Value("${grafana.loki.datasource-uid:loki}")
     private String lokiDatasourceUid;
+
+    @Value("${grafana.loki.namespace:semosan}")
+    private String lokiNamespace;
+
+    @Value("${grafana.loki.app:semosan-api}")
+    private String lokiApp;
 
     @Async("discordAlertExecutor")
     public void notify(int status, Exception exception, RequestContext requestContext) {
@@ -103,7 +106,7 @@ public class ServerErrorAlertService {
             return null;
         }
 
-        String expr = "{namespace=\"%s\", app=\"%s\"} | json | traceId=\"%s\"".formatted(LOKI_NAMESPACE, LOKI_APP, traceId);
+        String expr = "{namespace=\"%s\", app=\"%s\"} | json | traceId=\"%s\"".formatted(lokiNamespace, lokiApp, traceId);
         Map<String, Object> query = Map.of(
                 "refId", "A",
                 "expr", expr,
