@@ -60,6 +60,29 @@ class DiscordAlertClientTest {
     }
 
     @Test
+    void sendSignupPostsToSignupWebhook() {
+        AtomicInteger calls = new AtomicInteger();
+        DiscordAlertProperties properties = properties(true, null, null);
+        properties.setSignupWebhookUrl("https://discord.example.com/signup");
+        DiscordAlertClient client = new DiscordAlertClient(properties, webClientBuilder(calls));
+
+        client.sendSignup(message());
+
+        assertThat(calls).hasValue(1);
+    }
+
+    @Test
+    void sendSignupDoesNothingWhenSignupWebhookUrlIsMissing() {
+        AtomicInteger calls = new AtomicInteger();
+        DiscordAlertProperties properties = properties(true, "https://discord.example.com/webhook", null);
+        DiscordAlertClient client = new DiscordAlertClient(properties, webClientBuilder(calls));
+
+        client.sendSignup(message());
+
+        assertThat(calls).hasValue(0);
+    }
+
+    @Test
     void sendSwallowsClientFailure() {
         AtomicInteger calls = new AtomicInteger();
         DiscordAlertProperties properties = properties(true, "https://discord.example.com/webhook", null);
