@@ -22,7 +22,7 @@ firebase:
   service-account-path: dummy-firebase-service-account.json
 
 jwt:
-  secret: 2f46cc02e8155284ccc5eb23d1cc30ae8c7077a6d2578b72a60a44643b2c01f0
+  secret: do-not-use-test-only-jwt-secret-00000000000000000000000000000000
   access-token-expiration: 3600000
   refresh-token-expiration: 604800000
 
@@ -41,7 +41,7 @@ tracking:
   stream-max-len: 100000
 
 test:
-  secret-key: semosan-test-secret-2026
+  secret-key: test-only-secret-key
 
 minio:
   endpoint: http://localhost:9000
