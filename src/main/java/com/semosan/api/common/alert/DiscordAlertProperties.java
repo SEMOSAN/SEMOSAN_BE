@@ -10,6 +10,7 @@ public class DiscordAlertProperties {
     private boolean enabled;
     private String webhookUrl;
     private String reportWebhookUrl;
+    private String signupWebhookUrl;
 
     public boolean isEnabled() {
         return enabled;
@@ -33,5 +34,13 @@ public class DiscordAlertProperties {
 
     public void setReportWebhookUrl(String reportWebhookUrl) {
         this.reportWebhookUrl = reportWebhookUrl;
+    }
+
+    public String getSignupWebhookUrl() {
+        return signupWebhookUrl;
+    }
+
+    public void setSignupWebhookUrl(String signupWebhookUrl) {
+        this.signupWebhookUrl = signupWebhookUrl;
     }
 }
