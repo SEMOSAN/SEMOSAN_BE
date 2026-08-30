@@ -2,13 +2,6 @@ package com.semosan.api.domain.user.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
-import com.semosan.api.domain.hiking.repository.CourseDifficultyFeedbackRepository;
-import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
-import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
-import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
-import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
-import com.semosan.api.domain.notification.repository.NotificationRepository;
-import com.semosan.api.domain.review.repository.ReviewRepository;
 import com.semosan.api.domain.user.dto.command.CreateUserOnboardingCommand;
 import com.semosan.api.domain.user.dto.command.OAuthUserProfile;
 import com.semosan.api.domain.user.dto.request.UpdateUserProfileRequest;
@@ -20,6 +13,7 @@ import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import com.semosan.api.domain.user.enums.user.OnboardingStatus;
 import com.semosan.api.domain.user.event.UserRegisteredEvent;
+import com.semosan.api.domain.user.event.UserWithdrawnEvent;
 import com.semosan.api.domain.user.policy.DefaultNicknameGenerator;
 import com.semosan.api.domain.user.policy.NicknamePolicy;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
@@ -28,21 +22,18 @@ import com.semosan.api.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -58,27 +49,6 @@ class UserServiceTest {
 
     @Mock
     private UserOnboardingRepository userOnboardingRepository;
-
-    @Mock
-    private MountainLikeRepository mountainLikeRepository;
-
-    @Mock
-    private CourseLikeRepository courseLikeRepository;
-
-    @Mock
-    private ReviewRepository reviewRepository;
-
-    @Mock
-    private HikingMemberRepository hikingMemberRepository;
-
-    @Mock
-    private HikingRecordRepository hikingRecordRepository;
-
-    @Mock
-    private CourseDifficultyFeedbackRepository courseDifficultyFeedbackRepository;
-
-    @Mock
-    private NotificationRepository notificationRepository;
 
     @Mock
     private NicknamePolicy nicknamePolicy;
@@ -443,24 +413,16 @@ class UserServiceTest {
     }
 
     @Test
-    void withdrawUserDeletesUserChildRecordsAndSoftDeletesUser() {
+    void withdrawUserDeletesOwnDomainRecordsAndPublishesWithdrawnEvent() {
         User user = User.createTestUser("withdraw-test-user", DeviceType.IOS);
         ReflectionTestUtils.setField(user, "id", 1L);
-        when(hikingRecordRepository.findRecordIdsOnlyParticipatedByUser(1L)).thenReturn(List.of(10L, 11L));
 
         userService.withdrawUser(user);
 
-        verify(mountainLikeRepository).deleteByUser_Id(1L);
-        verify(reviewRepository).deleteByUser_Id(1L);
-        verify(courseDifficultyFeedbackRepository).deleteByUserId(1L);
-        verify(hikingRecordRepository).findRecordIdsOnlyParticipatedByUser(1L);
-        verify(hikingMemberRepository).deleteByUser_Id(1L);
-        verify(courseDifficultyFeedbackRepository).deleteByHikingRecordIdIn(List.of(10L, 11L));
-        verify(hikingRecordRepository).deleteAllByIdInBatch(List.of(10L, 11L));
-        verify(notificationRepository).deleteAllByUserId(1L);
         verify(userOnboardingRepository).deleteByUser_Id(1L);
         verify(userNotificationSettingRepository).deleteByUser_Id(1L);
         verify(userRepository).save(user);
+        verify(eventPublisher).publishEvent(new UserWithdrawnEvent(1L));
 
         assertThat(user.isDeleted()).isTrue();
         assertThat(user.getEmail()).isNull();
@@ -468,24 +430,5 @@ class UserServiceTest {
         assertThat(user.getNickname()).isNull();
         assertThat(user.getOauthId()).isEqualTo("WITHDRAWN:1:TEST");
         assertThat(user.getOnboardingStatus()).isEqualTo(OnboardingStatus.INCOMPLETE);
-
-        InOrder deleteOrder = inOrder(courseDifficultyFeedbackRepository, hikingRecordRepository);
-        deleteOrder.verify(courseDifficultyFeedbackRepository).deleteByUserId(1L);
-        deleteOrder.verify(hikingRecordRepository).findRecordIdsOnlyParticipatedByUser(1L);
-        deleteOrder.verify(courseDifficultyFeedbackRepository).deleteByHikingRecordIdIn(List.of(10L, 11L));
-        deleteOrder.verify(hikingRecordRepository).deleteAllByIdInBatch(List.of(10L, 11L));
-    }
-
-    @Test
-    void withdrawUserSkipsHikingRecordBatchDeleteWhenNoOnlyParticipatedRecords() {
-        User user = User.createTestUser("withdraw-test-user", DeviceType.IOS);
-        ReflectionTestUtils.setField(user, "id", 1L);
-        when(hikingRecordRepository.findRecordIdsOnlyParticipatedByUser(1L)).thenReturn(List.of());
-
-        userService.withdrawUser(user);
-
-        verify(courseDifficultyFeedbackRepository, never()).deleteByHikingRecordIdIn(any());
-        verify(hikingRecordRepository, never()).deleteAllByIdInBatch(any());
-        assertThat(user.isDeleted()).isTrue();
     }
 }

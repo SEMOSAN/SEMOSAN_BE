@@ -2,13 +2,6 @@ package com.semosan.api.domain.user.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
-import com.semosan.api.domain.hiking.repository.CourseDifficultyFeedbackRepository;
-import com.semosan.api.domain.hiking.repository.HikingMemberRepository;
-import com.semosan.api.domain.hiking.repository.HikingRecordRepository;
-import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
-import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
-import com.semosan.api.domain.notification.repository.NotificationRepository;
-import com.semosan.api.domain.review.repository.ReviewRepository;
 import com.semosan.api.domain.user.dto.command.CreateUserOnboardingCommand;
 import com.semosan.api.domain.user.dto.command.OAuthUserProfile;
 import com.semosan.api.domain.user.dto.command.UpdateUserProfileCommand;
@@ -19,6 +12,7 @@ import com.semosan.api.domain.user.entity.UserOnboarding;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import com.semosan.api.domain.user.event.UserRegisteredEvent;
+import com.semosan.api.domain.user.event.UserWithdrawnEvent;
 import com.semosan.api.domain.user.policy.DefaultNicknameGenerator;
 import com.semosan.api.domain.user.policy.NicknamePolicy;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
@@ -29,8 +23,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 import static com.semosan.api.common.constant.OfficialAccountConstants.SEMOSAN_OFFICIAL_OAUTH_ID;
 
 @Service
@@ -40,13 +32,6 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserNotificationSettingRepository userNotificationSettingRepository;
     private final UserOnboardingRepository userOnboardingRepository;
-    private final MountainLikeRepository mountainLikeRepository;
-    private final CourseLikeRepository courseLikeRepository;
-    private final ReviewRepository reviewRepository;
-    private final HikingMemberRepository hikingMemberRepository;
-    private final HikingRecordRepository hikingRecordRepository;
-    private final CourseDifficultyFeedbackRepository courseDifficultyFeedbackRepository;
-    private final NotificationRepository notificationRepository;
     private final DefaultNicknameGenerator defaultNicknameGenerator;
     private final NicknamePolicy nicknamePolicy;
     private final UserReader userReader;
@@ -170,27 +155,14 @@ public class UserService {
     }
 
     // 로그인한 사용자를 탈퇴 처리하고 하위 데이터를 삭제합니다.
+    // 다른 도메인의 하위 데이터 정리는 UserWithdrawnEvent를 구독하는 각 도메인 리스너가 담당한다.
     @Transactional
     public void withdrawUser(User user) {
-        deleteUserChildRecords(user.getId());
+        userOnboardingRepository.deleteByUser_Id(user.getId());
+        userNotificationSettingRepository.deleteByUser_Id(user.getId());
         user.withdraw();
         userRepository.save(user);
-    }
-
-    private void deleteUserChildRecords(Long userId) {
-        mountainLikeRepository.deleteByUser_Id(userId);
-        courseLikeRepository.deleteByUser_Id(userId);
-        reviewRepository.deleteByUser_Id(userId);
-        courseDifficultyFeedbackRepository.deleteByUserId(userId);
-        List<Long> recordIdsToDelete = hikingRecordRepository.findRecordIdsOnlyParticipatedByUser(userId);
-        hikingMemberRepository.deleteByUser_Id(userId);
-        if (!recordIdsToDelete.isEmpty()) {
-            courseDifficultyFeedbackRepository.deleteByHikingRecordIdIn(recordIdsToDelete);
-            hikingRecordRepository.deleteAllByIdInBatch(recordIdsToDelete);
-        }
-        notificationRepository.deleteAllByUserId(userId);
-        userOnboardingRepository.deleteByUser_Id(userId);
-        userNotificationSettingRepository.deleteByUser_Id(userId);
+        eventPublisher.publishEvent(new UserWithdrawnEvent(user.getId()));
     }
 
     // 프로필 수정 요청 값을 User 엔티티 갱신용 command로 변환합니다.
