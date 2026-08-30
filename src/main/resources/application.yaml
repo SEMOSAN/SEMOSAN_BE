@@ -95,9 +95,9 @@ discord:
 grafana:
   base-url: ${GRAFANA_BASE_URL:}
   loki:
-    datasource-uid: ${GRAFANA_LOKI_DATASOURCE_UID:loki}
-    namespace: ${GRAFANA_LOKI_NAMESPACE:semosan}
-    app: ${GRAFANA_LOKI_APP:semosan-api}
+    datasource-uid: ${GRAFANA_LOKI_DATASOURCE_UID}
+    namespace: ${GRAFANA_LOKI_NAMESPACE}
+    app: ${GRAFANA_LOKI_APP}
 
 rate-limit:
   enabled: ${RATE_LIMIT_ENABLED:true}

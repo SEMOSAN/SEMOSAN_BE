@@ -40,13 +40,13 @@ public class ServerErrorAlertService {
     @Value("${grafana.base-url:}")
     private String grafanaBaseUrl;
 
-    @Value("${grafana.loki.datasource-uid:loki}")
+    @Value("${grafana.loki.datasource-uid}")
     private String lokiDatasourceUid;
 
-    @Value("${grafana.loki.namespace:semosan}")
+    @Value("${grafana.loki.namespace}")
     private String lokiNamespace;
 
-    @Value("${grafana.loki.app:semosan-api}")
+    @Value("${grafana.loki.app}")
     private String lokiApp;
 
     @Async("discordAlertExecutor")
@@ -103,7 +103,8 @@ public class ServerErrorAlertService {
     }
 
     private String grafanaLogLink(String traceId, ZonedDateTime errorTime) {
-        if (!StringUtils.hasText(grafanaBaseUrl) || !StringUtils.hasText(traceId)) {
+        if (!StringUtils.hasText(grafanaBaseUrl) || !StringUtils.hasText(traceId)
+                || !StringUtils.hasText(lokiNamespace) || !StringUtils.hasText(lokiApp) || !StringUtils.hasText(lokiDatasourceUid)) {
             return null;
         }
 
