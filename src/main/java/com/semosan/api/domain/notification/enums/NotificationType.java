@@ -52,8 +52,8 @@ public enum NotificationType {
     ),
 
     /**
-     * 코스 거리 50% 도달 시 정상 인증 유도.
-     * 진짜 정상 좌표가 식별 불가해 코스 절반 지점을 "정상" 근처로 간주하는 임시 정책.
+     * 시작점→정상 누적 거리 도달 시 정상 인증 유도.
+     * 정상 좌표(courses.summit_lat/lng)가 없는 코스만 코스 절반 지점을 "정상" 근처로 간주한다.
      * iOS 백그라운드/잠금화면/앱 종료 상태에서도 시스템이 즉시 배너를 표시하도록 mixed payload
      * (notification 키 + data 키) 로 발송한다. 포그라운드 배너 제어는 TRACKING_PHOTO_MILESTONE
      * 과 동일하게 UNUserNotificationCenterDelegate(willPresent) 에서 동적으로 처리한다.

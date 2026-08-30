@@ -53,7 +53,8 @@ class TrackingMilestoneTriggerServiceTest {
     @Test
     void initializeMilestonesReturnsWhenCalculatedMilestonesAreEmpty() {
         TrackingSession session = mock(TrackingSession.class);
-        when(milestoneCalculator.calculate(session)).thenReturn(List.of());
+        when(milestoneCalculator.calculate(session))
+                .thenReturn(new TrackingMilestoneCalculator.MilestonePlan(List.of(), null));
 
         service().initializeMilestones(session);
 
@@ -64,13 +65,31 @@ class TrackingMilestoneTriggerServiceTest {
     void initializeMilestonesSavesCalculatedMilestonesWithTtl() {
         TrackingSession session = mock(TrackingSession.class);
         when(session.getId()).thenReturn(1L);
-        when(milestoneCalculator.calculate(session)).thenReturn(List.of(100.0, 200.0));
+        when(milestoneCalculator.calculate(session))
+                .thenReturn(new TrackingMilestoneCalculator.MilestonePlan(List.of(100.0, 200.0), 200.0));
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
         service().initializeMilestones(session);
 
         verify(valueOperations).set("tracking:session:1:milestones", "100.0,200.0");
         verify(redisTemplate).expire("tracking:session:1:milestones", Duration.ofHours(24));
+        verify(valueOperations).set("tracking:session:1:summit:mark", "200.0");
+        verify(redisTemplate).expire("tracking:session:1:summit:mark", Duration.ofHours(24));
+    }
+
+    @Test
+    void initializeMilestonesSavesSentinelSummitMarkForFreeRecording() {
+        TrackingSession session = mock(TrackingSession.class);
+        when(session.getId()).thenReturn(1L);
+        when(milestoneCalculator.calculate(session))
+                .thenReturn(new TrackingMilestoneCalculator.MilestonePlan(
+                        List.of(500.0, 1000.0, 1500.0, 2000.0), null));
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
+        service().initializeMilestones(session);
+
+        // 키 자체가 없으면 구버전 세션으로 오인되므로, 자유 기록도 sentinel 을 명시적으로 남긴다.
+        verify(valueOperations).set("tracking:session:1:summit:mark", "none");
     }
 
     @Test
@@ -117,18 +136,69 @@ class TrackingMilestoneTriggerServiceTest {
     }
 
     @Test
-    void evaluateUsesDistanceBodyWhenMilestoneCountIsNotCourseMode() {
-        mockLoadedMilestones("100.0,200.0,300.0,400.0,500.0,600.0", Set.of(), Set.of());
+    void evaluateUsesDistanceBodyAndSkipsSummitWhenSummitMarkIsSentinel() {
+        // 자유 기록도 4컷이라 개수로는 코스와 구분되지 않는다. sentinel 이 판별 기준이어야 한다.
+        mockLoadedMilestones("500.0,1000.0,1500.0,2000.0", Set.of(), Set.of());
+        when(valueOperations.get("tracking:session:1:summit:mark")).thenReturn("none");
         when(setOperations.add("tracking:session:1:photo:opened", "0")).thenReturn(1L);
 
-        service().evaluate(1L, 10L, 90.0);
+        service().evaluate(1L, 10L, 450.0);
 
         verify(notificationService).send(
                 eq(10L),
                 eq(NotificationType.TRACKING_PHOTO_MILESTONE),
-                eq(Map.of("distance", 100)),
-                eq("100m 돌파! 인증 사진을 남겨보세요!")
+                eq(Map.of("distance", 500)),
+                eq("500m 돌파! 인증 사진을 남겨보세요!")
         );
+        verify(messagingTemplate, never()).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
+    }
+
+    @Test
+    void evaluateUsesDistanceBodyForLegacyFreeRecordingSession() {
+        // 배포 전 생성된 자유 기록 세션은 6컷이고 mark 키가 없다.
+        mockLoadedMilestones("500.0,1000.0,1500.0,2000.0,2500.0,3000.0", Set.of(), Set.of());
+        when(setOperations.add("tracking:session:1:photo:opened", "0")).thenReturn(1L);
+
+        service().evaluate(1L, 10L, 450.0);
+
+        verify(notificationService).send(
+                eq(10L),
+                eq(NotificationType.TRACKING_PHOTO_MILESTONE),
+                eq(Map.of("distance", 500)),
+                eq("500m 돌파! 인증 사진을 남겨보세요!")
+        );
+        verify(messagingTemplate, never()).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
+    }
+
+    @Test
+    void evaluateSendsSummitAndFinalPhotoTogetherAtStoredSummitMark() {
+        // 정상 좌표가 있는 코스는 4/4 마일스톤이 곧 정상이라 두 알림이 같은 지점에서 함께 나간다.
+        mockLoadedMilestones("125.0,250.0,375.0,500.0", Set.of("0", "1", "2"), Set.of("0", "1", "2"));
+        when(valueOperations.get("tracking:session:1:summit:mark")).thenReturn("500.0");
+        when(setOperations.add("tracking:session:1:photo:opened", "3")).thenReturn(1L);
+        when(setOperations.add("tracking:session:1:summit:notified", "1")).thenReturn(1L);
+
+        service().evaluate(1L, 10L, 500.0);
+
+        verify(notificationService).send(
+                eq(10L),
+                eq(NotificationType.TRACKING_PHOTO_MILESTONE),
+                eq(Map.of("distance", 500)),
+                eq("정상 도착_완료_진짜최종_눌러서 인증하기")
+        );
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
+        verify(notificationService).send(10L, NotificationType.TRACKING_SUMMIT_REACHED, Map.of());
+    }
+
+    @Test
+    void evaluateFallsBackToHalfCourseSummitMarkWhenMarkKeyIsMissing() {
+        // 배포 전 생성된 코스 세션(4컷, mark 키 없음)은 종전 규칙대로 코스 절반에서 정상 알림.
+        mockLoadedMilestones("100.0,200.0,300.0,400.0", Set.of("0", "1"), Set.of("0", "1"));
+        when(setOperations.add("tracking:session:1:summit:notified", "1")).thenReturn(1L);
+
+        service().evaluate(1L, 10L, 200.0);
+
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
     }
 
     @Test
@@ -136,28 +206,28 @@ class TrackingMilestoneTriggerServiceTest {
         assertThat((String) ReflectionTestUtils.invokeMethod(
                 TrackingMilestoneTriggerService.class,
                 "courseModeBody",
-                4,
+                true,
                 1,
                 200
         )).isEqualTo("정상 도착_절반 돌파_눌러서 인증 남기기");
         assertThat((String) ReflectionTestUtils.invokeMethod(
                 TrackingMilestoneTriggerService.class,
                 "courseModeBody",
-                4,
+                true,
                 2,
                 300
         )).isEqualTo("정상 도착_마지막 1/4_눌러서 인증 남기기");
         assertThat((String) ReflectionTestUtils.invokeMethod(
                 TrackingMilestoneTriggerService.class,
                 "courseModeBody",
-                4,
+                true,
                 3,
                 400
         )).isEqualTo("정상 도착_완료_진짜최종_눌러서 인증하기");
         assertThat((String) ReflectionTestUtils.invokeMethod(
                 TrackingMilestoneTriggerService.class,
                 "courseModeBody",
-                4,
+                true,
                 99,
                 900
         )).isEqualTo("900m 돌파! 인증 사진을 남겨보세요!");
@@ -244,15 +314,15 @@ class TrackingMilestoneTriggerServiceTest {
     }
 
     @Test
-    void evaluateSummitReturnsWhenCourseDistanceIsNotPositive() {
+    void evaluateSummitReturnsWhenSummitMarkIsNotPositive() {
         service().evaluateSummit(1L, 10L, 100.0, 0.0);
 
         verifyNoInteractions(redisTemplate, messagingTemplate, notificationService);
     }
 
     @Test
-    void evaluateSummitReturnsBeforeHalfwayMark() {
-        service().evaluateSummit(1L, 10L, 199.0, 400.0);
+    void evaluateSummitReturnsBeforeSummitMark() {
+        service().evaluateSummit(1L, 10L, 199.0, 200.0);
 
         verifyNoInteractions(redisTemplate, messagingTemplate, notificationService);
     }
@@ -262,7 +332,7 @@ class TrackingMilestoneTriggerServiceTest {
         when(redisTemplate.opsForSet()).thenReturn(setOperations);
         when(setOperations.add("tracking:session:1:summit:notified", "1")).thenReturn(0L);
 
-        service().evaluateSummit(1L, 10L, 200.0, 400.0);
+        service().evaluateSummit(1L, 10L, 200.0, 200.0);
 
         verify(redisTemplate, never()).expire("tracking:session:1:summit:notified", Duration.ofHours(24));
         verifyNoInteractions(messagingTemplate, notificationService);
@@ -273,7 +343,7 @@ class TrackingMilestoneTriggerServiceTest {
         when(redisTemplate.opsForSet()).thenReturn(setOperations);
         when(setOperations.add("tracking:session:1:summit:notified", "1")).thenReturn(null);
 
-        service().evaluateSummit(1L, 10L, 200.0, 400.0);
+        service().evaluateSummit(1L, 10L, 200.0, 200.0);
 
         verifyNoInteractions(messagingTemplate, notificationService);
     }
@@ -283,7 +353,7 @@ class TrackingMilestoneTriggerServiceTest {
         when(redisTemplate.opsForSet()).thenReturn(setOperations);
         when(setOperations.add("tracking:session:1:summit:notified", "1")).thenReturn(1L);
 
-        service().evaluateSummit(1L, 10L, 200.0, 400.0);
+        service().evaluateSummit(1L, 10L, 200.0, 200.0);
 
         ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
         verify(redisTemplate).expire("tracking:session:1:summit:notified", Duration.ofHours(24));
@@ -300,7 +370,7 @@ class TrackingMilestoneTriggerServiceTest {
                 .when(notificationService)
                 .send(10L, NotificationType.TRACKING_SUMMIT_REACHED, Map.of());
 
-        service().evaluateSummit(1L, 10L, 200.0, 400.0);
+        service().evaluateSummit(1L, 10L, 200.0, 200.0);
 
         verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
     }
