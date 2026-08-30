@@ -3,6 +3,7 @@ package com.semosan.api.domain.admin.controller;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
+import com.semosan.api.domain.admin.controller.docs.AdminSemoFeedControllerDocs;
 import com.semosan.api.domain.admin.dto.request.AdminSemoFeedVisibilityRequest;
 import com.semosan.api.domain.admin.dto.response.AdminSemoFeedResponse;
 import com.semosan.api.domain.admin.service.AdminSemoFeedService;
@@ -14,13 +15,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/admin/semofeed")
+@RequestMapping("/api/admin")
 @RequiredArgsConstructor
-public class AdminSemoFeedController {
+public class AdminSemoFeedController implements AdminSemoFeedControllerDocs {
 
     private final AdminSemoFeedService adminSemoFeedService;
 
-    @GetMapping
+    @GetMapping("/semofeed")
+    @Override
     public ResponseEntity<ApiResponse<PageResponse<AdminSemoFeedResponse>>> getFeeds(
             @PageableDefault(size = 24) Pageable pageable
     ) {
@@ -30,7 +32,8 @@ public class AdminSemoFeedController {
         return ApiResponse.success(SuccessStatus.ADMIN_SEMOFEED_LIST_SUCCESS, result);
     }
 
-    @PatchMapping("/{semoFeedId}/visibility")
+    @PatchMapping("/semofeed/{semoFeedId}/visibility")
+    @Override
     public ResponseEntity<ApiResponse<Void>> updateVisibility(
             @PathVariable Long semoFeedId,
             @Valid @RequestBody AdminSemoFeedVisibilityRequest request
@@ -39,7 +42,8 @@ public class AdminSemoFeedController {
         return ApiResponse.success(SuccessStatus.ADMIN_SEMOFEED_VISIBILITY_UPDATE_SUCCESS);
     }
 
-    @DeleteMapping("/{semoFeedId}")
+    @DeleteMapping("/semofeed/{semoFeedId}")
+    @Override
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long semoFeedId) {
         adminSemoFeedService.delete(semoFeedId);
         return ApiResponse.success(SuccessStatus.ADMIN_SEMOFEED_DELETE_SUCCESS);
