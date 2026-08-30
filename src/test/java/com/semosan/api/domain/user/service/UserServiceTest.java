@@ -19,6 +19,7 @@ import com.semosan.api.domain.user.enums.onboarding.HikingLevel;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import com.semosan.api.domain.user.enums.user.OnboardingStatus;
+import com.semosan.api.domain.user.event.UserRegisteredEvent;
 import com.semosan.api.domain.user.policy.DefaultNicknameGenerator;
 import com.semosan.api.domain.user.policy.NicknamePolicy;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
@@ -26,10 +27,12 @@ import com.semosan.api.domain.user.repository.UserOnboardingRepository;
 import com.semosan.api.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -86,6 +89,9 @@ class UserServiceTest {
     @Mock
     private UserReader userReader;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private UserService userService;
 
@@ -124,6 +130,13 @@ class UserServiceTest {
         assertThat(result.isDeleted()).isFalse();
         assertThat(result.getName()).isEqualTo("name");
         assertThat(result.getNickname()).isEqualTo("용감한등산러1234");
+
+        ArgumentCaptor<UserRegisteredEvent> eventCaptor = forClass(UserRegisteredEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        UserRegisteredEvent event = eventCaptor.getValue();
+        assertThat(event.nickname()).isEqualTo("용감한등산러1234");
+        assertThat(event.provider()).isEqualTo(OAuthProvider.KAKAO);
+        assertThat(event.deviceType()).isEqualTo(DeviceType.IOS);
     }
 
     @Test
@@ -199,6 +212,8 @@ class UserServiceTest {
         assertThat(result.getDeviceType()).isEqualTo(DeviceType.ANDROID);
         assertThat(result.getNickname()).isEqualTo("테스트닉네임1234");
         verify(userNotificationSettingRepository).save(any());
+        // 테스트 로그인 유저는 가입 알림 대상이 아니다
+        verify(eventPublisher, never()).publishEvent(any(UserRegisteredEvent.class));
     }
 
     @Test
