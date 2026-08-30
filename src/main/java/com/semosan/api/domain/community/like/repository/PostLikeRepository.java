@@ -34,4 +34,13 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
 
     @Query("SELECT pl.post.id, COUNT(pl) FROM PostLike pl WHERE pl.post.id IN :postIds GROUP BY pl.post.id")
     List<Object[]> countByPostIdsGrouped(@Param("postIds") List<Long> postIds);
+
+    /**
+     * 조건에 맞는 row가 없어도(동시 요청으로 이미 취소됨) 예외 없이 0을 반환하는 bulk delete.
+     * 엔티티 단위 remove()와 달리 JPQL bulk DELETE는 영향받은 row 수를 검증하지 않는다.
+     * @return 실제로 삭제된 row 수 (0 = 이미 취소된 상태)
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM PostLike pl WHERE pl.post.id = :postId AND pl.user.id = :userId")
+    int deleteByPostIdAndUserId(@Param("postId") Long postId, @Param("userId") Long userId);
 }
