@@ -14,12 +14,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.semosan.api.common.constant.OfficialAccountConstants.SEMOSAN_OFFICIAL_OAUTH_ID;
+
 @Service
 @RequiredArgsConstructor
 public class AdminSemoFeedService {
-
-    // 관리자는 User가 아니므로, 관리자가 올리는 세모피드의 작성자로 쓸 전용 공식 계정(V40에서 시드).
-    private static final String OFFICIAL_OAUTH_ID = "semosan_official";
 
     private final SemoFeedRepository semoFeedRepository;
     private final UserRepository userRepository;
@@ -33,7 +32,7 @@ public class AdminSemoFeedService {
     @Transactional
     public AdminSemoFeedResponse create(String imageUrl) {
         User official = userRepository
-                .findByOauthIdAndOauthProvider(OFFICIAL_OAUTH_ID, OAuthProvider.TEST)
+                .findByOauthIdAndOauthProvider(SEMOSAN_OFFICIAL_OAUTH_ID, OAuthProvider.SYSTEM)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.USER_NOT_FOUND));
         SemoFeed feed = SemoFeed.create(official, imageUrl);
         feed.updatePublic(true);
