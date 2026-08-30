@@ -10,10 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -32,5 +29,10 @@ public class AdminAuthController implements AdminAuthControllerDocs {
         String userAgent = httpRequest.getHeader("User-Agent");
         AdminLoginResponse response = adminAuthService.login(request, ipAddress, userAgent);
         return ApiResponse.success(SuccessStatus.ADMIN_LOGIN_SUCCESS, response);
+    }
+
+    @GetMapping("/test/error500")
+    public void triggerTestError() {
+        throw new RuntimeException("Grafana 알림 연동 테스트용 에러");
     }
 }
