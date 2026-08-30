@@ -10,6 +10,7 @@ import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.service.UserReader;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -39,6 +40,9 @@ class CourseLikeServiceTest {
 
     @Mock
     private UserReader userReader;
+
+    @Mock
+    private EntityManager entityManager;
 
     @InjectMocks
     private CourseLikeService courseLikeService;
@@ -83,10 +87,12 @@ class CourseLikeServiceTest {
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
         when(courseLikeRepository.findByUser_IdAndCourse_Id(1L, 10L)).thenReturn(Optional.empty());
         when(courseLikeRepository.save(any(CourseLike.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+        ReflectionTestUtils.setField(courseLikeService, "entityManager", entityManager);
 
         CourseLikeToggleResponse response = courseLikeService.toggleCourseLike(1L, 10L);
 
         assertThat(response.liked()).isTrue();
+        verify(entityManager).clear();
     }
 
     @Test

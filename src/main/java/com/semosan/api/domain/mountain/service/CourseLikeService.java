@@ -10,9 +10,10 @@ import com.semosan.api.domain.mountain.repository.CourseLikeRepository;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +26,10 @@ public class CourseLikeService {
     private final CourseRepository courseRepository;
     private final UserReader userReader;
 
-    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Transactional
     public CourseLikeToggleResponse toggleCourseLike(Long userId, Long courseId) {
         boolean liked = toggle(userId, courseId);
         return new CourseLikeToggleResponse(liked);
@@ -46,7 +50,10 @@ public class CourseLikeService {
     private boolean createCourseLike(User user, Course course) {
         return LikeConflictHandler.handleConcurrentCreate(
                 () -> courseLikeRepository.save(CourseLike.create(user, course)),
-                () -> log.warn("CourseLike 동시 요청 감지: courseId={}, userId={}", course.getId(), user.getId())
+                e -> {
+                    log.warn("CourseLike 동시 요청 감지: courseId={}, userId={}", course.getId(), user.getId(), e);
+                    entityManager.clear();
+                }
         );
     }
 

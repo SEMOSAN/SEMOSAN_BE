@@ -12,6 +12,7 @@ import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.service.UserReader;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -44,6 +45,9 @@ class MountainLikeServiceTest {
 
     @Mock
     private UserReader userReader;
+
+    @Mock
+    private EntityManager entityManager;
 
     @InjectMocks
     private MountainLikeService mountainLikeService;
@@ -101,10 +105,12 @@ class MountainLikeServiceTest {
         when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L)).thenReturn(Optional.empty());
         when(mountainLikeRepository.save(any(MountainLike.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate"));
+        ReflectionTestUtils.setField(mountainLikeService, "entityManager", entityManager);
 
         MountainLikeToggleResponse response = mountainLikeService.toggleMountainLike(1L, 10L);
 
         assertThat(response.liked()).isTrue();
+        verify(entityManager).clear();
     }
 
     @Test

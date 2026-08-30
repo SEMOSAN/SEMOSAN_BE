@@ -17,7 +17,7 @@ class LikeConflictHandlerTest {
 
         boolean result = LikeConflictHandler.handleConcurrentCreate(
                 () -> createCalled.set(true),
-                () -> logCalled.set(true)
+                e -> logCalled.set(true)
         );
 
         assertThat(result).isTrue();
@@ -28,12 +28,16 @@ class LikeConflictHandlerTest {
     @Test
     void handleConcurrentCreateReturnsTrueAndRunsLogActionWhenDataIntegrityViolationOccurs() {
         AtomicBoolean logCalled = new AtomicBoolean(false);
+        DataIntegrityViolationException thrown = new DataIntegrityViolationException("duplicate");
 
         boolean result = LikeConflictHandler.handleConcurrentCreate(
                 () -> {
-                    throw new DataIntegrityViolationException("duplicate");
+                    throw thrown;
                 },
-                () -> logCalled.set(true)
+                e -> {
+                    assertThat(e).isSameAs(thrown);
+                    logCalled.set(true);
+                }
         );
 
         assertThat(result).isTrue();
@@ -48,7 +52,7 @@ class LikeConflictHandlerTest {
                 () -> {
                     throw exception;
                 },
-                () -> {}
+                e -> {}
         )).isSameAs(exception);
     }
 }

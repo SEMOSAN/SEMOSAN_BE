@@ -17,6 +17,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -45,6 +46,9 @@ class PostLikeServiceTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private EntityManager entityManager;
 
     @InjectMocks
     private PostLikeService postLikeService;
@@ -101,12 +105,14 @@ class PostLikeServiceTest {
         when(postLikeRepository.findByPostAndUser(post, liker)).thenReturn(Optional.empty());
         when(postLikeRepository.save(any(PostLike.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
         when(postLikeRepository.countByPost(post)).thenReturn(1L);
+        ReflectionTestUtils.setField(postLikeService, "entityManager", entityManager);
 
         PostLikeToggleResponse result = postLikeService.toggleWithCount(10L, 2L);
 
         assertThat(result.liked()).isTrue();
         assertThat(result.count()).isEqualTo(1L);
         verify(eventPublisher, never()).publishEvent(any(Object.class));
+        verify(entityManager).clear();
     }
 
     @Test

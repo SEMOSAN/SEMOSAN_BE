@@ -11,9 +11,10 @@ import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,7 +29,10 @@ public class MountainLikeService {
     private final MountainRepository mountainRepository;
     private final UserReader userReader;
 
-    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Transactional
     public MountainLikeToggleResponse toggleMountainLike(Long userId, Long mountainId) {
         User user = userReader.findActiveUserById(userId);
         Mountain mountain = findMountainById(mountainId);
@@ -60,7 +64,10 @@ public class MountainLikeService {
     private boolean createMountainLike(User user, Mountain mountain) {
         return LikeConflictHandler.handleConcurrentCreate(
                 () -> mountainLikeRepository.save(MountainLike.create(user, mountain)),
-                () -> log.warn("MountainLike 동시 요청 감지: mountainId={}, userId={}", mountain.getId(), user.getId())
+                e -> {
+                    log.warn("MountainLike 동시 요청 감지: mountainId={}, userId={}", mountain.getId(), user.getId(), e);
+                    entityManager.clear();
+                }
         );
     }
 }

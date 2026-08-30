@@ -11,10 +11,11 @@ import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,9 @@ public class PostLikeService {
     private final PostRepository postRepository;
     private final UserReader userReader;
     private final ApplicationEventPublisher eventPublisher;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     /**
      * @return true = 좋아요 누름 / false = 좋아요 취소
@@ -47,7 +51,10 @@ public class PostLikeService {
         return LikeConflictHandler.handleConcurrentCreate(() -> {
             postLikeRepository.save(PostLike.create(post, user));
             eventPublisher.publishEvent(new PostLikedEvent(post.getId(), user.getId()));
-        }, () -> log.warn("PostLike 동시 요청 감지: postId={}, userId={}", postId, userId));
+        }, e -> {
+            log.warn("PostLike 동시 요청 감지: postId={}, userId={}", postId, userId, e);
+            entityManager.clear();
+        });
     }
 
     public long count(Long postId) {
@@ -55,7 +62,7 @@ public class PostLikeService {
         return postLikeRepository.countByPost(post);
     }
 
-    @Transactional(noRollbackFor = DataIntegrityViolationException.class)
+    @Transactional
     public PostLikeToggleResponse toggleWithCount(Long postId, Long userId) {
         boolean liked = this.toggle(postId, userId);
         long count = this.count(postId);
