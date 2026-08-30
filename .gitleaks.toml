@@ -1,0 +1,15 @@
+[extend]
+useDefault = true
+
+# 파일 단위가 아니라 값 단위로 예외를 둔다.
+# 파일을 통째로 제외하면 그 파일에 새로 들어온 진짜 시크릿을 놓치게 된다.
+[allowlist]
+description = "CI 서비스 컨테이너·로컬 테스트 전용 고정값. 운영에서는 사용하지 않는다."
+regexes = [
+  '''do-not-use-test-only-jwt-secret-0+''',
+  '''test-only-secret-key''',
+  '''minio-admin''',
+  '''minio-secret-password''',
+  '''pooreum02''',
+  '''dummy''',
+]
