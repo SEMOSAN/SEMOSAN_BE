@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -70,5 +71,37 @@ class ServerErrorAlertServiceTest {
 
         verify(discordAlertClient).send(captor.capture());
         assertThat(captor.getValue().embeds().getFirst().description()).contains("default");
+    }
+
+    @Test
+    void notifyIncludesGrafanaLogLinkWhenConfigured() {
+        ReflectionTestUtils.setField(alertService, "grafanaBaseUrl", "http://grafana.example.com");
+        ReflectionTestUtils.setField(alertService, "lokiDatasourceUid", "loki");
+        ReflectionTestUtils.setField(alertService, "lokiNamespace", "test");
+        ReflectionTestUtils.setField(alertService, "lokiApp", "test-api");
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"test"});
+        RequestContext requestContext = new RequestContext("GET", "https://api.example.com/fail", "127.0.0.1", null, null, "trace-abc");
+        ArgumentCaptor<DiscordMessage> captor = ArgumentCaptor.forClass(DiscordMessage.class);
+
+        alertService.notify(500, new RuntimeException("fail"), requestContext);
+
+        verify(discordAlertClient).send(captor.capture());
+        String description = captor.getValue().embeds().getFirst().description();
+        assertThat(description)
+                .contains("traceId: trace-abc")
+                .contains("http://grafana.example.com/explore?schemaVersion=1&panes=")
+                .contains("trace-abc");
+    }
+
+    @Test
+    void notifyOmitsLogLinkSectionWhenBaseUrlMissing() {
+        RequestContext requestContext = new RequestContext("GET", "https://api.example.com/fail", "127.0.0.1", null, null, "trace-xyz");
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"test"});
+        ArgumentCaptor<DiscordMessage> captor = ArgumentCaptor.forClass(DiscordMessage.class);
+
+        alertService.notify(500, new RuntimeException("fail"), requestContext);
+
+        verify(discordAlertClient).send(captor.capture());
+        assertThat(captor.getValue().embeds().getFirst().description()).doesNotContain("### Grafana 로그");
     }
 }
