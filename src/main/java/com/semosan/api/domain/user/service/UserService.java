@@ -61,6 +61,7 @@ public class UserService {
     }
 
     // OAuth 신규 가입 유저를 생성하고 가입 알림 이벤트를 발행합니다.
+    // 가입 알림은 이 경로에서만 발행하므로 findOrCreateTestUser로 생성되는 유저는 알림 대상이 아닙니다.
     private User registerOAuthUser(
             OAuthUserProfile profile, OAuthProvider provider, DeviceType deviceType
     ) {
@@ -73,7 +74,6 @@ public class UserService {
                         provider
                 )
         );
-        // 테스트 로그인으로 생성되는 유저는 알림 대상에서 제외합니다.
         eventPublisher.publishEvent(new UserRegisteredEvent(
                 savedUser.getId(),
                 savedUser.getNickname(),
