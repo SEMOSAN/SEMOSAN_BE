@@ -22,11 +22,11 @@ import java.util.stream.Collectors;
  * 트래킹 진행 중 GPS 거리 누적값을 보고, 사전에 결정된 마일스톤 거리에 도달하면
  * 사용자에게 두 종류의 알림을 트리거한다.
  *
- * 1) 사진 마일스톤(photo) — 코스 4컷 / 자유 6컷.
+ * 1) 사진 마일스톤(photo) — 코스 4컷 / 자유 4컷.
  *    ±10% 윈도우 진입 시 OPEN, 이탈 시 CLOSED. 채널: WebSocket(/topic/.../photo-window) + FCM OPEN 시점만.
  *
- * 2) 정상 도달(summit) — 코스 거리 50% 지점 도달 시 1회 (자유 기록은 skip).
- *    코스 정상 좌표를 정확히 식별 못해 임시 정책으로 "코스 절반" 을 정상 근처로 본다.
+ * 2) 정상 도달(summit) — 시작점→정상 누적 거리 도달 시 1회 (자유 기록은 skip).
+ *    정상 좌표가 없는 코스만 종전 정책대로 "코스 절반" 을 정상 근처로 본다.
  *    채널: WebSocket(/topic/.../summit) + FCM. Redis Set 으로 1회 idempotent 보장.
  *
  * TODO: 푸시 본문 단위 — 현재 m 단위 정수. 코스 마일스톤이 정수가 아닐 때 km 단위 포맷 고려.
@@ -38,24 +38,34 @@ public class TrackingMilestoneTriggerService {
 
     private static final double TOLERANCE_RATIO = 0.10;
     private static final Duration TTL = Duration.ofHours(24);
-    /** 코스 모드의 사진 마일스톤 개수 (1/4, 2/4, 3/4, 4/4). TrackingMilestoneCalculator 와 동기 유지. */
-    private static final int COURSE_MILESTONE_COUNT = 4;
+    /** 자유 기록엔 정상이 없다는 뜻의 sentinel. 키가 아예 없는 구버전 세션과 구분하려고 명시적으로 저장한다. */
+    private static final String SUMMIT_MARK_NONE = "none";
+    /**
+     * 이 변경 배포 전에 생성된 세션의 코스 모드 판별값. 그때는 자유 기록이 6컷이라 4컷이면 곧 코스였다.
+     * 신규 세션은 summit mark 키로 판별하므로 {@link #resolveSummitMark} 의 구버전 분기에서만 쓰인다.
+     */
+    private static final int LEGACY_COURSE_MILESTONE_COUNT = 4;
 
     private final StringRedisTemplate redisTemplate;
     private final SimpMessagingTemplate messagingTemplate;
     private final NotificationService notificationService;
     private final TrackingMilestoneCalculator milestoneCalculator;
 
-    /** 세션 생성 시 1회 호출 — 마일스톤 거리 리스트를 Redis 에 저장. */
+    /** 세션 생성 시 1회 호출 — 마일스톤 거리 리스트와 정상 알림 임계 거리를 Redis 에 저장. */
     public void initializeMilestones(TrackingSession session) {
-        List<Double> milestones = milestoneCalculator.calculate(session);
-        if (milestones.isEmpty()) {
+        TrackingMilestoneCalculator.MilestonePlan plan = milestoneCalculator.calculate(session);
+        if (plan.milestones().isEmpty()) {
             return;
         }
         String key = milestonesKey(session.getId());
-        String value = milestones.stream().map(String::valueOf).collect(Collectors.joining(","));
+        String value = plan.milestones().stream().map(String::valueOf).collect(Collectors.joining(","));
         redisTemplate.opsForValue().set(key, value);
         redisTemplate.expire(key, TTL);
+
+        String markKey = summitMarkKey(session.getId());
+        redisTemplate.opsForValue().set(markKey,
+                plan.summitMark() == null ? SUMMIT_MARK_NONE : String.valueOf(plan.summitMark()));
+        redisTemplate.expire(markKey, TTL);
     }
 
     /** GPS Consumer 가 매 점 처리 직후 호출. distanceTotal 은 누적 거리(m). */
@@ -64,6 +74,9 @@ public class TrackingMilestoneTriggerService {
         if (milestones.isEmpty()) {
             return;
         }
+        // summitMark 는 정상 알림 임계 거리이자 코스 모드 판별 기준이다 (자유 기록이면 null).
+        Double summitMark = resolveSummitMark(sessionId, milestones);
+        boolean courseMode = summitMark != null;
         Set<String> opened = membersOrEmpty(openedKey(sessionId));
         Set<String> closed = membersOrEmpty(closedKey(sessionId));
 
@@ -79,7 +92,7 @@ public class TrackingMilestoneTriggerService {
                 Long added = redisTemplate.opsForSet().add(openedKey(sessionId), idxStr);
                 if (added != null && added == 1L) {
                     redisTemplate.expire(openedKey(sessionId), TTL);
-                    sendOpen(sessionId, userId, i, mi, milestones.size());
+                    sendOpen(sessionId, userId, i, mi, courseMode);
                 }
             }
             if (isOpened && !isClosed && distanceTotal > exit) {
@@ -91,14 +104,33 @@ public class TrackingMilestoneTriggerService {
             }
         }
 
-        // 코스 모드(마일스톤 4개)일 때만 정상(=코스 절반 지점) 알림 평가.
-        // 마지막 마일스톤(4/4)이 곧 코스 distance 이므로 그걸 courseDistance 로 사용.
-        if (milestones.size() == COURSE_MILESTONE_COUNT) {
-            evaluateSummit(sessionId, userId, distanceTotal, milestones.get(milestones.size() - 1));
+        // 코스 모드일 때만 정상 알림 평가. 정상 좌표가 있으면 4/4 마일스톤이 곧 정상 지점이라
+        // photo 4/4 와 같은 지점에서 함께 발송된다.
+        if (courseMode) {
+            evaluateSummit(sessionId, userId, distanceTotal, summitMark);
         }
     }
 
-    private void sendOpen(Long sessionId, Long userId, int idx, double mi, int milestonesSize) {
+    /**
+     * 정상 알림 임계 거리(m)를 돌려준다. null 이면 정상 알림이 없는 자유 기록이다.
+     *
+     * 마크 키가 아예 없는 세션은 이 변경 배포 전에 생성돼 진행 중인 세션이다. 그때는 마일스톤 4개가
+     * 곧 코스 모드였고 정상을 코스 거리의 절반으로 봤으므로, 그 규칙 그대로 계산해 알림 공백을 막는다.
+     */
+    private Double resolveSummitMark(Long sessionId, List<Double> milestones) {
+        String raw = redisTemplate.opsForValue().get(summitMarkKey(sessionId));
+        if (raw == null) {
+            return milestones.size() == LEGACY_COURSE_MILESTONE_COUNT
+                    ? milestones.get(milestones.size() - 1) / 2.0
+                    : null;
+        }
+        if (raw.isBlank() || SUMMIT_MARK_NONE.equals(raw)) {
+            return null;
+        }
+        return Double.parseDouble(raw);
+    }
+
+    private void sendOpen(Long sessionId, Long userId, int idx, double mi, boolean courseMode) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("milestoneIndex", idx);
         payload.put("milestoneDistance", mi);
@@ -109,7 +141,7 @@ public class TrackingMilestoneTriggerService {
 
         try {
             int distanceMeters = (int) Math.round(mi);
-            String body = courseModeBody(milestonesSize, idx, distanceMeters);
+            String body = courseModeBody(courseMode, idx, distanceMeters);
             notificationService.send(
                     userId,
                     NotificationType.TRACKING_PHOTO_MILESTONE,
@@ -124,11 +156,14 @@ public class TrackingMilestoneTriggerService {
     }
 
     /**
-     * 코스 모드(4컷) 일 때만 마일스톤 idx 별로 본문을 반환한다.
-     * 자유 기록(6컷) 등 코스 모드가 아닐 땐 기존 distance 기반 문구로 fallback 한다.
+     * 코스 모드일 때만 마일스톤 idx 별로 본문을 반환한다.
+     * 자유 기록은 정상 개념이 없으므로 distance 기반 문구로 fallback 한다.
+     *
+     * 판별 기준이 마일스톤 개수가 아니라 코스 모드 여부인 이유: 자유 기록도 4컷이라
+     * 개수로는 코스와 구분되지 않아 자유 기록에 "정상 도착" 문구가 나가버린다.
      */
-    private static String courseModeBody(int milestonesSize, int milestoneIdx, int distanceMeters) {
-        if (milestonesSize != COURSE_MILESTONE_COUNT) {
+    private static String courseModeBody(boolean courseMode, int milestoneIdx, int distanceMeters) {
+        if (!courseMode) {
             return distanceMeters + "m 돌파! 인증 사진을 남겨보세요!";
         }
         return switch (milestoneIdx) {
@@ -151,36 +186,39 @@ public class TrackingMilestoneTriggerService {
     }
 
     /**
-     * 코스 거리 50% 지점 도달 시 1회 정상 알림을 발송한다.
-     *  - 자유 기록(session.course == null) 인 경우 정상 개념이 없으니 호출자에서 courseDistance=0 으로 넘기면 skip.
+     * 정상 지점 도달 시 1회 정상 알림을 발송한다.
+     *  - summitMark 는 코스 시작점부터 정상까지의 누적 거리(m). 정상 좌표가 없는 코스는
+     *    종전 정책대로 코스 거리의 절반이 들어온다.
+     *  - 자유 기록은 정상 개념이 없으니 호출자에서 skip 한다.
      *  - Redis SADD 의 반환값으로 idempotent — 두 인스턴스가 동시 호출해도 한 인스턴스만 발송.
      *  - WebSocket /topic/tracking/{sessionId}/summit + FCM 둘 다 발송.
      */
-    public void evaluateSummit(Long sessionId, Long userId, double distanceTotal, double courseDistance) {
-        if (courseDistance <= 0) {
+    public void evaluateSummit(Long sessionId, Long userId, double distanceTotal, double summitMark) {
+        if (summitMark <= 0) {
             return;
         }
-        double halfwayMark = courseDistance / 2.0;
-        if (distanceTotal < halfwayMark) {
+        if (distanceTotal < summitMark) {
             return;
         }
         String key = summitNotifiedKey(sessionId);
         Long added = redisTemplate.opsForSet().add(key, "1");
         if (added == null || added == 0L) {
             // 이미 다른 호출에서 보낸 상태 — silent skip.
-            // EXPIRE 도 함께 skip 해야 50% 통과 후 매 GPS 점마다 TTL 이 리셋되는 핫패스 부하를 막을 수 있다.
+            // EXPIRE 도 함께 skip 해야 정상 통과 후 매 GPS 점마다 TTL 이 리셋되는 핫패스 부하를 막을 수 있다.
             return;
         }
         redisTemplate.expire(key, TTL);
-        sendSummit(sessionId, userId, halfwayMark);
+        sendSummit(sessionId, userId, summitMark);
     }
 
-    private void sendSummit(Long sessionId, Long userId, double halfwayMark) {
+    private void sendSummit(Long sessionId, Long userId, double summitMark) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("halfwayMark", halfwayMark);
+        // 페이로드 키는 의미가 "코스 절반" 에서 "정상까지 거리" 로 바뀌었지만,
+        // 이미 배포된 클라이언트가 읽고 있어 이름은 그대로 둔다.
+        payload.put("halfwayMark", summitMark);
         payload.put("reachedAt", LocalDateTime.now().toString());
         messagingTemplate.convertAndSend(summitTopic(sessionId), (Object) payload);
-        log.info("Summit reached: sessionId={} userId={} halfwayMark={}m", sessionId, userId, (int) Math.round(halfwayMark));
+        log.info("Summit reached: sessionId={} userId={} summitMark={}m", sessionId, userId, (int) Math.round(summitMark));
 
         try {
             notificationService.send(
@@ -217,7 +255,7 @@ public class TrackingMilestoneTriggerService {
      * @param milestones     마일스톤 거리 목록 (m)
      * @param openedIndexes  촬영 창이 열린 적 있는 마일스톤 인덱스
      * @param closedIndexes  촬영 창이 닫힌 마일스톤 인덱스. openedIndexes - closedIndexes 가 현재 열린 창.
-     * @param summitNotified 정상(코스 50% 지점) 알림 발송 여부
+     * @param summitNotified 정상 도달 알림 발송 여부
      */
     public record MilestoneState(
             List<Double> milestones,
@@ -233,6 +271,10 @@ public class TrackingMilestoneTriggerService {
                 .map(Integer::parseInt)
                 .sorted()
                 .toList();
+    }
+
+    private static String summitMarkKey(Long sessionId) {
+        return "tracking:session:" + sessionId + ":summit:mark";
     }
 
     private static String summitNotifiedKey(Long sessionId) {
