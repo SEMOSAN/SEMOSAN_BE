@@ -30,6 +30,7 @@ public class ServerErrorAlertService {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH시 mm분 ss초");
     private static final int ERROR_COLOR = 0xED4245;
     private static final int MAX_STACK_TRACE_LENGTH = 1000;
+    private static final int MAX_ERROR_MESSAGE_LENGTH = 1000;
     private static final int MAX_EMBED_DESCRIPTION_LENGTH = 4000;
     private static final Duration LOG_WINDOW = Duration.ofMinutes(5);
 
@@ -78,7 +79,7 @@ public class ServerErrorAlertService {
                 endpoint(requestContext),
                 status,
                 client(requestContext),
-                sanitize(exception.getMessage()),
+                truncate(sanitize(exception.getMessage()), MAX_ERROR_MESSAGE_LENGTH),
                 stackTrace(exception),
                 grafanaSection(requestContext.traceId(), errorTime)
         );
