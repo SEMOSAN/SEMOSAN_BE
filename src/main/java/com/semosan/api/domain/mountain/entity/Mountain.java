@@ -4,12 +4,11 @@ import com.semosan.api.common.base.BaseEntity;
 import com.semosan.api.domain.mountain.enums.Difficulty;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Generated;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.generator.EventType;
 import org.hibernate.type.SqlTypes;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.PrecisionModel;
 
 import java.util.List;
 
@@ -49,7 +48,7 @@ public class Mountain extends BaseEntity {
      * 좌표는 두 가지 표현으로 중복 저장한다 — 단순 직렬화/BETWEEN 용 latitude/longitude,
      * PostGIS 공간 쿼리(nearest/거리 등) 용 location.
      * 응답 DTO 가 latitude/longitude 를 그대로 노출하고 있어 location 단일화는 별도 PR 에서 다룬다.
-     * 좌표 변경 시 반드시 {@link #updateCoordinates(Double, Double)} 로 세 컬럼을 함께 갱신할 것.
+     * 좌표 변경은 {@link #updateCoordinates(Double, Double)} 로 한다 — location 은 따라온다.
      */
     @Column(name = "latitude")
     private Double latitude;
@@ -57,7 +56,13 @@ public class Mountain extends BaseEntity {
     @Column(name = "longitude")
     private Double longitude;
 
-    @Column(name = "location", columnDefinition = "geography(Point, 4326)")
+    /**
+     * DB 생성 컬럼(V39) — latitude/longitude 에서 자동 파생되므로 애플리케이션은 쓰지 않는다.
+     * INSERT/UPDATE 직후 DB 가 계산한 값을 다시 읽어와 메모리 상태를 맞춘다.
+     */
+    @Generated(event = {EventType.INSERT, EventType.UPDATE})
+    @Column(name = "location", columnDefinition = "geography(Point, 4326)",
+            insertable = false, updatable = false)
     private Point location;
 
     @Builder.Default
@@ -80,11 +85,11 @@ public class Mountain extends BaseEntity {
         this.isPublic = isPublic;
     }
 
+    /**
+     * location 은 DB 생성 컬럼이라 여기서 건드리지 않는다 — flush 시점에 DB 가 계산해 준다.
+     */
     public void updateCoordinates(Double latitude, Double longitude) {
         this.latitude = latitude;
         this.longitude = longitude;
-        // PostGIS Point 는 (X=경도, Y=위도) 순서
-        this.location = new GeometryFactory(new PrecisionModel(), 4326)
-                .createPoint(new Coordinate(longitude, latitude));
     }
 }

@@ -43,16 +43,26 @@ class MountainTest {
     }
 
     @Test
-    void updateCoordinatesUpdatesLatitudeLongitudeAndPostgisPoint() throws Exception {
+    void updateCoordinatesUpdatesLatitudeAndLongitude() throws Exception {
         Mountain mountain = mountain();
 
         mountain.updateCoordinates(37.5, 127.0);
 
         assertThat(mountain.getLatitude()).isEqualTo(37.5);
         assertThat(mountain.getLongitude()).isEqualTo(127.0);
-        assertThat(mountain.getLocation().getSRID()).isEqualTo(4326);
-        assertThat(mountain.getLocation().getX()).isEqualTo(127.0);
-        assertThat(mountain.getLocation().getY()).isEqualTo(37.5);
+    }
+
+    /**
+     * location 은 V39 이후 latitude/longitude 에서 파생되는 DB 생성 컬럼이다.
+     * 애플리케이션이 값을 만들어 넣으면 DB 계산값과 어긋날 수 있으므로 쓰지 않는다.
+     */
+    @Test
+    void updateCoordinatesDoesNotTouchLocation() throws Exception {
+        Mountain mountain = mountain();
+
+        mountain.updateCoordinates(37.5, 127.0);
+
+        assertThat(mountain.getLocation()).isNull();
     }
 
     private Mountain mountain() throws Exception {
