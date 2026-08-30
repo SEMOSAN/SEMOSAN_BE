@@ -54,6 +54,7 @@ discord:
     enabled: false
     webhook-url: https://discord.example.com/webhook
     report-webhook-url: https://discord.example.com/report
+    signup-webhook-url: https://discord.example.com/signup
 
 grafana:
   base-url: http://grafana.example.com

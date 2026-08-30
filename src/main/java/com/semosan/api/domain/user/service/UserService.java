@@ -18,12 +18,14 @@ import com.semosan.api.domain.user.entity.UserNotificationSetting;
 import com.semosan.api.domain.user.entity.UserOnboarding;
 import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
+import com.semosan.api.domain.user.event.UserRegisteredEvent;
 import com.semosan.api.domain.user.policy.DefaultNicknameGenerator;
 import com.semosan.api.domain.user.policy.NicknamePolicy;
 import com.semosan.api.domain.user.repository.UserNotificationSettingRepository;
 import com.semosan.api.domain.user.repository.UserOnboardingRepository;
 import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +48,7 @@ public class UserService {
     private final DefaultNicknameGenerator defaultNicknameGenerator;
     private final NicknamePolicy nicknamePolicy;
     private final UserReader userReader;
+    private final ApplicationEventPublisher eventPublisher;
 
     // OAuth 유저 조회 후 없으면 신규 생성합니다.
     @Transactional
@@ -54,15 +57,31 @@ public class UserService {
     ) {
         return userRepository.findByOauthIdAndOauthProvider(profile.oauthId(), provider)
                 .filter(user -> !user.isDeleted())
-                .orElseGet(() -> saveNewUserWithNotificationSetting(
-                        User.createOAuthUser(
-                                profile.oauthId(),
-                                profile.email(),
-                                profile.name(),
-                                deviceType,
-                                provider
-                        )
-                ));
+                .orElseGet(() -> registerOAuthUser(profile, provider, deviceType));
+    }
+
+    // OAuth 신규 가입 유저를 생성하고 가입 알림 이벤트를 발행합니다.
+    // 가입 알림은 이 경로에서만 발행하므로 findOrCreateTestUser로 생성되는 유저는 알림 대상이 아닙니다.
+    private User registerOAuthUser(
+            OAuthUserProfile profile, OAuthProvider provider, DeviceType deviceType
+    ) {
+        User savedUser = saveNewUserWithNotificationSetting(
+                User.createOAuthUser(
+                        profile.oauthId(),
+                        profile.email(),
+                        profile.name(),
+                        deviceType,
+                        provider
+                )
+        );
+        eventPublisher.publishEvent(new UserRegisteredEvent(
+                savedUser.getId(),
+                savedUser.getNickname(),
+                provider,
+                deviceType,
+                savedUser.getCreatedAt()
+        ));
+        return savedUser;
     }
 
     // 테스트 유저 조회 후 없으면 신규 생성합니다.

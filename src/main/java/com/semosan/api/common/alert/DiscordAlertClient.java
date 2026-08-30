@@ -30,6 +30,10 @@ public class DiscordAlertClient {
         doSend(properties.getReportWebhookUrl(), message);
     }
 
+    public void sendSignup(DiscordMessage message) {
+        doSend(properties.getSignupWebhookUrl(), message);
+    }
+
     private void doSend(String webhookUrl, DiscordMessage message) {
         if (!properties.isEnabled() || !StringUtils.hasText(webhookUrl)) {
             return;

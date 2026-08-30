@@ -91,6 +91,7 @@ discord:
     enabled: ${DISCORD_ALERT_ENABLED}
     webhook-url: ${DISCORD_WEBHOOK_URL}
     report-webhook-url: ${DISCORD_REPORT_WEBHOOK_URL}
+    signup-webhook-url: ${DISCORD_SIGNUP_WEBHOOK_URL:}
 
 grafana:
   base-url: ${GRAFANA_BASE_URL:}
