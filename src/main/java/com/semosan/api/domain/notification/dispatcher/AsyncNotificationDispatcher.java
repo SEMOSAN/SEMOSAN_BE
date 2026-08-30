@@ -1,7 +1,9 @@
 package com.semosan.api.domain.notification.dispatcher;
 
+import com.google.firebase.messaging.BatchResponse;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
+import com.google.firebase.messaging.SendResponse;
 import com.semosan.api.common.fcm.FcmService;
 import com.semosan.api.domain.notification.service.FcmTokenService;
 import lombok.RequiredArgsConstructor;
@@ -10,12 +12,16 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class AsyncNotificationDispatcher implements NotificationDispatcher {
+
+    // FCM sendEachForMulticast 1회 호출당 담을 수 있는 최대 토큰 수 (SDK 상한).
+    private static final int MAX_BATCH_SIZE = 500;
 
     private final FcmService fcmService;
     private final FcmTokenService fcmTokenService;
@@ -28,14 +34,33 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
     @Async("notificationTaskExecutor")
     public void dispatch(NotificationDispatchCommand cmd) {
         Map<String, String> dataPayload = buildDataPayload(cmd);
+        List<String> tokens = cmd.tokens();
 
-        for (String token : cmd.tokens()) {
-            try {
-                fcmService.sendMessage(token, cmd.title(), cmd.body(), dataPayload, cmd.type().isDataOnly());
-            } catch (FirebaseMessagingException e) {
-                handleSendError(token, e);
-            } catch (Exception e) {
-                log.error("FCM 발송 중 알 수 없는 에러 (token={}): {}", maskToken(token), e.getMessage(), e);
+        for (int from = 0; from < tokens.size(); from += MAX_BATCH_SIZE) {
+            List<String> chunk = tokens.subList(from, Math.min(from + MAX_BATCH_SIZE, tokens.size()));
+            sendChunk(chunk, cmd, dataPayload);
+        }
+    }
+
+    private void sendChunk(List<String> chunk, NotificationDispatchCommand cmd, Map<String, String> dataPayload) {
+        try {
+            BatchResponse response = fcmService.sendEachForMulticast(
+                    chunk, cmd.title(), cmd.body(), dataPayload, cmd.type().isDataOnly());
+            handleBatchResponse(chunk, response);
+        } catch (FirebaseMessagingException e) {
+            log.error("FCM 배치 발송 자체 실패 (tokenCount={}): {}", chunk.size(), e.getMessage());
+        } catch (Exception e) {
+            log.error("FCM 배치 발송 중 알 수 없는 에러 (tokenCount={}): {}", chunk.size(), e.getMessage(), e);
+        }
+    }
+
+    // BatchResponse.getResponses() 는 요청한 토큰 리스트와 같은 순서로 오므로 인덱스로 매칭한다.
+    private void handleBatchResponse(List<String> chunk, BatchResponse response) {
+        List<SendResponse> results = response.getResponses();
+        for (int i = 0; i < results.size(); i++) {
+            SendResponse result = results.get(i);
+            if (!result.isSuccessful()) {
+                handleSendError(chunk.get(i), result.getException());
             }
         }
     }
