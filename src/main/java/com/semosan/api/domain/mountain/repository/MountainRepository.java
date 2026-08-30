@@ -75,6 +75,11 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
             Pageable pageable
     );
 
+    /**
+     * 지도 뷰포트(BBox) 안의 산을 조회한다.
+     * `&&` : PostGIS bbox 겹침 연산자, GIST 인덱스(idx_mountains_location)로 가속됨.
+     * location 은 point 데이터라 bbox 겹침 = 포함이므로 ST_Intersects 없이 `&&`만으로 충분하다.
+     */
     @Query(
             value = """
                     SELECT
@@ -87,8 +92,7 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
                     FROM mountains m
                     LEFT JOIN hiking_records hr ON hr.mountain_id = m.id
                     LEFT JOIN hiking_members hm ON hm.hiking_record_id = hr.id AND hm.user_id = :userId
-                    WHERE m.latitude BETWEEN :swLat AND :neLat
-                      AND m.longitude BETWEEN :swLng AND :neLng
+                    WHERE m.location && ST_MakeEnvelope(:swLng, :swLat, :neLng, :neLat, 4326)::geography
                       AND m.is_public = true
                     GROUP BY m.id
                     ORDER BY m.id
