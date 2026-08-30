@@ -20,3 +20,13 @@ WHERE NOT EXISTS (
 AND NOT EXISTS (
     SELECT 1 FROM users WHERE nickname = '세모산' AND is_deleted = false
 );
+
+INSERT INTO user_notification_settings (created_at, updated_at, user_id,
+                                        push_notification_enabled, live_activity_enabled, voice_enabled)
+SELECT now(), now(), u.id, false, false, false
+FROM users u
+WHERE u.oauth_id = 'semosan_official'
+  AND u.oauth_provider = 'SYSTEM'::oauth_provider_enum
+  AND NOT EXISTS (
+    SELECT 1 FROM user_notification_settings s WHERE s.user_id = u.id
+);
