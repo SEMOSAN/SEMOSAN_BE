@@ -9,6 +9,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - "수정해줘", "고쳐줘", "반영해줘", "만들어줘", "추가해줘", "삭제해줘" 같은 명시적 요청이 있을 때만 파일을 편집한다.
 - 수정 전에 어떤 파일을 왜 건드릴지 먼저 설명하고, 명시적 승인을 기다린다.
 
+## Workflow
+
+작업은 항상 아래 순서로 진행한다.
+
+1. **분석**: 관련 코드·설정·로그를 먼저 파악한다.
+2. **제안**: 원인과 해결 방향을 설명한다.
+3. **비교**: 대안이 있으면 트레이드오프를 비교해 추천안을 제시한다.
+4. **작업**: 사용자 승인 후에만 실제로 파일을 수정한다.
+
+그 외 규칙:
+
+- 커밋은 항상 사용자가 직접 한다. Claude는 스스로 커밋하지 않는다.
+- 작업이 끝나면 커밋 메시지를 추천한다 (커밋 자체는 하지 않는다).
+- PR을 생성할 때는 변경 타입에 맞는 라벨(`bug`/`enhancement`/`refactor`/`test`/`documentation`/`chore`)을 지정하고, 담당자(assignee)는 `gh pr create --assignee @me`로 현재 작업 중인 사람(gh CLI 인증 계정)을 지정한다.
+
 ## Build & Test Commands
 
 ```bash
@@ -88,7 +103,7 @@ throw new GeneralException(ErrorStatus.XXX);
 
 - PostgreSQL + PostGIS (지리 좌표 검색에 `hibernate-spatial` + JTS 사용)
 - **prod 프로파일**: Flyway 활성화, `ddl-auto: validate`
-- **local 프로파일**: Flyway 비활성화, `ddl-auto: update`
+- **local 프로파일**: prod와 동일하게 Flyway 활성화, `ddl-auto: validate` (마이그레이션 스크립트로 스키마 관리)
 - 마이그레이션 스크립트: `src/main/resources/db/migration/V{N}__description.sql`
 
 ### Infrastructure
