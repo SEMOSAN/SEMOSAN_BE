@@ -55,5 +55,12 @@ discord:
     webhook-url: https://discord.example.com/webhook
     report-webhook-url: https://discord.example.com/report
 
+grafana:
+  base-url: http://grafana.example.com
+  loki:
+    datasource-uid: loki
+    namespace: test
+    app: test-api
+
 weather:
   api-key: dummy
