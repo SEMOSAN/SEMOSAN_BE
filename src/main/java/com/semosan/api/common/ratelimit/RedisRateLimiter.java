@@ -2,10 +2,12 @@ package com.semosan.api.common.ratelimit;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -14,10 +16,19 @@ public class RedisRateLimiter {
 
     private static final String KEY_PREFIX = "ratelimit:";
 
+    private static final DefaultRedisScript<Long> INCR_SCRIPT;
+
+    static {
+        INCR_SCRIPT = new DefaultRedisScript<>();
+        INCR_SCRIPT.setLocation(new ClassPathResource("redis/rate-limit-incr.lua"));
+        INCR_SCRIPT.setResultType(Long.class);
+    }
+
     private final StringRedisTemplate redisTemplate;
 
     /**
      * 윈도우 내 요청 수를 1 증가시키고 한도 초과 여부를 반환한다.
+     * INCR + 최초 요청 시 EXPIRE 를 Lua 스크립트로 원자 처리 — EXPIRE 유실로 인한 영구 차단 방지.
      *
      * @param scope         정책 구분
      * @param clientId      식별자
@@ -31,11 +42,7 @@ public class RedisRateLimiter {
         String key = KEY_PREFIX + scope + ":" + clientId + ":" + windowIndex;
 
         try {
-            Long count = redisTemplate.opsForValue().increment(key);
-            // 윈도우 첫 요청일 때만 TTL 부여 (이후 요청은 기존 TTL 유지)
-            if (count != null && count == 1L) {
-                redisTemplate.expire(key, Duration.ofSeconds(windowSeconds));
-            }
+            Long count = redisTemplate.execute(INCR_SCRIPT, List.of(key), String.valueOf(windowSeconds));
             boolean allowed = count == null || count <= limit;
             return new RateLimitResult(allowed, retryAfter);
         } catch (RuntimeException e) {
