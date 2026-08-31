@@ -128,7 +128,7 @@ class TrackingMilestoneTriggerServiceTest {
         verify(notificationService).send(
                 eq(10L),
                 eq(NotificationType.TRACKING_PHOTO_MILESTONE),
-                eq(Map.of("distance", 100)),
+                eq(Map.of("distance", 100, "milestoneIndex", 0)),
                 eq("정상 도착_1/4 완료_눌러서 인증 남기기")
         );
         verify(setOperations).add("tracking:session:1:photo:opened", "0");
@@ -147,7 +147,7 @@ class TrackingMilestoneTriggerServiceTest {
         verify(notificationService).send(
                 eq(10L),
                 eq(NotificationType.TRACKING_PHOTO_MILESTONE),
-                eq(Map.of("distance", 500)),
+                eq(Map.of("distance", 500, "milestoneIndex", 0)),
                 eq("500m 돌파! 인증 사진을 남겨보세요!")
         );
         verify(messagingTemplate, never()).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
@@ -164,7 +164,7 @@ class TrackingMilestoneTriggerServiceTest {
         verify(notificationService).send(
                 eq(10L),
                 eq(NotificationType.TRACKING_PHOTO_MILESTONE),
-                eq(Map.of("distance", 500)),
+                eq(Map.of("distance", 500, "milestoneIndex", 0)),
                 eq("500m 돌파! 인증 사진을 남겨보세요!")
         );
         verify(messagingTemplate, never()).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
@@ -183,11 +183,16 @@ class TrackingMilestoneTriggerServiceTest {
         verify(notificationService).send(
                 eq(10L),
                 eq(NotificationType.TRACKING_PHOTO_MILESTONE),
-                eq(Map.of("distance", 500)),
+                eq(Map.of("distance", 500, "milestoneIndex", 3)),
                 eq("정상 도착_완료_진짜최종_눌러서 인증하기")
         );
-        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
-        verify(notificationService).send(10L, NotificationType.TRACKING_SUMMIT_REACHED, Map.of());
+        ArgumentCaptor<Map<String, Object>> summitCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) summitCaptor.capture());
+        assertThat(summitCaptor.getValue())
+                .containsEntry("milestoneIndex", 3)
+                .containsEntry("milestoneDistanceM", 500.0);
+        verify(notificationService).send(10L, NotificationType.TRACKING_SUMMIT_REACHED,
+                Map.of("milestoneIndex", 3, "milestoneDistanceM", 500.0));
     }
 
     @Test
@@ -198,7 +203,14 @@ class TrackingMilestoneTriggerServiceTest {
 
         service().evaluate(1L, 10L, 200.0);
 
-        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
+        // 코스 절반을 정상으로 보는 세션은 summitMark 가 2/4 마일스톤과 같아 인덱스가 3 이 아니라 1 이다.
+        ArgumentCaptor<Map<String, Object>> summitCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) summitCaptor.capture());
+        assertThat(summitCaptor.getValue())
+                .containsEntry("milestoneIndex", 1)
+                .containsEntry("milestoneDistanceM", 200.0);
+        verify(notificationService).send(10L, NotificationType.TRACKING_SUMMIT_REACHED,
+                Map.of("milestoneIndex", 1, "milestoneDistanceM", 200.0));
     }
 
     @Test
@@ -315,14 +327,14 @@ class TrackingMilestoneTriggerServiceTest {
 
     @Test
     void evaluateSummitReturnsWhenSummitMarkIsNotPositive() {
-        service().evaluateSummit(1L, 10L, 100.0, 0.0);
+        service().evaluateSummit(1L, 10L, 100.0, 0.0, 3);
 
         verifyNoInteractions(redisTemplate, messagingTemplate, notificationService);
     }
 
     @Test
     void evaluateSummitReturnsBeforeSummitMark() {
-        service().evaluateSummit(1L, 10L, 199.0, 200.0);
+        service().evaluateSummit(1L, 10L, 199.0, 200.0, 3);
 
         verifyNoInteractions(redisTemplate, messagingTemplate, notificationService);
     }
@@ -332,7 +344,7 @@ class TrackingMilestoneTriggerServiceTest {
         when(redisTemplate.opsForSet()).thenReturn(setOperations);
         when(setOperations.add("tracking:session:1:summit:notified", "1")).thenReturn(0L);
 
-        service().evaluateSummit(1L, 10L, 200.0, 200.0);
+        service().evaluateSummit(1L, 10L, 200.0, 200.0, 3);
 
         verify(redisTemplate, never()).expire("tracking:session:1:summit:notified", Duration.ofHours(24));
         verifyNoInteractions(messagingTemplate, notificationService);
@@ -343,7 +355,7 @@ class TrackingMilestoneTriggerServiceTest {
         when(redisTemplate.opsForSet()).thenReturn(setOperations);
         when(setOperations.add("tracking:session:1:summit:notified", "1")).thenReturn(null);
 
-        service().evaluateSummit(1L, 10L, 200.0, 200.0);
+        service().evaluateSummit(1L, 10L, 200.0, 200.0, 3);
 
         verifyNoInteractions(messagingTemplate, notificationService);
     }
@@ -353,13 +365,17 @@ class TrackingMilestoneTriggerServiceTest {
         when(redisTemplate.opsForSet()).thenReturn(setOperations);
         when(setOperations.add("tracking:session:1:summit:notified", "1")).thenReturn(1L);
 
-        service().evaluateSummit(1L, 10L, 200.0, 200.0);
+        service().evaluateSummit(1L, 10L, 200.0, 200.0, 3);
 
         ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
         verify(redisTemplate).expire("tracking:session:1:summit:notified", Duration.ofHours(24));
         verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) payloadCaptor.capture());
-        assertThat(payloadCaptor.getValue()).containsEntry("halfwayMark", 200.0);
-        verify(notificationService).send(10L, NotificationType.TRACKING_SUMMIT_REACHED, Map.of());
+        assertThat(payloadCaptor.getValue())
+                .containsEntry("milestoneIndex", 3)
+                .containsEntry("milestoneDistanceM", 200.0)
+                .containsEntry("halfwayMark", 200.0);
+        verify(notificationService).send(10L, NotificationType.TRACKING_SUMMIT_REACHED,
+                Map.of("milestoneIndex", 3, "milestoneDistanceM", 200.0));
     }
 
     @Test
@@ -368,9 +384,10 @@ class TrackingMilestoneTriggerServiceTest {
         when(setOperations.add("tracking:session:1:summit:notified", "1")).thenReturn(1L);
         doThrow(new RuntimeException("fcm fail"))
                 .when(notificationService)
-                .send(10L, NotificationType.TRACKING_SUMMIT_REACHED, Map.of());
+                .send(10L, NotificationType.TRACKING_SUMMIT_REACHED,
+                        Map.of("milestoneIndex", 3, "milestoneDistanceM", 200.0));
 
-        service().evaluateSummit(1L, 10L, 200.0, 200.0);
+        service().evaluateSummit(1L, 10L, 200.0, 200.0, 3);
 
         verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
     }

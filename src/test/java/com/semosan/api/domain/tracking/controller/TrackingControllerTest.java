@@ -41,7 +41,7 @@ class TrackingControllerTest {
 
     @Test
     void getLiveActivityCourseReturnsSuccessResponse() {
-        LiveActivityCourseResponse course = new LiveActivityCourseResponse(10L, List.of(), 1500.0, 90);
+        LiveActivityCourseResponse course = new LiveActivityCourseResponse(10L, List.of(), 1500.0, 90, 500.0, 30);
         when(trackingService.getLiveActivityCourse(1L, 10L)).thenReturn(course);
 
         ResponseEntity<ApiResponse<LiveActivityCourseResponse>> response =

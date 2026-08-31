@@ -7,6 +7,7 @@ import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.enums.Difficulty;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
+import com.semosan.api.domain.mountain.service.CourseSummitDistanceCalculator;
 import com.semosan.api.domain.tracking.dto.response.LiveActivityCourseResponse;
 import com.semosan.api.domain.tracking.dto.response.NearbyMountainResponse;
 import com.semosan.api.domain.user.service.UserReader;
@@ -41,6 +42,9 @@ class TrackingServiceTest {
 
     @Mock
     private UserReader userReader;
+
+    @Mock
+    private CourseSummitDistanceCalculator summitDistanceCalculator;
 
     @InjectMocks
     private TrackingService trackingService;
@@ -82,6 +86,7 @@ class TrackingServiceTest {
                 });
         ReflectionTestUtils.setField(course, "polyline", polyline);
         when(courseRepository.findById(10L)).thenReturn(Optional.of(course));
+        when(summitDistanceCalculator.calculate(course)).thenReturn(500.0);
 
         LiveActivityCourseResponse response = trackingService.getLiveActivityCourse(2L, 10L);
 
@@ -92,6 +97,9 @@ class TrackingServiceTest {
         assertThat(response.coordinates().getFirst().longitude()).isEqualTo(127.0);
         assertThat(response.totalDistance()).isEqualTo(1500.0);
         assertThat(response.estimatedTime()).isEqualTo(90);
+        // 마일스톤 계산과 같은 계산기를 써야 푸시 지점과 화면 표시가 어긋나지 않는다.
+        assertThat(response.summitDistance()).isEqualTo(500.0);
+        assertThat(response.summitEstimatedTime()).isEqualTo(30);
     }
 
     @Test

@@ -5,6 +5,7 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
+import com.semosan.api.domain.mountain.service.CourseSummitDistanceCalculator;
 import com.semosan.api.domain.tracking.dto.response.LiveActivityCourseResponse;
 import com.semosan.api.domain.tracking.dto.response.NearbyMountainResponse;
 import com.semosan.api.domain.user.service.UserReader;
@@ -20,6 +21,7 @@ public class TrackingService {
     private final MountainRepository mountainRepository;
     private final CourseRepository courseRepository;
     private final UserReader userReader;
+    private final CourseSummitDistanceCalculator summitDistanceCalculator;
 
     /**
      * 사용자의 현재 좌표 기준 가장 가까운 산 1개와 그 산의 코스 목록을 반환한다.
@@ -41,7 +43,7 @@ public class TrackingService {
         // JWT 인증 이후에도 탈퇴/비활성 유저의 Live Activity 코스 조회를 막기 위한 도메인 검증.
         userReader.findActiveUserById(userId);
         return courseRepository.findById(courseId)
-                .map(LiveActivityCourseResponse::from)
+                .map(course -> LiveActivityCourseResponse.from(course, summitDistanceCalculator.calculate(course)))
                 .orElseThrow(() -> new GeneralException(ErrorStatus.COURSE_NOT_FOUND));
     }
 }

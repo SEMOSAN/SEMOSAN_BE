@@ -38,6 +38,7 @@ public enum NotificationType {
 
     /**
      * 트래킹 중 거리 마일스톤 도달 시 사진 촬영 유도.
+     * data 에 distance(m), milestoneIndex 를 싣는다 — 클라이언트가 사진 업로드 API 에 그대로 넘긴다.
      * iOS 백그라운드/잠금화면/앱 종료 상태에서도 시스템이 즉시 배너를 표시하도록 mixed payload
      * (notification 키 + data 키) 로 발송한다. 포그라운드 배너 노출 여부는 클라(앱) 의
      * UNUserNotificationCenterDelegate(willPresent) 에서 알림 타입(data.type) 을 식별해
@@ -47,12 +48,14 @@ public enum NotificationType {
     TRACKING_PHOTO_MILESTONE(
             "SEMOSAN",
             "{distance}m 돌파! 인증 사진을 남겨보세요!",
-            Set.of("distance"),
+            Set.of("distance", "milestoneIndex"),
             false
     ),
 
     /**
      * 시작점→정상 누적 거리 도달 시 정상 인증 유도.
+     * data 에 milestoneIndex, milestoneDistanceM 을 싣는다 — 정상 인증 사진 업로드에 필요한 값이다.
+     * 정상과 일치하는 마일스톤 인덱스는 코스마다 다르다(정상 좌표 있으면 3, fallback 이면 1).
      * 정상 좌표(courses.summit_lat/lng)가 없는 코스만 코스 절반 지점을 "정상" 근처로 간주한다.
      * iOS 백그라운드/잠금화면/앱 종료 상태에서도 시스템이 즉시 배너를 표시하도록 mixed payload
      * (notification 키 + data 키) 로 발송한다. 포그라운드 배너 제어는 TRACKING_PHOTO_MILESTONE
@@ -61,7 +64,7 @@ public enum NotificationType {
     TRACKING_SUMMIT_REACHED(
             "SEMOSAN",
             "정상에 도착했나요? 정상 인증하기!",
-            Set.of(),
+            Set.of("milestoneIndex", "milestoneDistanceM"),
             false
     );
 
