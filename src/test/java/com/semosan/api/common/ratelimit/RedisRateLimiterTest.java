@@ -2,18 +2,16 @@ package com.semosan.api.common.ratelimit;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
-
-import java.time.Duration;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,16 +21,12 @@ class RedisRateLimiterTest {
     @Mock
     private StringRedisTemplate redisTemplate;
 
-    @Mock
-    private ValueOperations<String, String> valueOperations;
-
     @InjectMocks
     private RedisRateLimiter redisRateLimiter;
 
     @Test
     void allowsWhenCountIsWithinLimit() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.increment(anyString())).thenReturn(5L);
+        when(redisTemplate.execute(any(DefaultRedisScript.class), anyList(), any())).thenReturn(5L);
 
         RateLimitResult result = redisRateLimiter.tryConsume("global", "1.1.1.1", 10, 60);
 
@@ -41,8 +35,7 @@ class RedisRateLimiterTest {
 
     @Test
     void allowsWhenCountEqualsLimit() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.increment(anyString())).thenReturn(10L);
+        when(redisTemplate.execute(any(DefaultRedisScript.class), anyList(), any())).thenReturn(10L);
 
         RateLimitResult result = redisRateLimiter.tryConsume("global", "1.1.1.1", 10, 60);
 
@@ -51,8 +44,7 @@ class RedisRateLimiterTest {
 
     @Test
     void blocksWhenCountExceedsLimit() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.increment(anyString())).thenReturn(11L);
+        when(redisTemplate.execute(any(DefaultRedisScript.class), anyList(), any())).thenReturn(11L);
 
         RateLimitResult result = redisRateLimiter.tryConsume("global", "1.1.1.1", 10, 60);
 
@@ -61,29 +53,21 @@ class RedisRateLimiterTest {
     }
 
     @Test
-    void setsTtlOnFirstRequestInWindow() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.increment(anyString())).thenReturn(1L);
+    void passesRemainingWindowTimeAsScriptArgument() {
+        when(redisTemplate.execute(any(DefaultRedisScript.class), anyList(), any())).thenReturn(1L);
+        ArgumentCaptor<String> ttlArg = ArgumentCaptor.forClass(String.class);
 
         redisRateLimiter.tryConsume("auth", "1.1.1.1", 10, 60);
 
-        verify(redisTemplate).expire(anyString(), any(Duration.class));
-    }
-
-    @Test
-    void doesNotSetTtlOnSubsequentRequests() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.increment(anyString())).thenReturn(2L);
-
-        redisRateLimiter.tryConsume("auth", "1.1.1.1", 10, 60);
-
-        verify(redisTemplate, never()).expire(anyString(), any(Duration.class));
+        verify(redisTemplate).execute(any(DefaultRedisScript.class), anyList(), ttlArg.capture());
+        // 윈도우 전체 길이(60)가 아니라 "윈도우 끝까지 남은 시간"이 전달돼야 한다 — 항상 1~60 범위.
+        assertThat(Long.parseLong(ttlArg.getValue())).isBetween(1L, 60L);
     }
 
     @Test
     void failsOpenWhenRedisThrows() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        when(valueOperations.increment(anyString())).thenThrow(new RuntimeException("redis down"));
+        when(redisTemplate.execute(any(DefaultRedisScript.class), anyList(), any()))
+                .thenThrow(new RuntimeException("redis down"));
 
         RateLimitResult result = redisRateLimiter.tryConsume("global", "1.1.1.1", 10, 60);
 
