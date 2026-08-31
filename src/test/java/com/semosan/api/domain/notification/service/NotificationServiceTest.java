@@ -82,7 +82,7 @@ class NotificationServiceTest {
                 NotificationType.TRACKING_PHOTO_MILESTONE,
                 "SEMOSAN",
                 "override",
-                Map.of("distance", 500)
+                Map.of("distance", 500, "milestoneIndex", 3)
         );
         ReflectionTestUtils.setField(notification, "id", 10L);
         when(userRepository.existsByIdAndDeletedFalse(1L)).thenReturn(true);
@@ -93,7 +93,7 @@ class NotificationServiceTest {
         notificationService.send(
                 1L,
                 NotificationType.TRACKING_PHOTO_MILESTONE,
-                Map.of("distance", 500),
+                Map.of("distance", 500, "milestoneIndex", 3),
                 "override"
         );
 

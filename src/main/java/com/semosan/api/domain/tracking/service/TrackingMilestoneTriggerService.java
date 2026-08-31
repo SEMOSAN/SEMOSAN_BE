@@ -104,11 +104,36 @@ public class TrackingMilestoneTriggerService {
             }
         }
 
-        // 코스 모드일 때만 정상 알림 평가. 정상 좌표가 있으면 4/4 마일스톤이 곧 정상 지점이라
-        // photo 4/4 와 같은 지점에서 함께 발송된다.
+        // 코스 모드일 때만 정상 알림 평가.
+        // photo 4/4 OPEN 은 마일스톤의 -10%(entry) 지점이고 정상 알림은 마일스톤 정각이라 동시에 나가지 않는다.
+        // 다만 창이 +10% 에서 닫히므로 정상 알림이 도착하는 시점에 촬영 창이 열려 있는 것은 보장된다.
+        // GPS 가 드물어 한 점이 ±10% 구간을 통째로 건너뛰면 photo 4/4 는 발송되지 않고 정상 알림만 나간다.
         if (courseMode) {
-            evaluateSummit(sessionId, userId, distanceTotal, summitMark);
+            evaluateSummit(sessionId, userId, distanceTotal, summitMark,
+                    summitMilestoneIndex(milestones, summitMark));
         }
+    }
+
+    /**
+     * 정상 지점과 일치하는 사진 마일스톤 인덱스.
+     *
+     * 정상 좌표가 있는 코스는 4/4 라 3 이지만, 정상 좌표가 없어 코스 절반을 정상으로 보는 fallback
+     * 코스는 summitMark 가 course.distance/2 라 2/4 인 1 이 된다. 상수로 둘 수 없어
+     * summitMark 에 가장 가까운 마일스톤을 찾는다.
+     *
+     * 클라이언트가 정상 인증 사진을 올릴 때 이 인덱스를 그대로 실어 보낸다.
+     */
+    private static int summitMilestoneIndex(List<Double> milestones, double summitMark) {
+        int nearest = 0;
+        double nearestGap = Double.MAX_VALUE;
+        for (int i = 0; i < milestones.size(); i++) {
+            double gap = Math.abs(milestones.get(i) - summitMark);
+            if (gap < nearestGap) {
+                nearestGap = gap;
+                nearest = i;
+            }
+        }
+        return nearest;
     }
 
     /**
@@ -142,10 +167,15 @@ public class TrackingMilestoneTriggerService {
         try {
             int distanceMeters = (int) Math.round(mi);
             String body = courseModeBody(courseMode, idx, distanceMeters);
+            // milestoneIndex 를 함께 실어야 백그라운드에서 푸시로 진입한 클라이언트가
+            // 사진 업로드 API(POST /api/tracking/sessions/{id}/photos) 에 그대로 넘길 수 있다.
             notificationService.send(
                     userId,
                     NotificationType.TRACKING_PHOTO_MILESTONE,
-                    Map.of("distance", distanceMeters),
+                    Map.of(
+                            "distance", distanceMeters,
+                            "milestoneIndex", idx
+                    ),
                     body
             );
         } catch (Exception e) {
@@ -190,10 +220,12 @@ public class TrackingMilestoneTriggerService {
      *  - summitMark 는 코스 시작점부터 정상까지의 누적 거리(m). 정상 좌표가 없는 코스는
      *    종전 정책대로 코스 거리의 절반이 들어온다.
      *  - 자유 기록은 정상 개념이 없으니 호출자에서 skip 한다.
+     *  - summitMilestoneIndex 는 정상과 일치하는 사진 마일스톤 인덱스 — 정상 인증 사진 업로드에 쓰인다.
      *  - Redis SADD 의 반환값으로 idempotent — 두 인스턴스가 동시 호출해도 한 인스턴스만 발송.
      *  - WebSocket /topic/tracking/{sessionId}/summit + FCM 둘 다 발송.
      */
-    public void evaluateSummit(Long sessionId, Long userId, double distanceTotal, double summitMark) {
+    public void evaluateSummit(Long sessionId, Long userId, double distanceTotal,
+                               double summitMark, int summitMilestoneIndex) {
         if (summitMark <= 0) {
             return;
         }
@@ -208,23 +240,30 @@ public class TrackingMilestoneTriggerService {
             return;
         }
         redisTemplate.expire(key, TTL);
-        sendSummit(sessionId, userId, summitMark);
+        sendSummit(sessionId, userId, summitMark, summitMilestoneIndex);
     }
 
-    private void sendSummit(Long sessionId, Long userId, double summitMark) {
+    private void sendSummit(Long sessionId, Long userId, double summitMark, int summitMilestoneIndex) {
         Map<String, Object> payload = new LinkedHashMap<>();
-        // 페이로드 키는 의미가 "코스 절반" 에서 "정상까지 거리" 로 바뀌었지만,
+        // 정상 인증 사진 업로드(POST /api/tracking/sessions/{id}/photos) 가 두 값을 필수로 받는다.
+        payload.put("milestoneIndex", summitMilestoneIndex);
+        payload.put("milestoneDistanceM", summitMark);
+        // halfwayMark 는 의미가 "코스 절반" 에서 "정상까지 거리" 로 바뀌었지만
         // 이미 배포된 클라이언트가 읽고 있어 이름은 그대로 둔다.
         payload.put("halfwayMark", summitMark);
         payload.put("reachedAt", LocalDateTime.now().toString());
         messagingTemplate.convertAndSend(summitTopic(sessionId), (Object) payload);
-        log.info("Summit reached: sessionId={} userId={} summitMark={}m", sessionId, userId, (int) Math.round(summitMark));
+        log.info("Summit reached: sessionId={} userId={} idx={} summitMark={}m",
+                sessionId, userId, summitMilestoneIndex, (int) Math.round(summitMark));
 
         try {
             notificationService.send(
                     userId,
                     NotificationType.TRACKING_SUMMIT_REACHED,
-                    Map.of()
+                    Map.of(
+                            "milestoneIndex", summitMilestoneIndex,
+                            "milestoneDistanceM", summitMark
+                    )
             );
         } catch (Exception e) {
             // FCM 실패가 WebSocket summit 자체를 막아선 안 됨 — 로그만 남기고 진행

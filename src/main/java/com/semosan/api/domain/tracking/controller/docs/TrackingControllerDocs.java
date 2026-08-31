@@ -47,7 +47,11 @@ public interface TrackingControllerDocs {
     @Operation(
             summary = "라이브 액티비티용 코스 정보 조회",
             description = "코스 기반 트래킹의 Live Activity 초기화에 필요한 전체 코스 좌표 배열, "
-                    + "전체 거리(m), 예상 소요 시간(분)을 반환합니다. 자유 기록에서는 호출하지 않습니다."
+                    + "전체 거리(m), 예상 소요 시간(분)을 반환합니다. 자유 기록에서는 호출하지 않습니다.\n\n"
+                    + "`summitDistance`(시작점→정상 누적 거리, m)와 `summitEstimatedTime`(정상까지 예상 시간, 분)이 "
+                    + "함께 내려갑니다. 사진 마일스톤 푸시가 이 거리 기준으로 발송되므로 "
+                    + "\"정상까지 거리/시간\" 표시에는 totalDistance 를 절반으로 나누지 말고 이 값을 쓰세요. "
+                    + "정상 좌표가 없어 계산이 불가한 코스는 두 필드 모두 null 입니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

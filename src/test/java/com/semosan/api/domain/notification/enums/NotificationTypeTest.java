@@ -47,8 +47,28 @@ class NotificationTypeTest {
     }
 
     @Test
-    void validatePassesWhenTypeHasNoRequiredKeysAndParamsAreEmpty() {
-        NotificationType.TRACKING_SUMMIT_REACHED.validate(Map.of());
+    void validatePassesWhenSummitReachedCarriesMilestoneParams() {
+        NotificationType.TRACKING_SUMMIT_REACHED.validate(Map.of(
+                "milestoneIndex", 3,
+                "milestoneDistanceM", 2000.0
+        ));
+    }
+
+    @Test
+    void validateThrowsWhenSummitReachedIsMissingMilestoneParams() {
+        // 정상 인증 사진 업로드에 필요한 값이라 누락되면 발송 전에 막아야 한다.
+        assertThatThrownBy(() -> NotificationType.TRACKING_SUMMIT_REACHED.validate(Map.of()))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.NOTIFICATION_PARAMS_INVALID);
+    }
+
+    @Test
+    void validateThrowsWhenPhotoMilestoneIsMissingMilestoneIndex() {
+        assertThatThrownBy(() -> NotificationType.TRACKING_PHOTO_MILESTONE.validate(Map.of("distance", 500)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.NOTIFICATION_PARAMS_INVALID);
     }
 
     @Test
