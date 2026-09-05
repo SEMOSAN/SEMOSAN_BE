@@ -135,6 +135,42 @@ class JwtServiceTest {
     }
 
     @Test
+    void validateRefreshTokenSignatureThrowsWhenTokenTypeIsUnknown() {
+        JwtService jwtService = jwtService();
+        SecretKey key = io.jsonwebtoken.security.Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String unknownTypeToken = Jwts.builder()
+                .subject("1")
+                .claim("tokenType", "UNKNOWN")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + REFRESH_EXPIRATION))
+                .signWith(key, Jwts.SIG.HS256)
+                .compact();
+
+        assertThatThrownBy(() -> jwtService.validateRefreshTokenSignature(unknownTypeToken))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_INVALID_TYPE);
+    }
+
+    @Test
+    void validateAccessTokenThrowsWhenTokenTypeIsUnknown() {
+        JwtService jwtService = jwtService();
+        SecretKey key = io.jsonwebtoken.security.Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String unknownTypeToken = Jwts.builder()
+                .subject("1")
+                .claim("tokenType", "UNKNOWN")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + ACCESS_EXPIRATION))
+                .signWith(key, Jwts.SIG.HS256)
+                .compact();
+
+        assertThatThrownBy(() -> jwtService.validateAccessTokenAndGetClaims(unknownTypeToken))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_INVALID_TYPE);
+    }
+
+    @Test
     void validateAccessTokenThrowsWhenTokenIsBlank() {
         JwtService jwtService = jwtService();
 

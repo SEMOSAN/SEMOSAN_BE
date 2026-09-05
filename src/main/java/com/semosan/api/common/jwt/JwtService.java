@@ -130,7 +130,7 @@ public class JwtService {
         return claims;
     }
 
-    /** claim 이 없거나 알 수 없는 값이면 null (구버전 발급 토큰). */
+    /** claim 이 없으면 null (구버전 발급 토큰). 알 수 없는 값은 legacy 로 오인되지 않도록 즉시 거부. */
     public TokenType getTokenType(Claims claims) {
         String value = claims.get(CLAIM_TOKEN_TYPE, String.class);
         if (value == null) {
@@ -139,7 +139,7 @@ public class JwtService {
         try {
             return TokenType.valueOf(value);
         } catch (IllegalArgumentException e) {
-            return null;
+            throw new GeneralException(ErrorStatus.JWT_INVALID_TYPE);
         }
     }
 
