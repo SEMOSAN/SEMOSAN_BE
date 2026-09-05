@@ -38,12 +38,12 @@ public class JwtFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
 
-    // ADMIN 토큰으로 접근 가능한 경로. admin.id 가 user.id 와 같은 숫자 공간을 쓰므로,
-    // 여기 없는 경로를 허용하면 동일 ID 유저로 행세하는 impersonation 이 된다.
-    private static final List<PathPatternRequestMatcher> ADMIN_ACCESSIBLE_PATHS = List.of(
-            PathPatternRequestMatcher.withDefaults().matcher("/api/admin/**"),
-            PathPatternRequestMatcher.withDefaults().matcher("/api/app-version")
-    );
+    // admin.id 가 user.id 와 같은 숫자 공간을 쓰므로, ADMIN 토큰이 관리자 표면 밖 경로를
+    // 호출하면 동일 ID 유저로 행세하는 impersonation 이 된다. 허용 목록은 SecurityConfig 단일 출처
+    private static final List<PathPatternRequestMatcher> ADMIN_ACCESSIBLE_PATHS =
+            Arrays.stream(SecurityConfig.ADMIN_ACCESSIBLE_URIS)
+                    .map(PathPatternRequestMatcher.withDefaults()::matcher)
+                    .toList();
 
     // SecurityConfig의 permitAll 경로와 동일하게 맞춰줍니다.
     // WebSocket 핸드셰이크(/ws/tracking)는 HTTP JWT 필터 우회 — STOMP CONNECT 프레임의

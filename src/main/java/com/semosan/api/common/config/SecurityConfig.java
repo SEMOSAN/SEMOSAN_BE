@@ -67,6 +67,15 @@ public class SecurityConfig {
             "/api/admin/login"
     };
 
+    /**
+     * ADMIN 토큰으로 접근 가능한 경로. JwtFilter 가 이 목록 밖 요청을 403 처리한다.
+     * 관리자 권한 엔드포인트를 새로 열 때는 아래 인가 규칙과 이 목록을 함께 갱신해야 한다.
+     */
+    public static final String[] ADMIN_ACCESSIBLE_URIS = {
+            "/api/admin/**",
+            "/api/app-version"
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
