@@ -3,6 +3,7 @@ package com.semosan.api.domain.tracking.websocket;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.jwt.JwtService;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,9 @@ class StompAuthChannelInterceptorTest {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private TrackingSessionRepository trackingSessionRepository;
 
     @InjectMocks
     private StompAuthChannelInterceptor interceptor;
@@ -103,6 +107,70 @@ class StompAuthChannelInterceptorTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.JWT_BLACKLISTED);
+    }
+
+    @Test
+    void preSendAllowsSubscribeWhenUserOwnsTrackingSession() {
+        Message<?> message = subscribeMessage("/topic/tracking/46/summit", new UserIdPrincipal(1L));
+        when(trackingSessionRepository.existsByIdAndUser_Id(46L, 1L)).thenReturn(true);
+
+        Message<?> result = interceptor.preSend(message, mock(MessageChannel.class));
+
+        assertThat(result).isSameAs(message);
+    }
+
+    @Test
+    void preSendThrowsWhenSubscribingToOtherUsersTrackingSession() {
+        Message<?> message = subscribeMessage("/topic/tracking/46/photo-window", new UserIdPrincipal(2L));
+        when(trackingSessionRepository.existsByIdAndUser_Id(46L, 2L)).thenReturn(false);
+
+        assertThatThrownBy(() -> interceptor.preSend(message, mock(MessageChannel.class)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.TRACKING_SESSION_FORBIDDEN);
+    }
+
+    @Test
+    void preSendThrowsWhenSubscribeHasNoAuthenticatedUser() {
+        Message<?> message = subscribeMessage("/topic/tracking/46/summit", null);
+
+        assertThatThrownBy(() -> interceptor.preSend(message, mock(MessageChannel.class)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_TOKEN_NOT_FOUND);
+    }
+
+    @Test
+    void preSendThrowsWhenSubscribingToUnknownDestination() {
+        Message<?> message = subscribeMessage("/topic/other/1", new UserIdPrincipal(1L));
+
+        assertThatThrownBy(() -> interceptor.preSend(message, mock(MessageChannel.class)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.FORBIDDEN);
+    }
+
+    @Test
+    void preSendThrowsWhenSubscribeDestinationIsMissing() {
+        Message<?> message = subscribeMessage(null, new UserIdPrincipal(1L));
+
+        assertThatThrownBy(() -> interceptor.preSend(message, mock(MessageChannel.class)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.FORBIDDEN);
+    }
+
+    private Message<?> subscribeMessage(String destination, Principal user) {
+        StompHeaderAccessor accessor = StompHeaderAccessor.create(StompCommand.SUBSCRIBE);
+        accessor.setSessionId("session-1");
+        if (destination != null) {
+            accessor.setDestination(destination);
+        }
+        if (user != null) {
+            accessor.setUser(user);
+        }
+        accessor.setLeaveMutable(true);
+        return MessageBuilder.createMessage(new byte[0], accessor.getMessageHeaders());
     }
 
     private Message<?> connectMessage(String authorization) {
