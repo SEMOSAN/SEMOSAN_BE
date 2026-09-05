@@ -78,8 +78,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 MDC.put("userId", String.valueOf(userId));
 
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                String tokenType = claims.get("tokenType", String.class);
-                if ("ADMIN".equals(tokenType)) {
+                if (TokenType.ADMIN == jwtService.getTokenType(claims)) {
                     authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
                 } else {
                     // 탈퇴(soft-delete)했거나 존재하지 않는 유저는 인증 실패 처리

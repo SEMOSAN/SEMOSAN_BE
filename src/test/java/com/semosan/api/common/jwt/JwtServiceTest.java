@@ -71,6 +71,106 @@ class JwtServiceTest {
     }
 
     @Test
+    void generateAccessTokenIncludesAccessTokenType() {
+        JwtService jwtService = jwtService();
+
+        Claims claims = jwtService.validateAccessTokenAndGetClaims(jwtService.generateAccessToken(user(2L)));
+
+        assertThat(jwtService.getTokenType(claims)).isEqualTo(TokenType.ACCESS);
+    }
+
+    @Test
+    void validateAccessTokenThrowsWhenRefreshTokenIsUsedAsAccessToken() {
+        JwtService jwtService = jwtService();
+        String refreshToken = jwtService.generateRefreshToken(user(1L));
+
+        assertThatThrownBy(() -> jwtService.validateAccessTokenAndGetClaims(refreshToken))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_INVALID_TYPE);
+    }
+
+    @Test
+    void validateAccessTokenThrowsWhenTokenTypeClaimIsMissing() {
+        JwtService jwtService = jwtService();
+        SecretKey key = io.jsonwebtoken.security.Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String legacyToken = Jwts.builder()
+                .subject("1")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + ACCESS_EXPIRATION))
+                .signWith(key, Jwts.SIG.HS256)
+                .compact();
+
+        assertThatThrownBy(() -> jwtService.validateAccessTokenAndGetClaims(legacyToken))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_INVALID_TYPE);
+    }
+
+    @Test
+    void validateRefreshTokenSignatureThrowsWhenAccessTokenIsUsedAsRefreshToken() {
+        JwtService jwtService = jwtService();
+        String accessToken = jwtService.generateAccessToken(user(1L));
+
+        assertThatThrownBy(() -> jwtService.validateRefreshTokenSignature(accessToken))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_INVALID_TYPE);
+    }
+
+    @Test
+    void validateRefreshTokenSignatureAllowsLegacyRefreshTokenWithoutTokenType() {
+        JwtService jwtService = jwtService();
+        SecretKey key = io.jsonwebtoken.security.Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String legacyRefreshToken = Jwts.builder()
+                .subject("1")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + REFRESH_EXPIRATION))
+                .signWith(key, Jwts.SIG.HS256)
+                .compact();
+
+        Claims claims = jwtService.validateRefreshTokenSignature(legacyRefreshToken);
+
+        assertThat(claims.getSubject()).isEqualTo("1");
+    }
+
+    @Test
+    void validateRefreshTokenSignatureThrowsWhenTokenTypeIsUnknown() {
+        JwtService jwtService = jwtService();
+        SecretKey key = io.jsonwebtoken.security.Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String unknownTypeToken = Jwts.builder()
+                .subject("1")
+                .claim("tokenType", "UNKNOWN")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + REFRESH_EXPIRATION))
+                .signWith(key, Jwts.SIG.HS256)
+                .compact();
+
+        assertThatThrownBy(() -> jwtService.validateRefreshTokenSignature(unknownTypeToken))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_INVALID_TYPE);
+    }
+
+    @Test
+    void validateAccessTokenThrowsWhenTokenTypeIsUnknown() {
+        JwtService jwtService = jwtService();
+        SecretKey key = io.jsonwebtoken.security.Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String unknownTypeToken = Jwts.builder()
+                .subject("1")
+                .claim("tokenType", "UNKNOWN")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + ACCESS_EXPIRATION))
+                .signWith(key, Jwts.SIG.HS256)
+                .compact();
+
+        assertThatThrownBy(() -> jwtService.validateAccessTokenAndGetClaims(unknownTypeToken))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_INVALID_TYPE);
+    }
+
+    @Test
     void validateAccessTokenThrowsWhenTokenIsBlank() {
         JwtService jwtService = jwtService();
 
@@ -167,6 +267,7 @@ class JwtServiceTest {
         SecretKey key = io.jsonwebtoken.security.Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
         String token = Jwts.builder()
                 .subject("not-number")
+                .claim("tokenType", TokenType.ACCESS.name())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + ACCESS_EXPIRATION))
                 .signWith(key, Jwts.SIG.HS256)
