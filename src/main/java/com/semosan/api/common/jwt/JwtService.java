@@ -21,6 +21,11 @@ import java.util.HexFormat;
 @Component
 public class JwtService {
 
+    public static final String CLAIM_TOKEN_TYPE = "tokenType";
+    public static final String TOKEN_TYPE_ACCESS = "ACCESS";
+    public static final String TOKEN_TYPE_REFRESH = "REFRESH";
+    public static final String TOKEN_TYPE_ADMIN = "ADMIN";
+
     private final SecretKey secretKey;
     @Getter
     private final long accessTokenExpiration;
@@ -55,6 +60,7 @@ public class JwtService {
         return Jwts.builder()
                 .subject(user.getId().toString())
                 .claim("loginType", user.getOauthProvider().name())
+                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_ACCESS)
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(secretKey, Jwts.SIG.HS256)
@@ -68,6 +74,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(user.getId().toString())
+                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_REFRESH)
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(secretKey, Jwts.SIG.HS256)
@@ -91,7 +98,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(admin.getId().toString())
-                .claim("tokenType", "ADMIN")
+                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_ADMIN)
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(secretKey, Jwts.SIG.HS256)
@@ -99,19 +106,31 @@ public class JwtService {
     }
 
     // Access Token 검증 후 Claims를 반환해 호출부에서 같은 토큰을 다시 파싱하지 않도록 한다.
+    // tokenType 검증으로 refresh 토큰이 access 로 통용되는 것을 차단한다.
     public Claims validateAccessTokenAndGetClaims(String accessToken) {
         if (accessToken == null || accessToken.isBlank()) {
             throw new GeneralException(ErrorStatus.JWT_TOKEN_NOT_FOUND);
         }
-        return parseClaims(accessToken);
+        Claims claims = parseClaims(accessToken);
+        String tokenType = claims.get(CLAIM_TOKEN_TYPE, String.class);
+        if (!TOKEN_TYPE_ACCESS.equals(tokenType) && !TOKEN_TYPE_ADMIN.equals(tokenType)) {
+            throw new GeneralException(ErrorStatus.JWT_INVALID_TYPE);
+        }
+        return claims;
     }
 
-    // Refresh Token 서명/만료 검증 후 Claims 반환 — DB 비교 전 1차 검증용
+    // Refresh Token 서명/만료 검증 후 Claims 반환 — DB 비교 전 1차 검증용.
+    // claim 없는 기존 refresh 토큰은 만료 전까지 허용해 강제 로그아웃을 막는다.
     public Claims validateRefreshTokenSignature(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) {
             throw new GeneralException(ErrorStatus.JWT_TOKEN_NOT_FOUND);
         }
-        return parseClaims(refreshToken);
+        Claims claims = parseClaims(refreshToken);
+        String tokenType = claims.get(CLAIM_TOKEN_TYPE, String.class);
+        if (tokenType != null && !TOKEN_TYPE_REFRESH.equals(tokenType)) {
+            throw new GeneralException(ErrorStatus.JWT_INVALID_TYPE);
+        }
+        return claims;
     }
 
     public void validateRefreshToken(String refreshToken, Long userId) {
