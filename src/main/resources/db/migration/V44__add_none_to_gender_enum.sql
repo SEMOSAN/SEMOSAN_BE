@@ -1,0 +1,1 @@
+ALTER TYPE gender_enum ADD VALUE IF NOT EXISTS 'NONE';
