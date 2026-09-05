@@ -84,6 +84,41 @@ class JwtFilterTest {
     }
 
     @Test
+    void doFilterWritesErrorResponseWhenAdminTokenIsUsedOnUserApi() throws Exception {
+        Claims claims = mock(Claims.class);
+        when(jwtService.validateAccessTokenAndGetClaims("admin-token")).thenReturn(claims);
+        when(jwtService.isAccessTokenBlacklisted("admin-token")).thenReturn(false);
+        when(jwtService.getUserIdFromClaims(claims)).thenReturn(9L);
+        when(claims.get("tokenType", String.class)).thenReturn("ADMIN");
+        MockHttpServletRequest request = request("/api/mountains", "Bearer admin-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter().doFilter(request, response, new MockFilterChain());
+
+        assertThat(response.getStatus()).isEqualTo(ErrorStatus.FORBIDDEN.getHttpStatus().value());
+        assertThat(response.getContentAsString()).contains(ErrorStatus.FORBIDDEN.getCode());
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(userRepository, never()).findByIdAndDeletedFalse(9L);
+    }
+
+    @Test
+    void doFilterAllowsAdminTokenOnAppVersionPut() throws Exception {
+        Claims claims = mock(Claims.class);
+        when(jwtService.validateAccessTokenAndGetClaims("admin-token")).thenReturn(claims);
+        when(jwtService.isAccessTokenBlacklisted("admin-token")).thenReturn(false);
+        when(jwtService.getUserIdFromClaims(claims)).thenReturn(9L);
+        when(claims.get("tokenType", String.class)).thenReturn("ADMIN");
+        MockHttpServletRequest request = request("PUT", "/api/app-version", "Bearer admin-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter().doFilter(request, response, new MockFilterChain());
+
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getAuthorities())
+                .extracting("authority")
+                .containsExactly("ROLE_ADMIN");
+    }
+
+    @Test
     void doFilterPassesThroughWhenTokenIsMissing() throws Exception {
         MockHttpServletRequest request = request("/api/mountains", null);
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -177,7 +212,11 @@ class JwtFilterTest {
     }
 
     private MockHttpServletRequest request(String path, String authorization) {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", path);
+        return request("GET", path, authorization);
+    }
+
+    private MockHttpServletRequest request(String method, String path, String authorization) {
+        MockHttpServletRequest request = new MockHttpServletRequest(method, path);
         request.setServletPath(path);
         if (authorization != null) {
             request.addHeader("Authorization", authorization);
