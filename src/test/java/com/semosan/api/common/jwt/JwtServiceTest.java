@@ -76,7 +76,7 @@ class JwtServiceTest {
 
         Claims claims = jwtService.validateAccessTokenAndGetClaims(jwtService.generateAccessToken(user(2L)));
 
-        assertThat(claims.get(JwtService.CLAIM_TOKEN_TYPE, String.class)).isEqualTo(JwtService.TOKEN_TYPE_ACCESS);
+        assertThat(jwtService.getTokenType(claims)).isEqualTo(TokenType.ACCESS);
     }
 
     @Test
@@ -231,7 +231,7 @@ class JwtServiceTest {
         SecretKey key = io.jsonwebtoken.security.Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
         String token = Jwts.builder()
                 .subject("not-number")
-                .claim(JwtService.CLAIM_TOKEN_TYPE, JwtService.TOKEN_TYPE_ACCESS)
+                .claim("tokenType", TokenType.ACCESS.name())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + ACCESS_EXPIRATION))
                 .signWith(key, Jwts.SIG.HS256)

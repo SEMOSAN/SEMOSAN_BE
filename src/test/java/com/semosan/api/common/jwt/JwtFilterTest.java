@@ -52,7 +52,7 @@ class JwtFilterTest {
         when(jwtService.validateAccessTokenAndGetClaims("access")).thenReturn(claims);
         when(jwtService.isAccessTokenBlacklisted("access")).thenReturn(false);
         when(jwtService.getUserIdFromClaims(claims)).thenReturn(1L);
-        when(claims.get("tokenType", String.class)).thenReturn(null);
+        when(jwtService.getTokenType(claims)).thenReturn(null);
         when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(user));
         MockHttpServletRequest request = request("/api/mountains", "Bearer access");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -71,7 +71,7 @@ class JwtFilterTest {
         when(jwtService.validateAccessTokenAndGetClaims("admin-token")).thenReturn(claims);
         when(jwtService.isAccessTokenBlacklisted("admin-token")).thenReturn(false);
         when(jwtService.getUserIdFromClaims(claims)).thenReturn(9L);
-        when(claims.get("tokenType", String.class)).thenReturn("ADMIN");
+        when(jwtService.getTokenType(claims)).thenReturn(TokenType.ADMIN);
         MockHttpServletRequest request = request("/api/admin/mountains", "Bearer admin-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -129,7 +129,7 @@ class JwtFilterTest {
         when(jwtService.validateAccessTokenAndGetClaims("access")).thenReturn(claims);
         when(jwtService.isAccessTokenBlacklisted("access")).thenReturn(false);
         when(jwtService.getUserIdFromClaims(claims)).thenReturn(1L);
-        when(claims.get("tokenType", String.class)).thenReturn(null);
+        when(jwtService.getTokenType(claims)).thenReturn(null);
         when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(user));
         MockHttpServletRequest request = request("/api/mountains", "Bearer access");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -160,7 +160,7 @@ class JwtFilterTest {
         when(jwtService.validateAccessTokenAndGetClaims("access")).thenReturn(claims);
         when(jwtService.isAccessTokenBlacklisted("access")).thenReturn(false);
         when(jwtService.getUserIdFromClaims(claims)).thenReturn(1L);
-        when(claims.get("tokenType", String.class)).thenReturn(null);
+        when(jwtService.getTokenType(claims)).thenReturn(null);
         when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.empty());
         MockHttpServletRequest request = request("/api/mountains", "Bearer access");
         MockHttpServletResponse response = new MockHttpServletResponse();

@@ -21,10 +21,7 @@ import java.util.HexFormat;
 @Component
 public class JwtService {
 
-    public static final String CLAIM_TOKEN_TYPE = "tokenType";
-    public static final String TOKEN_TYPE_ACCESS = "ACCESS";
-    public static final String TOKEN_TYPE_REFRESH = "REFRESH";
-    public static final String TOKEN_TYPE_ADMIN = "ADMIN";
+    private static final String CLAIM_TOKEN_TYPE = "tokenType";
 
     private final SecretKey secretKey;
     @Getter
@@ -60,7 +57,7 @@ public class JwtService {
         return Jwts.builder()
                 .subject(user.getId().toString())
                 .claim("loginType", user.getOauthProvider().name())
-                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_ACCESS)
+                .claim(CLAIM_TOKEN_TYPE, TokenType.ACCESS.name())
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(secretKey, Jwts.SIG.HS256)
@@ -74,7 +71,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(user.getId().toString())
-                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_REFRESH)
+                .claim(CLAIM_TOKEN_TYPE, TokenType.REFRESH.name())
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(secretKey, Jwts.SIG.HS256)
@@ -98,7 +95,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(admin.getId().toString())
-                .claim(CLAIM_TOKEN_TYPE, TOKEN_TYPE_ADMIN)
+                .claim(CLAIM_TOKEN_TYPE, TokenType.ADMIN.name())
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(secretKey, Jwts.SIG.HS256)
@@ -112,8 +109,8 @@ public class JwtService {
             throw new GeneralException(ErrorStatus.JWT_TOKEN_NOT_FOUND);
         }
         Claims claims = parseClaims(accessToken);
-        String tokenType = claims.get(CLAIM_TOKEN_TYPE, String.class);
-        if (!TOKEN_TYPE_ACCESS.equals(tokenType) && !TOKEN_TYPE_ADMIN.equals(tokenType)) {
+        TokenType tokenType = getTokenType(claims);
+        if (tokenType != TokenType.ACCESS && tokenType != TokenType.ADMIN) {
             throw new GeneralException(ErrorStatus.JWT_INVALID_TYPE);
         }
         return claims;
@@ -126,11 +123,24 @@ public class JwtService {
             throw new GeneralException(ErrorStatus.JWT_TOKEN_NOT_FOUND);
         }
         Claims claims = parseClaims(refreshToken);
-        String tokenType = claims.get(CLAIM_TOKEN_TYPE, String.class);
-        if (tokenType != null && !TOKEN_TYPE_REFRESH.equals(tokenType)) {
+        TokenType tokenType = getTokenType(claims);
+        if (tokenType != null && tokenType != TokenType.REFRESH) {
             throw new GeneralException(ErrorStatus.JWT_INVALID_TYPE);
         }
         return claims;
+    }
+
+    /** claim 이 없거나 알 수 없는 값이면 null (구버전 발급 토큰). */
+    public TokenType getTokenType(Claims claims) {
+        String value = claims.get(CLAIM_TOKEN_TYPE, String.class);
+        if (value == null) {
+            return null;
+        }
+        try {
+            return TokenType.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public void validateRefreshToken(String refreshToken, Long userId) {
