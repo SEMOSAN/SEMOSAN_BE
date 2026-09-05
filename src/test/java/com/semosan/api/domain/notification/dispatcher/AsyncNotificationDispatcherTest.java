@@ -305,6 +305,56 @@ class AsyncNotificationDispatcherTest {
         return success;
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void dispatchCarriesRoutingFieldsSoPushAndInboxShareOneContract() throws Exception {
+        AsyncNotificationDispatcher dispatcher = dispatcher();
+        stubSuccessfulBatch(1);
+        NotificationDispatchCommand command = new NotificationDispatchCommand(
+                4L,
+                10L,
+                NotificationType.SEMOFEED_EMOJI,
+                "세모피드에 반응이 달렸어요",
+                "푸름님이 세모피드에 🔥 반응을 남겼어요",
+                Map.of("actorId", 2L, "actorName", "푸름", "semoFeedId", 42L, "emojiType", "🔥"),
+                List.of("token-1")
+        );
+
+        dispatcher.dispatch(command);
+
+        ArgumentCaptor<Map<String, String>> dataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(fcmService).sendEachForMulticast(
+                anyList(), anyString(), anyString(), dataCaptor.capture(), anyBoolean());
+        assertThat(dataCaptor.getValue())
+                .containsEntry("targetType", "SEMOFEED")
+                .containsEntry("targetId", "42");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void dispatchMarksRoutingAsNoneWhenNotificationHasNoDestination() throws Exception {
+        AsyncNotificationDispatcher dispatcher = dispatcher();
+        stubSuccessfulBatch(1);
+        NotificationDispatchCommand command = new NotificationDispatchCommand(
+                5L,
+                10L,
+                NotificationType.TRACKING_PHOTO_MILESTONE,
+                "SEMOSAN",
+                "500m 돌파! 인증 사진을 남겨보세요!",
+                Map.of("distance", 500, "milestoneIndex", 3),
+                List.of("token-1")
+        );
+
+        dispatcher.dispatch(command);
+
+        ArgumentCaptor<Map<String, String>> dataCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(fcmService).sendEachForMulticast(
+                anyList(), anyString(), anyString(), dataCaptor.capture(), anyBoolean());
+        assertThat(dataCaptor.getValue())
+                .containsEntry("targetType", "NONE")
+                .doesNotContainKey("targetId");
+    }
+
     private BatchResponse batchResponse(List<SendResponse> responses) {
         BatchResponse batchResponse = mock(BatchResponse.class);
         when(batchResponse.getResponses()).thenReturn(responses);

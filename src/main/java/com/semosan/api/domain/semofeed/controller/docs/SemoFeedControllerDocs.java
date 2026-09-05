@@ -62,6 +62,34 @@ public interface SemoFeedControllerDocs {
     );
 
     @Operation(
+            summary = "세모피드 단건 조회",
+            description = "세모피드 하나를 조회합니다. 알림에서 해당 게시물로 이동할 때 사용합니다. "
+                    + "비공개 세모피드는 작성자 본인만 조회할 수 있습니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "세모피드 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SemoFeedResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "비공개 세모피드는 작성자만 조회 가능 (SF_403_1)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "세모피드를 찾을 수 없음 (SF_404_1)",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<SemoFeedResponse>> get(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "세모피드 ID", required = true)
+            @PathVariable Long semoFeedId
+    );
+
+    @Operation(
             summary = "세모피드 이모지 토글",
             description = "세모피드에 FIRE, HEART, CONGRATS, LAUGH 이모지를 타입별로 등록하거나 취소합니다."
     )

@@ -221,6 +221,67 @@ class SemoFeedServiceTest {
         verify(semoFeedRepository).delete(semoFeed);
     }
 
+    @Test
+    void getReturnsPublicFeedToAnyViewer() {
+        User author = user(1L, "author", "https://example.com/profile.png");
+        SemoFeed semoFeed = semoFeed(10L, author);
+        semoFeed.updatePublic(true);
+
+        when(semoFeedRepository.findByIdWithUser(10L)).thenReturn(Optional.of(semoFeed));
+        when(semoFeedEmojiRepository.countBySemoFeedIdsGrouped(List.of(10L))).thenReturn(List.<Object[]>of(
+                new Object[]{10L, SemoFeedEmojiType.FIRE, 5L}
+        ));
+        when(semoFeedEmojiRepository.findReactedTypesBySemoFeedIdsAndUserId(List.of(10L), 2L))
+                .thenReturn(List.<Object[]>of(new Object[]{10L, SemoFeedEmojiType.FIRE}));
+
+        SemoFeedResponse result = semoFeedService.get(2L, 10L);
+
+        assertThat(result.id()).isEqualTo(10L);
+        assertThat(result.userId()).isEqualTo(1L);
+        assertThat(result.mine()).isFalse();
+        assertThat(result.emojiCounts()).containsEntry(SemoFeedEmojiType.FIRE, 5L);
+        assertThat(result.reactedByMe()).containsEntry(SemoFeedEmojiType.FIRE, true);
+    }
+
+    @Test
+    void getReturnsPrivateFeedToItsAuthor() {
+        // 이모지 알림 수신자는 항상 작성자 본인이라 비공개 피드도 딥링크로 열려야 한다.
+        User owner = user(1L, "owner", null);
+        SemoFeed semoFeed = semoFeed(10L, owner);
+
+        when(semoFeedRepository.findByIdWithUser(10L)).thenReturn(Optional.of(semoFeed));
+        when(semoFeedEmojiRepository.countBySemoFeedIdsGrouped(List.of(10L))).thenReturn(List.of());
+        when(semoFeedEmojiRepository.findReactedTypesBySemoFeedIdsAndUserId(List.of(10L), 1L))
+                .thenReturn(List.of());
+
+        SemoFeedResponse result = semoFeedService.get(1L, 10L);
+
+        assertThat(result.isPublic()).isFalse();
+        assertThat(result.mine()).isTrue();
+    }
+
+    @Test
+    void getThrowsWhenPrivateFeedIsRequestedByAnotherUser() {
+        SemoFeed semoFeed = semoFeed(10L, user(1L, "owner", null));
+
+        when(semoFeedRepository.findByIdWithUser(10L)).thenReturn(Optional.of(semoFeed));
+
+        assertThatThrownBy(() -> semoFeedService.get(2L, 10L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.SEMOFEED_FORBIDDEN);
+    }
+
+    @Test
+    void getThrowsWhenFeedNotFound() {
+        when(semoFeedRepository.findByIdWithUser(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> semoFeedService.get(1L, 10L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.SEMOFEED_NOT_FOUND);
+    }
+
     private User user(Long id, String nickname, String profileUrl) {
         User user = User.createTestUser(nickname, DeviceType.IOS);
         ReflectionTestUtils.setField(user, "id", id);

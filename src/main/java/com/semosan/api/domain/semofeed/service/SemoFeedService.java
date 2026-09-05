@@ -37,6 +37,17 @@ public class SemoFeedService {
         return SemoFeedResponse.from(semoFeedRepository.save(semoFeed));
     }
 
+    public SemoFeedResponse get(Long userId, Long semoFeedId) {
+        SemoFeed semoFeed = semoFeedRepository.findByIdWithUser(semoFeedId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.SEMOFEED_NOT_FOUND));
+        if (!semoFeed.isPublic() && !semoFeed.isOwnedBy(userId)) {
+            throw new GeneralException(ErrorStatus.SEMOFEED_FORBIDDEN);
+        }
+
+        SemoFeedResponseAssembler assembler = createResponseAssembler(List.of(semoFeed), userId);
+        return assembler.toResponse(semoFeed);
+    }
+
     public List<SemoFeedResponse> listMine(Long userId) {
         List<SemoFeed> semoFeeds = semoFeedRepository.findByUserId(userId);
         SemoFeedResponseAssembler assembler = createResponseAssembler(semoFeeds, userId);

@@ -72,6 +72,7 @@ public enum ErrorStatus implements BaseStatus {
      * Notification
      */
     NOTIFICATION_PARAMS_INVALID(HttpStatus.BAD_REQUEST, "NOTIF_400_1", "알림 파라미터가 유효하지 않습니다."),
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIF_404_1", "알림을 찾을 수 없습니다."),
 
     /**
      * Apple OAuth

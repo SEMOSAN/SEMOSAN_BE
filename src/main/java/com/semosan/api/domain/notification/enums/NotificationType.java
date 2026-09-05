@@ -12,28 +12,36 @@ public enum NotificationType {
             "새 댓글이 달렸어요",
             "{actorName}: {commentPreview}",
             Set.of("actorName", "commentPreview"),
-            false
+            false,
+            NotificationTargetType.COMMUNITY_POST,
+            "postId"
     ),
 
     COMMUNITY_REPLY(
             "새 답글이 달렸어요",
             "{actorName}: {commentPreview}",
             Set.of("actorName", "commentPreview"),
-            false
+            false,
+            NotificationTargetType.COMMUNITY_POST,
+            "postId"
     ),
 
     COMMUNITY_POST_LIKE(
             "게시글에 좋아요가 눌렸어요",
             "{actorName}님이 게시글을 좋아합니다",
             Set.of("actorName"),
-            false
+            false,
+            NotificationTargetType.COMMUNITY_POST,
+            "postId"
     ),
 
     SEMOFEED_EMOJI(
             "세모피드에 반응이 달렸어요",
             "{actorName}님이 세모피드에 {emojiType} 반응을 남겼어요",
             Set.of("actorId", "actorName", "semoFeedId", "emojiType"),
-            false
+            false,
+            NotificationTargetType.SEMOFEED,
+            "semoFeedId"
     ),
 
     /**
@@ -49,7 +57,9 @@ public enum NotificationType {
             "SEMOSAN",
             "{distance}m 돌파! 인증 사진을 남겨보세요!",
             Set.of("distance", "milestoneIndex"),
-            false
+            false,
+            NotificationTargetType.NONE,
+            null
     ),
 
     /**
@@ -65,19 +75,58 @@ public enum NotificationType {
             "SEMOSAN",
             "정상에 도착했나요? 정상 인증하기!",
             Set.of("milestoneIndex", "milestoneDistanceM"),
-            false
+            false,
+            NotificationTargetType.NONE,
+            null
     );
 
     private final String titleTemplate;
     private final String bodyTemplate;
     private final Set<String> requiredKeys;
     private final boolean dataOnly;
+    private final NotificationTargetType targetType;
+    private final String targetKey;
 
-    NotificationType(String titleTemplate, String bodyTemplate, Set<String> requiredKeys, boolean dataOnly) {
+    NotificationType(
+            String titleTemplate,
+            String bodyTemplate,
+            Set<String> requiredKeys,
+            boolean dataOnly,
+            NotificationTargetType targetType,
+            String targetKey
+    ) {
         this.titleTemplate = titleTemplate;
         this.bodyTemplate = bodyTemplate;
         this.requiredKeys = requiredKeys;
         this.dataOnly = dataOnly;
+        this.targetType = targetType;
+        this.targetKey = targetKey;
+    }
+
+    public NotificationTargetType getTargetType() {
+        return targetType;
+    }
+
+    /**
+     * extras 는 jsonb 로 왕복하면서 Integer/Long/String 중 무엇으로든 돌아올 수 있어 세 경우를 모두 받는다.
+     * 해석 불가 시 null — 호출부에서 이동 불가 알림으로 처리한다.
+     */
+    public Long resolveTargetId(Map<String, Object> extras) {
+        if (targetKey == null || extras == null) {
+            return null;
+        }
+        Object value = extras.get(targetKey);
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String text) {
+            try {
+                return Long.parseLong(text.trim());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
     }
 
     /**

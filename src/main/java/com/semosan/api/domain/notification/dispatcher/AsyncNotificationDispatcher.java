@@ -5,6 +5,7 @@ import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.MessagingErrorCode;
 import com.google.firebase.messaging.SendResponse;
 import com.semosan.api.common.fcm.FcmService;
+import com.semosan.api.domain.notification.enums.NotificationTargetType;
 import com.semosan.api.domain.notification.service.FcmTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -78,6 +79,15 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
         data.put("title", cmd.title());
         data.put("body", cmd.body());
         data.put("notificationId", String.valueOf(cmd.notificationId()));
+
+        // 알림함 응답과 동일한 라우팅 계약을 푸시에도 실어, 앱이 두 경로를 같은 로직으로 처리하게 한다.
+        Long targetId = cmd.type().resolveTargetId(cmd.extras());
+        NotificationTargetType targetType =
+                targetId == null ? NotificationTargetType.NONE : cmd.type().getTargetType();
+        data.put("targetType", targetType.name());
+        if (targetId != null) {
+            data.put("targetId", String.valueOf(targetId));
+        }
         return data;
     }
 

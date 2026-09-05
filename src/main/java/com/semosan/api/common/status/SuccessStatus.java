@@ -79,6 +79,7 @@ public enum SuccessStatus implements BaseStatus {
     SEMOFEED_TOGGLE_PUBLIC_SUCCESS(HttpStatus.OK, "SF_200_3", "세모피드 공개 상태가 변경되었습니다."),
     SEMOFEED_DELETE_SUCCESS(HttpStatus.OK, "SF_200_4", "세모피드가 삭제되었습니다."),
     SEMOFEED_EMOJI_TOGGLE_SUCCESS(HttpStatus.OK, "SF_200_5", "세모피드 이모지 처리에 성공했습니다."),
+    SEMOFEED_GET_SUCCESS(HttpStatus.OK, "SF_200_6", "세모피드 조회에 성공했습니다."),
     SEMOFEED_CREATE_SUCCESS(HttpStatus.CREATED, "SF_201_1", "세모피드가 저장되었습니다."),
 
     /**
@@ -92,6 +93,10 @@ public enum SuccessStatus implements BaseStatus {
     FCM_TOKEN_REGISTER_SUCCESS(HttpStatus.OK, "FCM_200_1", "FCM 토큰이 등록되었습니다."),
     FCM_TOKEN_DELETE_SUCCESS(HttpStatus.OK, "FCM_200_2", "FCM 토큰이 삭제되었습니다."),
     NOTIFICATION_SEND_SUCCESS(HttpStatus.OK, "NOTIF_200_1", "알림 발송 요청에 성공했습니다."),
+    NOTIFICATION_LIST_SUCCESS(HttpStatus.OK, "NOTIF_200_2", "알림 목록 조회에 성공했습니다."),
+    NOTIFICATION_UNREAD_COUNT_SUCCESS(HttpStatus.OK, "NOTIF_200_3", "안 읽은 알림 개수 조회에 성공했습니다."),
+    NOTIFICATION_READ_SUCCESS(HttpStatus.OK, "NOTIF_200_4", "알림을 읽음 처리했습니다."),
+    NOTIFICATION_READ_ALL_SUCCESS(HttpStatus.OK, "NOTIF_200_5", "모든 알림을 읽음 처리했습니다."),
 
     /**
      * Record Post (기록공유 게시글)
