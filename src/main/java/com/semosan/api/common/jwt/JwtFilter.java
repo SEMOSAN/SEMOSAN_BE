@@ -38,6 +38,13 @@ public class JwtFilter extends OncePerRequestFilter {
     private final ObjectMapper objectMapper;
     private final UserRepository userRepository;
 
+    // ADMIN 토큰으로 접근 가능한 경로. admin.id 가 user.id 와 같은 숫자 공간을 쓰므로,
+    // 여기 없는 경로를 허용하면 동일 ID 유저로 행세하는 impersonation 이 된다.
+    private static final List<PathPatternRequestMatcher> ADMIN_ACCESSIBLE_PATHS = List.of(
+            PathPatternRequestMatcher.withDefaults().matcher("/api/admin/**"),
+            PathPatternRequestMatcher.withDefaults().matcher("/api/app-version")
+    );
+
     // SecurityConfig의 permitAll 경로와 동일하게 맞춰줍니다.
     // WebSocket 핸드셰이크(/ws/tracking)는 HTTP JWT 필터 우회 — STOMP CONNECT 프레임의
     // StompAuthChannelInterceptor 가 별도로 인증한다.
@@ -80,6 +87,9 @@ public class JwtFilter extends OncePerRequestFilter {
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
                 String tokenType = claims.get("tokenType", String.class);
                 if ("ADMIN".equals(tokenType)) {
+                    if (ADMIN_ACCESSIBLE_PATHS.stream().noneMatch(matcher -> matcher.matches(request))) {
+                        throw new GeneralException(ErrorStatus.FORBIDDEN);
+                    }
                     authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
                 } else {
                     // 탈퇴(soft-delete)했거나 존재하지 않는 유저는 인증 실패 처리
