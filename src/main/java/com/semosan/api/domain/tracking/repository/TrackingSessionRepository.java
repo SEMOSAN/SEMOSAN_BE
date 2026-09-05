@@ -17,6 +17,9 @@ public interface TrackingSessionRepository extends JpaRepository<TrackingSession
     /** 유저당 진행 중 세션이 이미 있는지 — 409 분기에 사용. */
     boolean existsByUser_IdAndStatusIn(Long userId, Collection<TrackingSessionStatus> statuses);
 
+    /** 세션 소유권 확인 — STOMP SUBSCRIBE 인가에 사용. */
+    boolean existsByIdAndUser_Id(Long id, Long userId);
+
     /** 유저의 활성(IN_PROGRESS/PAUSED) 세션 1건 조회 — 앱 재진입 시. */
     Optional<TrackingSession> findFirstByUser_IdAndStatusInOrderByStartedAtDesc(
             Long userId,
