@@ -3,6 +3,7 @@ package com.semosan.api.domain.notification.service;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.notification.dispatcher.NotificationDispatchCommand;
+import com.semosan.api.domain.notification.dto.response.NotificationResponse;
 import com.semosan.api.domain.notification.entity.FcmToken;
 import com.semosan.api.domain.notification.entity.Notification;
 import com.semosan.api.domain.notification.enums.NotificationType;
@@ -13,9 +14,12 @@ import com.semosan.api.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -88,5 +92,28 @@ public class NotificationService {
                         tokens
                 )
         ));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<NotificationResponse> getNotifications(Long userId, Pageable pageable) {
+        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
+                .map(NotificationResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public long getUnreadCount(Long userId) {
+        return notificationRepository.countByUserIdAndReadFalse(userId);
+    }
+
+    @Transactional
+    public void markAsRead(Long userId, Long notificationId) {
+        Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.NOTIFICATION_NOT_FOUND));
+        notification.markAsRead();
+    }
+
+    @Transactional
+    public void markAllAsRead(Long userId) {
+        notificationRepository.markAllAsReadByUserId(userId, LocalDateTime.now());
     }
 }

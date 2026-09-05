@@ -5,10 +5,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SemoFeedRepository extends JpaRepository<SemoFeed, Long> {
+
+    @Query("SELECT s FROM SemoFeed s JOIN FETCH s.user WHERE s.id = :semoFeedId")
+    Optional<SemoFeed> findByIdWithUser(@Param("semoFeedId") Long semoFeedId);
 
     @Query(
             value = "SELECT s FROM SemoFeed s JOIN FETCH s.user WHERE s.isPublic = true ORDER BY s.createdAt DESC",

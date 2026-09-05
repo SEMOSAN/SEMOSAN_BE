@@ -2,8 +2,10 @@ package com.semosan.api.domain.notification.service;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.domain.notification.dto.response.NotificationResponse;
 import com.semosan.api.domain.notification.entity.FcmToken;
 import com.semosan.api.domain.notification.entity.Notification;
+import com.semosan.api.domain.notification.enums.NotificationTargetType;
 import com.semosan.api.domain.notification.enums.NotificationType;
 import com.semosan.api.domain.notification.event.NotificationCreatedEvent;
 import com.semosan.api.domain.notification.repository.FcmTokenRepository;
@@ -17,14 +19,20 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -144,5 +152,79 @@ class NotificationServiceTest {
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.NOTIFICATION_PARAMS_INVALID);
         verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    void getNotificationsMapsEntitiesToResponsesWithDestination() {
+        Notification notification = Notification.create(
+                1L,
+                NotificationType.SEMOFEED_EMOJI,
+                "세모피드에 반응이 달렸어요",
+                "푸름님이 세모피드에 🔥 반응을 남겼어요",
+                Map.of("actorId", 2L, "actorName", "푸름", "semoFeedId", 42L, "emojiType", "🔥")
+        );
+        ReflectionTestUtils.setField(notification, "id", 10L);
+        PageRequest pageable = PageRequest.of(0, 20);
+        when(notificationRepository.findByUserIdOrderByCreatedAtDesc(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(notification), pageable, 1));
+
+        Page<NotificationResponse> result = notificationService.getNotifications(1L, pageable);
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        NotificationResponse response = result.getContent().getFirst();
+        assertThat(response.notificationId()).isEqualTo(10L);
+        assertThat(response.targetType()).isEqualTo(NotificationTargetType.SEMOFEED);
+        assertThat(response.targetId()).isEqualTo(42L);
+    }
+
+    @Test
+    void getNotificationsReturnsEmptyPageWhenUserHasNoNotifications() {
+        PageRequest pageable = PageRequest.of(0, 20);
+        when(notificationRepository.findByUserIdOrderByCreatedAtDesc(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        assertThat(notificationService.getNotifications(1L, pageable)).isEmpty();
+    }
+
+    @Test
+    void getUnreadCountDelegatesToRepository() {
+        when(notificationRepository.countByUserIdAndReadFalse(1L)).thenReturn(3L);
+
+        assertThat(notificationService.getUnreadCount(1L)).isEqualTo(3L);
+    }
+
+    @Test
+    void markAsReadFlipsReadStateOfOwnedNotification() {
+        Notification notification = Notification.create(
+                1L,
+                NotificationType.COMMUNITY_COMMENT,
+                "title",
+                "body",
+                Map.of("postId", 7L)
+        );
+        when(notificationRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(notification));
+
+        notificationService.markAsRead(1L, 10L);
+
+        assertThat(notification.isRead()).isTrue();
+        assertThat(notification.getReadAt()).isNotNull();
+    }
+
+    @Test
+    void markAsReadThrowsWhenNotificationBelongsToAnotherUser() {
+        // 소유자 조건까지 걸린 조회라 남의 알림은 애초에 조회되지 않는다.
+        when(notificationRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> notificationService.markAsRead(1L, 10L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.NOTIFICATION_NOT_FOUND);
+    }
+
+    @Test
+    void markAllAsReadDelegatesToBulkUpdate() {
+        notificationService.markAllAsRead(1L);
+
+        verify(notificationRepository).markAllAsReadByUserId(eq(1L), any(LocalDateTime.class));
     }
 }

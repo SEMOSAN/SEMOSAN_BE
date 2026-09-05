@@ -64,6 +64,16 @@ class SemoFeedControllerTest {
         verify(semoFeedService).delete(1L, 10L);
     }
 
+    @Test
+    void getReturnsSingleFeed() {
+        SemoFeedResponse response = response();
+        when(semoFeedService.get(1L, 10L)).thenReturn(response);
+
+        assertThat(semoFeedController.get(1L, 10L).getBody().getData()).isSameAs(response);
+        assertThat(semoFeedController.get(1L, 10L).getStatusCode())
+                .isEqualTo(SuccessStatus.SEMOFEED_GET_SUCCESS.getHttpStatus());
+    }
+
     private SemoFeedResponse response() {
         return new SemoFeedResponse(
                 10L, 1L, "profile.jpg", "닉네임", "image.jpg", true,

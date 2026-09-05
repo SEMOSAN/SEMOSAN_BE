@@ -50,6 +50,16 @@ public class SemoFeedController implements SemoFeedControllerDocs {
         return ApiResponse.success(SuccessStatus.SEMOFEED_LIST_SUCCESS, response);
     }
 
+    @GetMapping("/{semoFeedId}")
+    @Override
+    public ResponseEntity<ApiResponse<SemoFeedResponse>> get(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable Long semoFeedId
+    ) {
+        SemoFeedResponse response = semoFeedService.get(userId, semoFeedId);
+        return ApiResponse.success(SuccessStatus.SEMOFEED_GET_SUCCESS, response);
+    }
+
     @PostMapping("/{semoFeedId}/emojis")
     @Override
     // 세모피드 이모지를 타입별로 등록하거나 취소합니다.
