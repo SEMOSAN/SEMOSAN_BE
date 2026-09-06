@@ -86,6 +86,9 @@ public class JwtFilter extends OncePerRequestFilter {
 
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
                 if (TokenType.ADMIN == jwtService.getTokenType(claims)) {
+                    if (ADMIN_ACCESSIBLE_PATHS.stream().noneMatch(matcher -> matcher.matches(request))) {
+                        throw new GeneralException(ErrorStatus.FORBIDDEN);
+                    }
                     authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
                 } else {
                     // 탈퇴(soft-delete)했거나 존재하지 않는 유저는 인증 실패 처리

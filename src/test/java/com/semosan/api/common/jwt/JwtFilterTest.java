@@ -89,7 +89,7 @@ class JwtFilterTest {
         when(jwtService.validateAccessTokenAndGetClaims("admin-token")).thenReturn(claims);
         when(jwtService.isAccessTokenBlacklisted("admin-token")).thenReturn(false);
         when(jwtService.getUserIdFromClaims(claims)).thenReturn(9L);
-        when(claims.get("tokenType", String.class)).thenReturn("ADMIN");
+        when(jwtService.getTokenType(claims)).thenReturn(TokenType.ADMIN);
         MockHttpServletRequest request = request("/api/mountains", "Bearer admin-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -107,7 +107,7 @@ class JwtFilterTest {
         when(jwtService.validateAccessTokenAndGetClaims("admin-token")).thenReturn(claims);
         when(jwtService.isAccessTokenBlacklisted("admin-token")).thenReturn(false);
         when(jwtService.getUserIdFromClaims(claims)).thenReturn(9L);
-        when(claims.get("tokenType", String.class)).thenReturn("ADMIN");
+        when(jwtService.getTokenType(claims)).thenReturn(TokenType.ADMIN);
         MockHttpServletRequest request = request("PUT", "/api/app-version", "Bearer admin-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
