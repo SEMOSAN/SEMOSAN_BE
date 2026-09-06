@@ -2,8 +2,11 @@ package com.semosan.api.domain.tracking.websocket;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.jwt.JwtService;
+import com.semosan.api.common.jwt.TokenType;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
+import com.semosan.api.domain.user.entity.User;
+import com.semosan.api.domain.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +26,7 @@ import java.util.regex.Pattern;
  * STOMP CONNECT 단계에서 Authorization 헤더의 JWT 를 검증하고,
  * 추출한 userId 를 UserIdPrincipal 로 세션에 바인딩한다.
  * 이후 같은 WebSocket 세션의 모든 메시지는 인증된 상태로 처리된다.
+ * CONNECT 시 토큰 타입(ACCESS)과 유저 상태(탈퇴/정지)를 JwtFilter 와 동일하게 검증한다.
  * SUBSCRIBE 단계에서는 목적지 세션의 소유자인지 추가로 인가한다.
  *
  * 진단 로그: CONNECT 진입/성공/실패, 그 외 STOMP command 종류를 모두 기록.
@@ -43,6 +47,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
     private final JwtService jwtService;
     private final TrackingSessionRepository trackingSessionRepository;
+    private final UserRepository userRepository;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -125,6 +130,12 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             log.warn("STOMP CONNECT 인증 실패: 블랙리스트 토큰. sessionId={}", sessionId);
             throw new GeneralException(ErrorStatus.JWT_BLACKLISTED);
         }
+        // ADMIN 토큰은 subject 가 admin.id 라 그대로 바인딩하면 같은 숫자 id 의 유저로 행세하게 된다.
+        // 트래킹 WS 는 관리자 표면이 아니므로 ACCESS 토큰만 허용한다.
+        if (TokenType.ACCESS != jwtService.getTokenType(claims)) {
+            log.warn("STOMP CONNECT 인증 실패: ACCESS 토큰이 아님. sessionId={}", sessionId);
+            throw new GeneralException(ErrorStatus.JWT_INVALID_TYPE);
+        }
         Long userId;
         try {
             userId = jwtService.getUserIdFromClaims(claims);
@@ -133,7 +144,24 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
                     sessionId, e.getErrorStatus().getCode(), e.getMessage());
             throw e;
         }
+        verifyUserIsActive(sessionId, userId);
         accessor.setUser(new UserIdPrincipal(userId));
         log.info("STOMP CONNECT 인증 성공: sessionId={} userId={}", sessionId, userId);
+    }
+
+    /**
+     * JwtFilter 의 HTTP 인증과 동일한 유저 상태 검증.
+     * 이 검증이 없으면 정지·탈퇴 유저가 토큰 만료 전까지 WS 로만 계속 접속할 수 있다.
+     */
+    private void verifyUserIsActive(String sessionId, Long userId) {
+        User user = userRepository.findByIdAndDeletedFalse(userId)
+                .orElseThrow(() -> {
+                    log.warn("STOMP CONNECT 인증 실패: 탈퇴/미존재 유저. sessionId={} userId={}", sessionId, userId);
+                    return new GeneralException(ErrorStatus.JWT_USER_WITHDRAWN);
+                });
+        if (user.isSuspended()) {
+            log.warn("STOMP CONNECT 인증 실패: 정지 유저. sessionId={} userId={}", sessionId, userId);
+            throw new GeneralException(ErrorStatus.USER_SUSPENDED);
+        }
     }
 }

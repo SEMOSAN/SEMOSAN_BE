@@ -2,8 +2,12 @@ package com.semosan.api.domain.tracking.websocket;
 
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.jwt.JwtService;
+import com.semosan.api.common.jwt.TokenType;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
+import com.semosan.api.domain.user.entity.User;
+import com.semosan.api.domain.user.enums.user.DeviceType;
+import com.semosan.api.domain.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,8 +20,11 @@ import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,6 +42,9 @@ class StompAuthChannelInterceptorTest {
     @Mock
     private TrackingSessionRepository trackingSessionRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private StompAuthChannelInterceptor interceptor;
 
@@ -44,7 +54,9 @@ class StompAuthChannelInterceptorTest {
         Message<?> message = connectMessage("Bearer access-token");
         when(jwtService.validateAccessTokenAndGetClaims("access-token")).thenReturn(claims);
         when(jwtService.isAccessTokenBlacklisted("access-token")).thenReturn(false);
+        when(jwtService.getTokenType(claims)).thenReturn(TokenType.ACCESS);
         when(jwtService.getUserIdFromClaims(claims)).thenReturn(1L);
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(user(1L)));
 
         Message<?> result = interceptor.preSend(message, mock(MessageChannel.class));
 
@@ -158,6 +170,61 @@ class StompAuthChannelInterceptorTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.FORBIDDEN);
+    }
+
+    @Test
+    void preSendThrowsWhenConnectTokenIsNotAccessType() {
+        Claims claims = mock(Claims.class);
+        Message<?> message = connectMessage("Bearer admin-token");
+        when(jwtService.validateAccessTokenAndGetClaims("admin-token")).thenReturn(claims);
+        when(jwtService.isAccessTokenBlacklisted("admin-token")).thenReturn(false);
+        when(jwtService.getTokenType(claims)).thenReturn(TokenType.ADMIN);
+
+        assertThatThrownBy(() -> interceptor.preSend(message, mock(MessageChannel.class)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_INVALID_TYPE);
+        verify(userRepository, never()).findByIdAndDeletedFalse(org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
+    void preSendThrowsWhenConnectUserIsWithdrawn() {
+        Claims claims = mock(Claims.class);
+        Message<?> message = connectMessage("Bearer access-token");
+        when(jwtService.validateAccessTokenAndGetClaims("access-token")).thenReturn(claims);
+        when(jwtService.isAccessTokenBlacklisted("access-token")).thenReturn(false);
+        when(jwtService.getTokenType(claims)).thenReturn(TokenType.ACCESS);
+        when(jwtService.getUserIdFromClaims(claims)).thenReturn(1L);
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> interceptor.preSend(message, mock(MessageChannel.class)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.JWT_USER_WITHDRAWN);
+    }
+
+    @Test
+    void preSendThrowsWhenConnectUserIsSuspended() {
+        Claims claims = mock(Claims.class);
+        Message<?> message = connectMessage("Bearer access-token");
+        User suspended = user(1L);
+        suspended.suspend(LocalDateTime.now().plusDays(1));
+        when(jwtService.validateAccessTokenAndGetClaims("access-token")).thenReturn(claims);
+        when(jwtService.isAccessTokenBlacklisted("access-token")).thenReturn(false);
+        when(jwtService.getTokenType(claims)).thenReturn(TokenType.ACCESS);
+        when(jwtService.getUserIdFromClaims(claims)).thenReturn(1L);
+        when(userRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(suspended));
+
+        assertThatThrownBy(() -> interceptor.preSend(message, mock(MessageChannel.class)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_SUSPENDED);
+    }
+
+    private User user(Long id) {
+        User user = User.createTestUser("test-" + id, DeviceType.IOS);
+        ReflectionTestUtils.setField(user, "id", id);
+        return user;
     }
 
     private Message<?> subscribeMessage(String destination, Principal user) {
