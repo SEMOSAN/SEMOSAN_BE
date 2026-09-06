@@ -105,6 +105,25 @@ class NotificationServiceTest {
         assertThat(eventCaptor.getValue().command().badge()).isEqualTo(7);
     }
 
+    // 트래킹 알림은 등산 1회에 여러 건 쌓여 뱃지만 부풀리므로 저장 시점에 읽음 처리한다.
+    @Test
+    void trackingNotificationIsSavedAsAlreadyRead() {
+        Notification tracking = Notification.create(
+                1L, NotificationType.TRACKING_PHOTO_MILESTONE, "SEMOSAN", "500m 돌파!", Map.of());
+
+        assertThat(tracking.isRead()).isTrue();
+        assertThat(tracking.getReadAt()).isNotNull();
+    }
+
+    @Test
+    void communityNotificationIsSavedAsUnread() {
+        Notification comment = Notification.create(
+                1L, NotificationType.COMMUNITY_COMMENT, "title", "body", Map.of());
+
+        assertThat(comment.isRead()).isFalse();
+        assertThat(comment.getReadAt()).isNull();
+    }
+
     @Test
     void sendUsesBodyOverrideWhenProvided() {
         Notification notification = Notification.create(
