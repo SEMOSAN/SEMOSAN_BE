@@ -9,8 +9,8 @@ import java.util.Set;
 public enum NotificationType {
 
     COMMUNITY_COMMENT(
-            "새 댓글이 달렸어요",
-            "{actorName}: {commentPreview}",
+            "내 게시글에 댓글이 달렸어요",
+            "{actorName}님이 댓글을 남겼어요",
             Set.of("actorName", "commentPreview"),
             false,
             NotificationTargetType.COMMUNITY_POST,
@@ -18,14 +18,19 @@ public enum NotificationType {
     ),
 
     COMMUNITY_REPLY(
-            "새 답글이 달렸어요",
-            "{actorName}: {commentPreview}",
+            "{actorName}님이 내 댓글에 답글을 남겼어요",
+            "{commentPreview}",
             Set.of("actorName", "commentPreview"),
             false,
             NotificationTargetType.COMMUNITY_POST,
             "postId"
     ),
 
+    /**
+     * 좋아요는 알림을 보내지 않기로 정책이 확정돼 발송 경로가 제거됐다.
+     * 이미 저장된 알림 이력의 type 값을 읽을 때 파싱이 깨지지 않도록 상수만 남긴다.
+     */
+    @Deprecated
     COMMUNITY_POST_LIKE(
             "게시글에 좋아요가 눌렸어요",
             "{actorName}님이 게시글을 좋아합니다",
