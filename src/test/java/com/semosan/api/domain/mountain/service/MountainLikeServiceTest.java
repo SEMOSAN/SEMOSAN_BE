@@ -49,10 +49,9 @@ class MountainLikeServiceTest {
     @Test
     void toggleMountainLikeCreatesLikeWhenNotLiked() {
         User user = user(1L);
-        Mountain mountain = mountain(10L);
 
         when(userReader.findActiveUserById(1L)).thenReturn(user);
-        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain));
+        when(mountainRepository.existsById(10L)).thenReturn(true);
         when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L)).thenReturn(Optional.empty());
 
         MountainLikeToggleResponse response = mountainLikeService.toggleMountainLike(1L, 10L);
@@ -64,7 +63,7 @@ class MountainLikeServiceTest {
     @Test
     void toggleMountainLikeThrowsWhenMountainMissing() {
         when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
-        when(mountainRepository.findById(10L)).thenReturn(Optional.empty());
+        when(mountainRepository.existsById(10L)).thenReturn(false);
 
         assertThatThrownBy(() -> mountainLikeService.toggleMountainLike(1L, 10L))
                 .isInstanceOf(GeneralException.class)
@@ -79,7 +78,7 @@ class MountainLikeServiceTest {
         MountainLike mountainLike = MountainLike.create(user, mountain);
 
         when(userReader.findActiveUserById(1L)).thenReturn(user);
-        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain));
+        when(mountainRepository.existsById(10L)).thenReturn(true);
         when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L)).thenReturn(Optional.of(mountainLike));
 
         MountainLikeToggleResponse response = mountainLikeService.toggleMountainLike(1L, 10L);
@@ -92,10 +91,9 @@ class MountainLikeServiceTest {
     @Test
     void toggleMountainLikeReturnsLikedWhenConcurrentDuplicateDetected() {
         User user = user(1L);
-        Mountain mountain = mountain(10L);
 
         when(userReader.findActiveUserById(1L)).thenReturn(user);
-        when(mountainRepository.findById(10L)).thenReturn(Optional.of(mountain));
+        when(mountainRepository.existsById(10L)).thenReturn(true);
         when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L)).thenReturn(Optional.empty());
         when(mountainLikeRepository.insertIgnoreConflict(1L, 10L)).thenReturn(0);
 
