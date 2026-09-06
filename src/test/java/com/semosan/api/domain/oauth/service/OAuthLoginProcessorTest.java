@@ -1,6 +1,7 @@
 package com.semosan.api.domain.oauth.service;
 
 import com.semosan.api.common.jwt.JwtService;
+import com.semosan.api.domain.notification.service.FcmTokenService;
 import com.semosan.api.common.jwt.TokenIssuance;
 import com.semosan.api.domain.oauth.dto.response.OAuthLoginResponse;
 import com.semosan.api.domain.user.dto.command.OAuthUserProfile;
@@ -29,6 +30,9 @@ class OAuthLoginProcessorTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private FcmTokenService fcmTokenService;
+
     @InjectMocks
     private OAuthLoginProcessor processor;
 
@@ -49,5 +53,19 @@ class OAuthLoginProcessorTest {
         assertThat(response.onboardingCompleted()).isTrue();
         verify(userService).findOrRegisterOAuthUser(profile, OAuthProvider.KAKAO, DeviceType.IOS);
         verify(jwtService).issueTokens(user);
+    }
+
+    // 새 로그인은 이전 기기 세션을 무효화하므로 그 기기의 FCM 토큰도 함께 정리돼야 한다.
+    @Test
+    void loginClearsPreviousDeviceFcmTokens() {
+        OAuthUserProfile profile = new OAuthUserProfile("oauth-id", "user@example.com", "사용자");
+        User user = mock(User.class);
+        when(userService.findOrRegisterOAuthUser(profile, OAuthProvider.KAKAO, DeviceType.IOS)).thenReturn(user);
+        when(jwtService.issueTokens(user)).thenReturn(new TokenIssuance("access", "refresh"));
+        when(user.getId()).thenReturn(1L);
+
+        processor.login(profile, OAuthProvider.KAKAO, DeviceType.IOS);
+
+        verify(fcmTokenService).deleteAllByUserId(1L);
     }
 }
