@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -77,8 +78,9 @@ class RateLimitFilterTest {
         verify(rateLimiter).tryConsume(eq("global"), anyString(), eq(300), eq(60L));
     }
 
+    // 클라이언트가 앞쪽 값을 위조해도 nginx 가 마지막에 붙인 실제 피어 IP 로 한도가 적용되어야 한다.
     @Test
-    void usesFirstIpFromForwardedForHeader() throws Exception {
+    void usesLastIpFromForwardedForHeader() throws Exception {
         when(rateLimiter.tryConsume(anyString(), anyString(), anyInt(), anyLong()))
                 .thenReturn(new RateLimitResult(true, 60));
         MockHttpServletRequest request = request("/api/mountains");
@@ -86,7 +88,22 @@ class RateLimitFilterTest {
 
         filter().doFilter(request, new MockHttpServletResponse(), new MockFilterChain());
 
-        verify(rateLimiter).tryConsume(anyString(), eq("203.0.113.9"), anyInt(), anyLong());
+        verify(rateLimiter).tryConsume(anyString(), eq("10.0.0.1"), anyInt(), anyLong());
+    }
+
+    @Test
+    void spoofedForwardedForEntriesDoNotChangeRateLimitKey() throws Exception {
+        when(rateLimiter.tryConsume(anyString(), anyString(), anyInt(), anyLong()))
+                .thenReturn(new RateLimitResult(true, 60));
+        MockHttpServletRequest first = request("/api/mountains");
+        first.addHeader("X-Forwarded-For", "1.1.1.1, 10.0.0.1");
+        MockHttpServletRequest second = request("/api/mountains");
+        second.addHeader("X-Forwarded-For", "2.2.2.2, 10.0.0.1");
+
+        filter().doFilter(first, new MockHttpServletResponse(), new MockFilterChain());
+        filter().doFilter(second, new MockHttpServletResponse(), new MockFilterChain());
+
+        verify(rateLimiter, times(2)).tryConsume(anyString(), eq("10.0.0.1"), anyInt(), anyLong());
     }
 
     @Test

@@ -12,7 +12,7 @@ import static org.mockito.Mockito.when;
 class RequestContextTest {
 
     @Test
-    void fromUsesFirstForwardedForIpAndPrincipalName() {
+    void fromUsesLastForwardedForIpAndPrincipalName() {
         HttpServletRequest request = mock(HttpServletRequest.class);
         Principal principal = () -> "1";
         when(request.getMethod()).thenReturn("GET");
@@ -25,7 +25,7 @@ class RequestContextTest {
 
         assertThat(context.method()).isEqualTo("GET");
         assertThat(context.url()).isEqualTo("https://api.example.com/mountains");
-        assertThat(context.ip()).isEqualTo("203.0.113.1");
+        assertThat(context.ip()).isEqualTo("10.0.0.1");
         assertThat(context.userId()).isEqualTo("1");
         assertThat(context.userAgent()).isEqualTo("JUnit");
     }
