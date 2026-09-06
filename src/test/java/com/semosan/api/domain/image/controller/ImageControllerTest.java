@@ -26,7 +26,7 @@ class ImageControllerTest {
 
     @Test
     void getPresignedUrlReturnsSuccessResponse() {
-        PresignedUrlResponse presignedUrl = new PresignedUrlResponse("upload-url", "image-url");
+        PresignedUrlResponse presignedUrl = new PresignedUrlResponse("upload-url", "image-url", "image/png");
         when(imageService.generatePresignedUrl("posts", "photo.png")).thenReturn(presignedUrl);
 
         ResponseEntity<ApiResponse<PresignedUrlResponse>> response =
