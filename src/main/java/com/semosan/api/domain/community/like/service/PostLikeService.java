@@ -4,14 +4,12 @@ import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.like.dto.PostLikeToggleResponse;
 import com.semosan.api.domain.community.like.entity.PostLike;
-import com.semosan.api.domain.community.like.event.PostLikedEvent;
 import com.semosan.api.domain.community.like.repository.PostLikeRepository;
 import com.semosan.api.domain.community.post.entity.Post;
 import com.semosan.api.domain.community.post.repository.PostRepository;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +23,6 @@ public class PostLikeService {
     private final PostLikeRepository postLikeRepository;
     private final PostRepository postRepository;
     private final UserReader userReader;
-    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * @return true = 좋아요 누름 / false = 좋아요 취소
@@ -42,9 +39,7 @@ public class PostLikeService {
         }
 
         // ON CONFLICT DO NOTHING이라 동시 요청이 겹쳐도 예외 없이 0 row로 끝난다.
-        if (postLikeRepository.insertIgnoreConflict(postId, userId) > 0) {
-            eventPublisher.publishEvent(new PostLikedEvent(post.getId(), user.getId()));
-        }
+        postLikeRepository.insertIgnoreConflict(postId, userId);
         return true;
     }
 

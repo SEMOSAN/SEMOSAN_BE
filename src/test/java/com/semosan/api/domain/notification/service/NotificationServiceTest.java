@@ -79,8 +79,8 @@ class NotificationServiceTest {
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         assertThat(eventCaptor.getValue().command().notificationId()).isEqualTo(10L);
         assertThat(eventCaptor.getValue().command().tokens()).containsExactly("token");
-        assertThat(eventCaptor.getValue().command().title()).isEqualTo("새 댓글이 달렸어요");
-        assertThat(eventCaptor.getValue().command().body()).isEqualTo("푸름: 확인");
+        assertThat(eventCaptor.getValue().command().title()).isEqualTo("내 게시글에 댓글이 달렸어요");
+        assertThat(eventCaptor.getValue().command().body()).isEqualTo("푸름님이 댓글을 남겼어요");
     }
 
     // 앱이 꺼져 있으면 클라가 뱃지를 못 올리므로 발송 시점 안읽음 수가 그대로 실려야 한다.

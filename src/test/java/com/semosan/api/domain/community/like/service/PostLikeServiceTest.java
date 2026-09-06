@@ -4,7 +4,6 @@ import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.community.like.dto.PostLikeToggleResponse;
 import com.semosan.api.domain.community.like.entity.PostLike;
-import com.semosan.api.domain.community.like.event.PostLikedEvent;
 import com.semosan.api.domain.community.like.repository.PostLikeRepository;
 import com.semosan.api.domain.community.post.entity.FreePost;
 import com.semosan.api.domain.community.post.repository.PostRepository;
@@ -13,11 +12,9 @@ import com.semosan.api.domain.user.enums.user.DeviceType;
 import com.semosan.api.domain.user.service.UserReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
@@ -42,14 +39,11 @@ class PostLikeServiceTest {
     @Mock
     private UserReader userReader;
 
-    @Mock
-    private ApplicationEventPublisher eventPublisher;
-
     @InjectMocks
     private PostLikeService postLikeService;
 
     @Test
-    void toggleWithCountPublishesEventWhenLikeCreated() throws Exception {
+    void toggleWithCountReturnsLikedWhenLikeCreated() throws Exception {
         User postAuthor = user(1L, "post-author");
         User liker = user(2L, "liker");
         FreePost post = freePost(10L, postAuthor, "제목", "본문");
@@ -64,14 +58,10 @@ class PostLikeServiceTest {
 
         assertThat(result.liked()).isTrue();
         assertThat(result.count()).isEqualTo(1L);
-        ArgumentCaptor<PostLikedEvent> eventCaptor = ArgumentCaptor.forClass(PostLikedEvent.class);
-        verify(eventPublisher).publishEvent(eventCaptor.capture());
-        assertThat(eventCaptor.getValue().postId()).isEqualTo(10L);
-        assertThat(eventCaptor.getValue().actorId()).isEqualTo(2L);
     }
 
     @Test
-    void toggleWithCountDoesNotPublishEventWhenUnlike() throws Exception {
+    void toggleWithCountReturnsUnlikedWhenExistingLike() throws Exception {
         User postAuthor = user(1L, "post-author");
         User liker = user(2L, "liker");
         FreePost post = freePost(10L, postAuthor, "제목", "본문");
@@ -87,7 +77,6 @@ class PostLikeServiceTest {
         assertThat(result.liked()).isFalse();
         assertThat(result.count()).isZero();
         verify(postLikeRepository).deleteByPostIdAndUserId(10L, 2L);
-        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     // bulk delete라 동시 취소 요청이 겹쳐 0 row가 삭제돼도 예외 없이 liked=false로 흡수된다.
@@ -108,12 +97,11 @@ class PostLikeServiceTest {
 
         assertThat(result.liked()).isFalse();
         assertThat(result.count()).isZero();
-        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     // ON CONFLICT DO NOTHING이라 동시 요청이 겹치면 insert row가 0개라 예외 없이 liked=true로 흡수된다.
     @Test
-    void toggleWithCountDoesNotPublishEventWhenConcurrentDuplicateDetected() throws Exception {
+    void toggleWithCountAbsorbsConcurrentDuplicateInsert() throws Exception {
         User postAuthor = user(1L, "post-author");
         User liker = user(2L, "liker");
         FreePost post = freePost(10L, postAuthor, "제목", "본문");
@@ -128,7 +116,6 @@ class PostLikeServiceTest {
 
         assertThat(result.liked()).isTrue();
         assertThat(result.count()).isEqualTo(1L);
-        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test
@@ -169,7 +156,6 @@ class PostLikeServiceTest {
                 .isEqualTo(ErrorStatus.POST_NOT_FOUND);
         verify(userReader, never()).findActiveUserById(2L);
         verify(postLikeRepository, never()).insertIgnoreConflict(any(), any());
-        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     private User user(Long id, String nickname) {

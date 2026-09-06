@@ -74,15 +74,26 @@ class NotificationTypeTest {
 
     @Test
     void formatTitleReturnsTemplateWhenParamsAreNullOrEmpty() {
-        assertThat(NotificationType.COMMUNITY_COMMENT.formatTitle(null)).isEqualTo("새 댓글이 달렸어요");
-        assertThat(NotificationType.COMMUNITY_COMMENT.formatBody(Map.of())).isEqualTo("{actorName}: {commentPreview}");
+        assertThat(NotificationType.COMMUNITY_COMMENT.formatTitle(null)).isEqualTo("내 게시글에 댓글이 달렸어요");
+        assertThat(NotificationType.COMMUNITY_COMMENT.formatBody(Map.of())).isEqualTo("{actorName}님이 댓글을 남겼어요");
     }
 
     @Test
     void formatBodyReplacesProvidedParamsAndKeepsMissingPlaceholders() {
-        String body = NotificationType.COMMUNITY_COMMENT.formatBody(Map.of("actorName", "푸름"));
+        String body = NotificationType.COMMUNITY_REPLY.formatBody(Map.of("actorName", "푸름"));
 
-        assertThat(body).isEqualTo("푸름: {commentPreview}");
+        assertThat(body).isEqualTo("{commentPreview}");
+    }
+
+    // 기획 문구 — 댓글은 본문에 내용을 싣지 않고, 답글은 반대로 내용만 싣는다.
+    @Test
+    void communityCommentAndReplyFollowCopyPolicy() {
+        Map<String, Object> params = Map.of("actorName", "푸름", "commentPreview", "확인했어요");
+
+        assertThat(NotificationType.COMMUNITY_COMMENT.formatTitle(params)).isEqualTo("내 게시글에 댓글이 달렸어요");
+        assertThat(NotificationType.COMMUNITY_COMMENT.formatBody(params)).isEqualTo("푸름님이 댓글을 남겼어요");
+        assertThat(NotificationType.COMMUNITY_REPLY.formatTitle(params)).isEqualTo("푸름님이 내 댓글에 답글을 남겼어요");
+        assertThat(NotificationType.COMMUNITY_REPLY.formatBody(params)).isEqualTo("확인했어요");
     }
 
     @Test
