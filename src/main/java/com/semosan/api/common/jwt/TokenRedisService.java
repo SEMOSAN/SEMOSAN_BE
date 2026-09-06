@@ -6,6 +6,14 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 유저당 세션 1개만 유지한다. refresh 토큰을 {@code refresh:{userId}} 키 하나에 저장해
+ * 새 로그인이 이전 기기의 토큰을 덮어쓰는 구조다.
+ *
+ * 트래킹이 유저당 활성 세션 1개를 강제하고 있어(uq_tracking_sessions_user_active)
+ * 멀티 기기와는 개념이 맞지 않는다. 기기별 세션으로 바꾸려면 로그인·로그아웃 시점의
+ * FCM 토큰 정리(AuthService, OAuthLoginProcessor)도 기기 단위로 함께 손봐야 한다.
+ */
 @Service
 @RequiredArgsConstructor
 public class TokenRedisService {
