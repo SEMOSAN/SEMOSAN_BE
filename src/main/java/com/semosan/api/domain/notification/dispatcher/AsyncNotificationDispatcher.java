@@ -46,7 +46,7 @@ public class AsyncNotificationDispatcher implements NotificationDispatcher {
     private void sendChunk(List<String> chunk, NotificationDispatchCommand cmd, Map<String, String> dataPayload) {
         try {
             BatchResponse response = fcmService.sendEachForMulticast(
-                    chunk, cmd.title(), cmd.body(), dataPayload, cmd.type().isDataOnly());
+                    chunk, cmd.title(), cmd.body(), dataPayload, cmd.type().isDataOnly(), cmd.badge());
             handleBatchResponse(chunk, response);
         } catch (FirebaseMessagingException e) {
             log.error("FCM 배치 발송 자체 실패 (tokenCount={}): {}", chunk.size(), e.getMessage());

@@ -1,5 +1,7 @@
 package com.semosan.api.common.fcm;
 
+import com.google.firebase.messaging.AndroidConfig;
+import com.google.firebase.messaging.AndroidNotification;
 import com.google.firebase.messaging.ApnsConfig;
 import com.google.firebase.messaging.Aps;
 import com.google.firebase.messaging.ApsAlert;
@@ -14,17 +16,23 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
 public class FcmService {
 
+    /**
+     * @param badge 앱 아이콘에 표시할 안읽음 수. null 이면 설정하지 않는다.
+     *              앱이 종료된 상태에서는 클라이언트가 뱃지를 갱신할 수 없어 서버가 실어 보내야 한다.
+     */
     public String sendMessage(
             String token,
             String title,
             String body,
             Map<String, String> data,
-            boolean dataOnly
+            boolean dataOnly,
+            Integer badge
     ) throws FirebaseMessagingException {
         Message.Builder builder = Message.builder()
                 .setToken(token);
@@ -35,9 +43,10 @@ public class FcmService {
                     .setBody(body)
                     .build();
             builder.setNotification(notification);
+            androidBadgeConfig(badge).ifPresent(builder::setAndroidConfig);
         }
 
-        builder.setApnsConfig(dataOnly ? silentPushApnsConfig() : normalPushApnsConfig(title, body));
+        builder.setApnsConfig(dataOnly ? silentPushApnsConfig(badge) : normalPushApnsConfig(title, body, badge));
 
         if (data != null && !data.isEmpty()) {
             builder.putAllData(data);
@@ -58,7 +67,8 @@ public class FcmService {
             String title,
             String body,
             Map<String, String> data,
-            boolean dataOnly
+            boolean dataOnly,
+            Integer badge
     ) throws FirebaseMessagingException {
         MulticastMessage.Builder builder = MulticastMessage.builder()
                 .addAllTokens(tokens);
@@ -69,9 +79,10 @@ public class FcmService {
                     .setBody(body)
                     .build();
             builder.setNotification(notification);
+            androidBadgeConfig(badge).ifPresent(builder::setAndroidConfig);
         }
 
-        builder.setApnsConfig(dataOnly ? silentPushApnsConfig() : normalPushApnsConfig(title, body));
+        builder.setApnsConfig(dataOnly ? silentPushApnsConfig(badge) : normalPushApnsConfig(title, body, badge));
 
         if (data != null && !data.isEmpty()) {
             builder.putAllData(data);
@@ -82,29 +93,50 @@ public class FcmService {
         return response;
     }
 
-    private ApnsConfig normalPushApnsConfig(String title, String body) {
+    private ApnsConfig normalPushApnsConfig(String title, String body, Integer badge) {
+        Aps.Builder aps = Aps.builder()
+                .setAlert(ApsAlert.builder()
+                        .setTitle(title)
+                        .setBody(body)
+                        .build())
+                .setSound("default")
+                .setContentAvailable(true);
+        if (badge != null) {
+            aps.setBadge(badge);
+        }
         return ApnsConfig.builder()
                 .putHeader("apns-push-type", "alert")
                 .putHeader("apns-priority", "10")
-                .setAps(Aps.builder()
-                        .setAlert(ApsAlert.builder()
-                                .setTitle(title)
-                                .setBody(body)
-                                .build())
-                        .setSound("default")
-                        .setContentAvailable(true)
-                        .build())
+                .setAps(aps.build())
                 .build();
     }
 
-    private ApnsConfig silentPushApnsConfig() {
+    private ApnsConfig silentPushApnsConfig(Integer badge) {
+        Aps.Builder aps = Aps.builder()
+                .setContentAvailable(true);
+        if (badge != null) {
+            aps.setBadge(badge);
+        }
         return ApnsConfig.builder()
                 .putHeader("apns-push-type", "background")
                 .putHeader("apns-priority", "5")
-                .setAps(Aps.builder()
-                        .setContentAvailable(true)
-                        .build())
+                .setAps(aps.build())
                 .build();
+    }
+
+    /**
+     * Android 뱃지. 런처마다 표시 여부가 달라 보장되지는 않지만, 지원하는 런처에서는 반영된다.
+     * 여기서 title/body 는 지정하지 않아 상위 notification 값이 그대로 쓰인다.
+     */
+    private Optional<AndroidConfig> androidBadgeConfig(Integer badge) {
+        if (badge == null) {
+            return Optional.empty();
+        }
+        return Optional.of(AndroidConfig.builder()
+                .setNotification(AndroidNotification.builder()
+                        .setNotificationCount(badge)
+                        .build())
+                .build());
     }
 
 }

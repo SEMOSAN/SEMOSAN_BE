@@ -80,6 +80,10 @@ public class NotificationService {
             return;
         }
 
+        // 방금 저장한 알림까지 포함한 안읽음 수를 뱃지로 싣는다.
+        // 앱이 종료된 상태에서는 클라이언트가 뱃지를 갱신할 수 없어 발송 시점 값이 그대로 표시된다.
+        int badge = toBadge(notificationRepository.countByUserIdAndReadFalse(receiverId));
+
         // 트랜잭션 커밋 후에만 실제 발송이 일어나도록 이벤트 발행
         eventPublisher.publishEvent(new NotificationCreatedEvent(
                 new NotificationDispatchCommand(
@@ -89,9 +93,15 @@ public class NotificationService {
                         title,
                         body,
                         params,
-                        tokens
+                        tokens,
+                        badge
                 )
         ));
+    }
+
+    // APNs 뱃지는 int 라 이론상 넘칠 수 있는 long 카운트를 잘라 넣는다.
+    private static int toBadge(long unreadCount) {
+        return (int) Math.min(unreadCount, Integer.MAX_VALUE);
     }
 
     @Transactional(readOnly = true)
