@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface MountainLikeRepository extends JpaRepository<MountainLike, Long> {
@@ -31,6 +33,14 @@ public interface MountainLikeRepository extends JpaRepository<MountainLike, Long
             + "VALUES (:userId, :mountainId, now(), now()) "
             + "ON CONFLICT (user_id, mountain_id) DO NOTHING", nativeQuery = true)
     int insertIgnoreConflict(@Param("userId") Long userId, @Param("mountainId") Long mountainId);
+
+    /** 산마다 exists 를 돌리면 N+1 이라 페이지의 산 ID 를 한 번에 넘긴다. */
+    @Query("SELECT ml.mountain.id FROM MountainLike ml "
+            + "WHERE ml.user.id = :userId AND ml.mountain.id IN :mountainIds")
+    List<Long> findLikedMountainIds(
+            @Param("userId") Long userId,
+            @Param("mountainIds") Collection<Long> mountainIds
+    );
 
     @EntityGraph(attributePaths = "mountain")
     @Query(

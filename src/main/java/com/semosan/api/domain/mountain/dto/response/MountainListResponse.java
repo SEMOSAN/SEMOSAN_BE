@@ -14,10 +14,11 @@ public record MountainListResponse(
         Integer duration,
         List<String> imageUrls,
         Double latitude,
-        Double longitude
+        Double longitude,
+        boolean likedByMe
 ) {
 
-    public static MountainListResponse from(Mountain mountain) {
+    public static MountainListResponse of(Mountain mountain, boolean likedByMe) {
         return new MountainListResponse(
                 mountain.getId(),
                 mountain.getName(),
@@ -27,7 +28,8 @@ public record MountainListResponse(
                 mountain.getDuration(),
                 mountain.getImageUrls(),
                 mountain.getLatitude(),
-                mountain.getLongitude()
+                mountain.getLongitude(),
+                likedByMe
         );
     }
 }

@@ -14,6 +14,7 @@ import com.semosan.api.domain.mountain.enums.Difficulty;
 import com.semosan.api.domain.mountain.enums.TransportationType;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.MountainDetailQueryRepository;
+import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.mountain.repository.projection.MountainMapProjection;
 import com.semosan.api.domain.mountain.service.recommendation.FitnessLevelCalculator;
@@ -64,6 +65,9 @@ class MountainServiceTest {
     private MountainDetailQueryRepository mountainDetailQueryRepository;
 
     @Mock
+    private MountainLikeRepository mountainLikeRepository;
+
+    @Mock
     private HikingMemberRepository hikingMemberRepository;
 
     @Mock
@@ -83,12 +87,39 @@ class MountainServiceTest {
         PageRequest pageable = PageRequest.of(0, 10);
         when(mountainRepository.findByIsPublicTrue(pageable))
                 .thenReturn(new PageImpl<>(List.of(mountain(1L, "관악산")), pageable, 1));
+        when(mountainLikeRepository.findLikedMountainIds(1L, List.of(1L))).thenReturn(List.of(1L));
 
         Page<MountainListResponse> result = mountainService.getMountains(1L, pageable);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().getFirst().mountainId()).isEqualTo(1L);
         assertThat(result.getContent().getFirst().name()).isEqualTo("관악산");
+        assertThat(result.getContent().getFirst().likedByMe()).isTrue();
+    }
+
+    @Test
+    void getMountainsMarksUnlikedMountainAsNotLiked() throws Exception {
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(mountainRepository.findByIsPublicTrue(pageable))
+                .thenReturn(new PageImpl<>(List.of(mountain(1L, "관악산")), pageable, 1));
+        when(mountainLikeRepository.findLikedMountainIds(1L, List.of(1L))).thenReturn(List.of());
+
+        Page<MountainListResponse> result = mountainService.getMountains(1L, pageable);
+
+        assertThat(result.getContent().getFirst().likedByMe()).isFalse();
+    }
+
+    // 빈 페이지에 대해 IN () 빈 컬렉션 쿼리가 나가지 않아야 한다.
+    @Test
+    void getMountainsSkipsLikeLookupWhenPageIsEmpty() {
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(mountainRepository.findByIsPublicTrue(pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        Page<MountainListResponse> result = mountainService.getMountains(1L, pageable);
+
+        assertThat(result.getContent()).isEmpty();
+        verifyNoInteractions(mountainLikeRepository);
     }
 
     @Test
@@ -96,10 +127,49 @@ class MountainServiceTest {
         PageRequest pageable = PageRequest.of(0, 10);
         when(mountainRepository.searchByKeyword("관악", pageable))
                 .thenReturn(new PageImpl<>(List.of(mountain(1L, "관악산")), pageable, 1));
+        when(mountainLikeRepository.findLikedMountainIds(1L, List.of(1L))).thenReturn(List.of(1L));
 
         Page<MountainListResponse> result = mountainService.searchMountains(1L, "  관악  ", pageable);
 
         assertThat(result.getContent().getFirst().name()).isEqualTo("관악산");
+        assertThat(result.getContent().getFirst().likedByMe()).isTrue();
+    }
+
+    // 탈퇴/비활성 유저는 access token 이 남아 있어도 조회를 막아야 한다.
+    @Test
+    void getMountainsThrowsWhenUserIsNotActive() {
+        when(userReader.findActiveUserById(1L))
+                .thenThrow(new GeneralException(ErrorStatus.USER_NOT_FOUND));
+
+        assertThatThrownBy(() -> mountainService.getMountains(1L, PageRequest.of(0, 10)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+        verifyNoInteractions(mountainRepository);
+    }
+
+    @Test
+    void searchMountainsThrowsWhenUserIsNotActive() {
+        when(userReader.findActiveUserById(1L))
+                .thenThrow(new GeneralException(ErrorStatus.USER_NOT_FOUND));
+
+        assertThatThrownBy(() -> mountainService.searchMountains(1L, "관악", PageRequest.of(0, 10)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+        verifyNoInteractions(mountainRepository);
+    }
+
+    @Test
+    void getMountainDetailThrowsWhenUserIsNotActive() {
+        when(userReader.findActiveUserById(1L))
+                .thenThrow(new GeneralException(ErrorStatus.USER_NOT_FOUND));
+
+        assertThatThrownBy(() -> mountainService.getMountainDetail(1L, 1L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+        verifyNoInteractions(mountainDetailQueryRepository);
     }
 
     @Test
@@ -153,7 +223,7 @@ class MountainServiceTest {
         MountainDetailResponse detail = new MountainDetailResponse(
                 new MountainDetailResponse.MountainInfo(
                         1L, "관악산", "서울", 632.2, Difficulty.NORMAL, 90,
-                        List.of("image"), 37.0, 127.0
+                        List.of("image"), 37.0, 127.0, false
                 ),
                 List.of(new MountainDetailResponse.CourseInfo(
                         10L, "정상 코스", Difficulty.NORMAL, 1500.0, 90, "입구", "정상"
@@ -178,10 +248,12 @@ class MountainServiceTest {
         );
 
         when(mountainDetailQueryRepository.findDetailByMountainId(1L)).thenReturn(Optional.of(detail));
+        when(mountainLikeRepository.existsByUser_IdAndMountain_Id(1L, 1L)).thenReturn(true);
 
         MountainDetailResponse response = mountainService.getMountainDetail(1L, 1L);
 
         assertThat(response.mountain().mountainId()).isEqualTo(1L);
+        assertThat(response.mountain().likedByMe()).isTrue();
         assertThat(response.courses().getFirst().courseId()).isEqualTo(10L);
         assertThat(response.transportations().publicTransport()).containsKey("상행");
         assertThat(response.transportations().parking()).containsKey("입구");

@@ -139,7 +139,8 @@ public class MountainDetailQueryRepository {
                         rs.getObject("duration", Integer.class),
                         parseImageUrls(rs.getString("image_urls")),
                         getDouble(rs, "latitude"),
-                        getDouble(rs, "longitude")
+                        getDouble(rs, "longitude"),
+                        false
                 ),
                 parseCourses(rs.getString("courses_json")),
                 parseTransportations(rs.getString("transportations_json")),

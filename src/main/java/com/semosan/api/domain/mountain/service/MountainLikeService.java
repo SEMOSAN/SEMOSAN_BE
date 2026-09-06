@@ -4,7 +4,6 @@ import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.mountain.dto.response.LikedMountainResponse;
 import com.semosan.api.domain.mountain.dto.response.MountainLikeToggleResponse;
-import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.repository.MountainLikeRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.user.service.UserReader;
@@ -25,7 +24,7 @@ public class MountainLikeService {
     @Transactional
     public MountainLikeToggleResponse toggleMountainLike(Long userId, Long mountainId) {
         userReader.findActiveUserById(userId);
-        findMountainById(mountainId);
+        validateMountainExists(mountainId);
 
         boolean liked = mountainLikeRepository.findByUser_IdAndMountain_Id(userId, mountainId)
                 .map(existing -> {
@@ -49,9 +48,10 @@ public class MountainLikeService {
                 .map(LikedMountainResponse::from);
     }
 
-    // mountainId로 산을 조회하고, 없으면 예외를 발생시킵니다.
-    private Mountain findMountainById(Long mountainId) {
-        return mountainRepository.findById(mountainId)
-                .orElseThrow(() -> new GeneralException(ErrorStatus.MOUNTAIN_NOT_FOUND));
+    // 존재 확인만 필요하므로 엔티티를 읽지 않는다. Mountain 은 PostGIS 좌표와 jsonb 를 들고 있어 로드 비용이 크다.
+    private void validateMountainExists(Long mountainId) {
+        if (!mountainRepository.existsById(mountainId)) {
+            throw new GeneralException(ErrorStatus.MOUNTAIN_NOT_FOUND);
+        }
     }
 }

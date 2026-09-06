@@ -131,7 +131,7 @@ class MountainControllerTest {
     private MountainListResponse mountainListResponse() {
         return new MountainListResponse(
                 1L, "관악산", "서울", 632.2, Difficulty.NORMAL, 120,
-                List.of("image.jpg"), 37.5, 127.0
+                List.of("image.jpg"), 37.5, 127.0, false
         );
     }
 }
