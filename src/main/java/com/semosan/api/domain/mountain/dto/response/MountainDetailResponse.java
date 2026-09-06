@@ -20,6 +20,18 @@ public record MountainDetailResponse(
         List<ReviewInfo> reviews
 ) {
 
+    /** 좋아요 여부는 조회한 사용자에 따라 달라져 상세 쿼리에서 채울 수 없으므로 서비스에서 덧붙인다. */
+    public MountainDetailResponse withLikedByMe(boolean likedByMe) {
+        return new MountainDetailResponse(
+                mountain.withLikedByMe(likedByMe),
+                courses,
+                transportations,
+                amenities,
+                restaurantSections,
+                reviews
+        );
+    }
+
     public record MountainInfo(
             Long mountainId,
             String name,
@@ -29,7 +41,8 @@ public record MountainDetailResponse(
             Integer duration,
             List<String> imageUrls,
             Double latitude,
-            Double longitude
+            Double longitude,
+            boolean likedByMe
     ) {
         public static MountainInfo from(Mountain mountain) {
             return new MountainInfo(
@@ -41,7 +54,15 @@ public record MountainDetailResponse(
                     mountain.getDuration(),
                     mountain.getImageUrls(),
                     mountain.getLatitude(),
-                    mountain.getLongitude()
+                    mountain.getLongitude(),
+                    false
+            );
+        }
+
+        public MountainInfo withLikedByMe(boolean likedByMe) {
+            return new MountainInfo(
+                    mountainId, name, address, altitude, difficulty,
+                    duration, imageUrls, latitude, longitude, likedByMe
             );
         }
     }
