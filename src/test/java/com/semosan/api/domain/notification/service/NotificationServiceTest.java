@@ -83,6 +83,28 @@ class NotificationServiceTest {
         assertThat(eventCaptor.getValue().command().body()).isEqualTo("푸름: 확인");
     }
 
+    // 앱이 꺼져 있으면 클라가 뱃지를 못 올리므로 발송 시점 안읽음 수가 그대로 실려야 한다.
+    @Test
+    void sendCarriesUnreadCountAsBadge() {
+        Notification notification = Notification.create(
+                1L, NotificationType.COMMUNITY_COMMENT, "title", "body", Map.of());
+        ReflectionTestUtils.setField(notification, "id", 10L);
+        when(userRepository.existsByIdAndDeletedFalse(1L)).thenReturn(true);
+        when(notificationRepository.save(any(Notification.class))).thenReturn(notification);
+        when(fcmTokenRepository.findAllByUserId(1L)).thenReturn(List.of(FcmToken.create(1L, "token", DeviceType.IOS)));
+        when(notificationRepository.countByUserIdAndReadFalse(1L)).thenReturn(7L);
+        ArgumentCaptor<NotificationCreatedEvent> eventCaptor = ArgumentCaptor.forClass(NotificationCreatedEvent.class);
+
+        notificationService.send(
+                1L,
+                NotificationType.COMMUNITY_COMMENT,
+                Map.of("actorName", "푸름", "commentPreview", "확인")
+        );
+
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().command().badge()).isEqualTo(7);
+    }
+
     @Test
     void sendUsesBodyOverrideWhenProvided() {
         Notification notification = Notification.create(

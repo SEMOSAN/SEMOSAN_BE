@@ -25,6 +25,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -57,7 +58,8 @@ class AsyncNotificationDispatcherTest {
                 "SEMOSAN",
                 "500m 돌파! 인증 사진을 남겨보세요!",
                 Map.of("distance", 500),
-                List.of("token-1")
+                List.of("token-1"),
+                7
         );
 
         dispatcher.dispatch(command);
@@ -68,7 +70,8 @@ class AsyncNotificationDispatcherTest {
                 eq("SEMOSAN"),
                 eq("500m 돌파! 인증 사진을 남겨보세요!"),
                 dataCaptor.capture(),
-                eq(false)
+                eq(false),
+                anyInt()
         );
         assertThat(dataCaptor.getValue())
                 .containsEntry("type", "TRACKING_PHOTO_MILESTONE")
@@ -91,7 +94,8 @@ class AsyncNotificationDispatcherTest {
                 "새 댓글이 달렸어요",
                 "푸름: 확인했어요",
                 Map.of("actorName", "푸름", "commentPreview", "확인했어요"),
-                List.of("token-1")
+                List.of("token-1"),
+                7
         );
 
         dispatcher.dispatch(command);
@@ -102,7 +106,8 @@ class AsyncNotificationDispatcherTest {
                 eq("새 댓글이 달렸어요"),
                 eq("푸름: 확인했어요"),
                 dataCaptor.capture(),
-                eq(false)
+                eq(false),
+                anyInt()
         );
         assertThat(dataCaptor.getValue())
                 .containsEntry("type", "COMMUNITY_COMMENT")
@@ -123,7 +128,8 @@ class AsyncNotificationDispatcherTest {
                 "SEMOSAN",
                 "정상에 도착했나요? 정상 인증하기!",
                 null,
-                List.of("token-1")
+                List.of("token-1"),
+                7
         );
 
         dispatcher.dispatch(command);
@@ -134,7 +140,8 @@ class AsyncNotificationDispatcherTest {
                 eq("SEMOSAN"),
                 eq("정상에 도착했나요? 정상 인증하기!"),
                 dataCaptor.capture(),
-                anyBoolean()
+                anyBoolean(),
+                anyInt()
         );
         assertThat(dataCaptor.getValue())
                 .containsEntry("type", "TRACKING_SUMMIT_REACHED")
@@ -159,13 +166,14 @@ class AsyncNotificationDispatcherTest {
                 "SEMOSAN",
                 "500m 돌파! 인증 사진을 남겨보세요!",
                 extras,
-                List.of("token-1")
+                List.of("token-1"),
+                7
         );
 
         dispatcher.dispatch(command);
 
         ArgumentCaptor<Map<String, String>> dataCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(fcmService).sendEachForMulticast(anyList(), anyString(), anyString(), dataCaptor.capture(), anyBoolean());
+        verify(fcmService).sendEachForMulticast(anyList(), anyString(), anyString(), dataCaptor.capture(), anyBoolean(), anyInt());
         assertThat(dataCaptor.getValue())
                 .containsEntry("distance", "500")
                 .doesNotContainKeys("ignored", null);
@@ -212,7 +220,7 @@ class AsyncNotificationDispatcherTest {
         when(failed.isSuccessful()).thenReturn(false);
         when(failed.getException()).thenReturn(firebaseMessagingException(MessagingErrorCode.INTERNAL));
         BatchResponse batch = batchResponse(List.of(failed));
-        when(fcmService.sendEachForMulticast(eq(List.of("broken-token")), anyString(), anyString(), anyMap(), anyBoolean()))
+        when(fcmService.sendEachForMulticast(eq(List.of("broken-token")), anyString(), anyString(), anyMap(), anyBoolean(), anyInt()))
                 .thenReturn(batch);
 
         dispatcher.dispatch(command);
@@ -227,7 +235,7 @@ class AsyncNotificationDispatcherTest {
         List<String> tokens = IntStream.range(0, 501)
                 .mapToObj(i -> "token-" + i)
                 .collect(Collectors.toCollection(ArrayList::new));
-        when(fcmService.sendEachForMulticast(anyList(), anyString(), anyString(), anyMap(), anyBoolean()))
+        when(fcmService.sendEachForMulticast(anyList(), anyString(), anyString(), anyMap(), anyBoolean(), anyInt()))
                 .thenThrow(new IllegalStateException("boom")) // 첫 청크는 배치 호출 자체가 실패
                 .thenAnswer(invocation -> { // 두 번째 청크는 정상 처리
                     List<String> chunk = invocation.getArgument(0);
@@ -236,7 +244,7 @@ class AsyncNotificationDispatcherTest {
 
         dispatcher.dispatch(command(tokens));
 
-        verify(fcmService, times(2)).sendEachForMulticast(anyList(), anyString(), anyString(), anyMap(), anyBoolean());
+        verify(fcmService, times(2)).sendEachForMulticast(anyList(), anyString(), anyString(), anyMap(), anyBoolean(), anyInt());
     }
 
     @Test
@@ -246,7 +254,7 @@ class AsyncNotificationDispatcherTest {
         List<String> tokens = IntStream.range(0, 501)
                 .mapToObj(i -> "token-" + i)
                 .collect(Collectors.toCollection(ArrayList::new));
-        when(fcmService.sendEachForMulticast(anyList(), anyString(), anyString(), anyMap(), anyBoolean()))
+        when(fcmService.sendEachForMulticast(anyList(), anyString(), anyString(), anyMap(), anyBoolean(), anyInt()))
                 .thenAnswer(invocation -> {
                     List<String> chunk = invocation.getArgument(0);
                     return batchResponse(chunk.stream().map(t -> successResponse()).toList());
@@ -255,7 +263,7 @@ class AsyncNotificationDispatcherTest {
         dispatcher.dispatch(command(tokens));
 
         ArgumentCaptor<List<String>> chunkCaptor = ArgumentCaptor.forClass(List.class);
-        verify(fcmService, times(2)).sendEachForMulticast(chunkCaptor.capture(), anyString(), anyString(), anyMap(), anyBoolean());
+        verify(fcmService, times(2)).sendEachForMulticast(chunkCaptor.capture(), anyString(), anyString(), anyMap(), anyBoolean(), anyInt());
         List<List<String>> chunks = chunkCaptor.getAllValues();
         assertThat(chunks.get(0)).hasSize(500);
         assertThat(chunks.get(1)).hasSize(1);
@@ -276,7 +284,8 @@ class AsyncNotificationDispatcherTest {
                 "새 댓글이 달렸어요",
                 "푸름: 확인했어요",
                 Map.of("actorName", "푸름", "commentPreview", "확인했어요"),
-                tokens
+                tokens,
+                7
         );
     }
 
@@ -286,7 +295,7 @@ class AsyncNotificationDispatcherTest {
             responses.add(successResponse());
         }
         BatchResponse batch = batchResponse(responses);
-        when(fcmService.sendEachForMulticast(anyList(), anyString(), anyString(), anyMap(), anyBoolean()))
+        when(fcmService.sendEachForMulticast(anyList(), anyString(), anyString(), anyMap(), anyBoolean(), anyInt()))
                 .thenReturn(batch);
     }
 
@@ -295,7 +304,7 @@ class AsyncNotificationDispatcherTest {
         when(failed.isSuccessful()).thenReturn(false);
         when(failed.getException()).thenReturn(firebaseMessagingException(errorCode));
         BatchResponse batch = batchResponse(List.of(failed));
-        when(fcmService.sendEachForMulticast(eq(List.of(token)), anyString(), anyString(), anyMap(), anyBoolean()))
+        when(fcmService.sendEachForMulticast(eq(List.of(token)), anyString(), anyString(), anyMap(), anyBoolean(), anyInt()))
                 .thenReturn(batch);
     }
 
@@ -317,14 +326,15 @@ class AsyncNotificationDispatcherTest {
                 "세모피드에 반응이 달렸어요",
                 "푸름님이 세모피드에 🔥 반응을 남겼어요",
                 Map.of("actorId", 2L, "actorName", "푸름", "semoFeedId", 42L, "emojiType", "🔥"),
-                List.of("token-1")
+                List.of("token-1"),
+                7
         );
 
         dispatcher.dispatch(command);
 
         ArgumentCaptor<Map<String, String>> dataCaptor = ArgumentCaptor.forClass(Map.class);
         verify(fcmService).sendEachForMulticast(
-                anyList(), anyString(), anyString(), dataCaptor.capture(), anyBoolean());
+                anyList(), anyString(), anyString(), dataCaptor.capture(), anyBoolean(), anyInt());
         assertThat(dataCaptor.getValue())
                 .containsEntry("targetType", "SEMOFEED")
                 .containsEntry("targetId", "42");
@@ -342,14 +352,15 @@ class AsyncNotificationDispatcherTest {
                 "SEMOSAN",
                 "500m 돌파! 인증 사진을 남겨보세요!",
                 Map.of("distance", 500, "milestoneIndex", 3),
-                List.of("token-1")
+                List.of("token-1"),
+                7
         );
 
         dispatcher.dispatch(command);
 
         ArgumentCaptor<Map<String, String>> dataCaptor = ArgumentCaptor.forClass(Map.class);
         verify(fcmService).sendEachForMulticast(
-                anyList(), anyString(), anyString(), dataCaptor.capture(), anyBoolean());
+                anyList(), anyString(), anyString(), dataCaptor.capture(), anyBoolean(), anyInt());
         assertThat(dataCaptor.getValue())
                 .containsEntry("targetType", "NONE")
                 .doesNotContainKey("targetId");

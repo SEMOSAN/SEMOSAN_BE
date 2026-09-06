@@ -1,5 +1,6 @@
 package com.semosan.api.common.fcm;
 
+import com.google.firebase.messaging.ApnsConfig;
 import com.google.firebase.messaging.BatchResponse;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
@@ -35,7 +36,8 @@ class FcmServiceTest {
                     "title",
                     "body",
                     Map.of("type", "COMMUNITY_COMMENT"),
-                    false
+                    false,
+                    3
             );
 
             assertThat(result).isEqualTo("message-id");
@@ -63,7 +65,8 @@ class FcmServiceTest {
                     "title",
                     "body",
                     Map.of("type", "TRACKING"),
-                    true
+                    true,
+                    3
             );
 
             assertThat(result).isEqualTo("message-id");
@@ -85,7 +88,7 @@ class FcmServiceTest {
         try (MockedStatic<FirebaseMessaging> mockedStatic = mockStatic(FirebaseMessaging.class)) {
             mockedStatic.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
 
-            String result = fcmService.sendMessage("token", "title", "body", null, false);
+            String result = fcmService.sendMessage("token", "title", "body", null, false, null);
 
             assertThat(result).isEqualTo("message-id");
             org.mockito.Mockito.verify(firebaseMessaging).send(captor.capture());
@@ -105,7 +108,7 @@ class FcmServiceTest {
         try (MockedStatic<FirebaseMessaging> mockedStatic = mockStatic(FirebaseMessaging.class)) {
             mockedStatic.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
 
-            String result = fcmService.sendMessage("token", "title", "body", Map.of(), true);
+            String result = fcmService.sendMessage("token", "title", "body", Map.of(), true, null);
 
             assertThat(result).isEqualTo("message-id");
             org.mockito.Mockito.verify(firebaseMessaging).send(captor.capture());
@@ -128,7 +131,7 @@ class FcmServiceTest {
             mockedStatic.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
 
             BatchResponse result = fcmService.sendEachForMulticast(
-                    List.of("token-1", "token-2"), "title", "body", Map.of("type", "COMMUNITY_COMMENT"), false);
+                    List.of("token-1", "token-2"), "title", "body", Map.of("type", "COMMUNITY_COMMENT"), false, 5);
 
             assertThat(result).isSameAs(batchResponse);
             org.mockito.Mockito.verify(firebaseMessaging).sendEachForMulticast(captor.capture());
@@ -154,7 +157,7 @@ class FcmServiceTest {
         try (MockedStatic<FirebaseMessaging> mockedStatic = mockStatic(FirebaseMessaging.class)) {
             mockedStatic.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
 
-            fcmService.sendEachForMulticast(List.of("token-1"), "title", "body", Map.of("type", "TRACKING"), true);
+            fcmService.sendEachForMulticast(List.of("token-1"), "title", "body", Map.of("type", "TRACKING"), true, 5);
 
             org.mockito.Mockito.verify(firebaseMessaging).sendEachForMulticast(captor.capture());
         }
@@ -163,6 +166,59 @@ class FcmServiceTest {
         assertThat(read(message, "getNotification")).isNull();
         assertThat(read(message, "getApnsConfig")).isNotNull();
         assertThat(read(message, "getData")).isEqualTo(Map.of("type", "TRACKING"));
+    }
+
+    @Test
+    void sendMessageSetsApnsBadgeAndAndroidConfigWhenBadgeGiven() throws Exception {
+        FirebaseMessaging firebaseMessaging = mock(FirebaseMessaging.class);
+        when(firebaseMessaging.send(org.mockito.ArgumentMatchers.any(Message.class))).thenReturn("message-id");
+        ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
+
+        try (MockedStatic<FirebaseMessaging> mockedStatic = mockStatic(FirebaseMessaging.class)) {
+            mockedStatic.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
+
+            fcmService.sendMessage("token", "title", "body", Map.of(), false, 7);
+
+            org.mockito.Mockito.verify(firebaseMessaging).send(captor.capture());
+        }
+
+        Message message = captor.getValue();
+        assertThat(apsFields(message)).containsEntry("badge", 7);
+        assertThat(read(message, "getAndroidConfig")).isNotNull();
+    }
+
+    @Test
+    void sendMessageOmitsBadgeWhenNull() throws Exception {
+        FirebaseMessaging firebaseMessaging = mock(FirebaseMessaging.class);
+        when(firebaseMessaging.send(org.mockito.ArgumentMatchers.any(Message.class))).thenReturn("message-id");
+        ArgumentCaptor<Message> captor = ArgumentCaptor.forClass(Message.class);
+
+        try (MockedStatic<FirebaseMessaging> mockedStatic = mockStatic(FirebaseMessaging.class)) {
+            mockedStatic.when(FirebaseMessaging::getInstance).thenReturn(firebaseMessaging);
+
+            fcmService.sendMessage("token", "title", "body", Map.of(), false, null);
+
+            org.mockito.Mockito.verify(firebaseMessaging).send(captor.capture());
+        }
+
+        Message message = captor.getValue();
+        assertThat(apsFields(message)).doesNotContainKey("badge");
+        assertThat(read(message, "getAndroidConfig")).isNull();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> apsFields(Message message) throws Exception {
+        Object apnsConfig = read(message, "getApnsConfig");
+        java.lang.reflect.Field payloadField = ApnsConfig.class.getDeclaredField("payload");
+        payloadField.setAccessible(true);
+        Map<String, Object> payload = (Map<String, Object>) payloadField.get(apnsConfig);
+        Object aps = payload.get("aps");
+        if (aps instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        Method getFields = aps.getClass().getDeclaredMethod("getFields");
+        getFields.setAccessible(true);
+        return (Map<String, Object>) getFields.invoke(aps);
     }
 
     private Object read(Message message, String methodName) throws Exception {
