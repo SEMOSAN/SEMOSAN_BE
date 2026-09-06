@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +47,7 @@ public class MountainService {
     private final MountainRepository mountainRepository;
     private final CourseRepository courseRepository;
     private final MountainDetailQueryRepository mountainDetailQueryRepository;
+    private final MountainLikeRepository mountainLikeRepository;
     private final HikingMemberRepository hikingMemberRepository;
     private final UserReader userReader;
     private final FitnessLevelCalculator fitnessLevelCalculator;
@@ -53,8 +55,7 @@ public class MountainService {
 
     public Page<MountainListResponse> getMountains(Long userId, Pageable pageable) {
         userReader.findActiveUserById(userId);
-         return mountainRepository.findByIsPublicTrue(pageable)
-                .map(MountainListResponse::from);
+        return toListResponse(userId, mountainRepository.findByIsPublicTrue(pageable));
     }
 
     public MountainMapListResponse getMountainsForMap(
@@ -163,14 +164,27 @@ public class MountainService {
         if (keyword == null || keyword.isBlank()) {
             throw new GeneralException(ErrorStatus.BAD_REQUEST);
         }
-        return mountainRepository.searchByKeyword(keyword.trim(), pageable)
-                .map(MountainListResponse::from);
+        return toListResponse(userId, mountainRepository.searchByKeyword(keyword.trim(), pageable));
     }
 
     public MountainDetailResponse getMountainDetail(Long userId, Long mountainId) {
         userReader.findActiveUserById(userId);
-        return mountainDetailQueryRepository.findDetailByMountainId(mountainId)
+        MountainDetailResponse detail = mountainDetailQueryRepository.findDetailByMountainId(mountainId)
                 .orElseThrow(() -> new GeneralException(ErrorStatus.MOUNTAIN_NOT_FOUND));
+        return detail.withLikedByMe(mountainLikeRepository.existsByUser_IdAndMountain_Id(userId, mountainId));
+    }
+
+    private Page<MountainListResponse> toListResponse(Long userId, Page<Mountain> mountains) {
+        Set<Long> likedIds = findLikedMountainIds(userId, mountains.getContent());
+        return mountains.map(mountain -> MountainListResponse.of(mountain, likedIds.contains(mountain.getId())));
+    }
+
+    private Set<Long> findLikedMountainIds(Long userId, List<Mountain> mountains) {
+        if (mountains.isEmpty()) {
+            return Set.of();
+        }
+        List<Long> mountainIds = mountains.stream().map(Mountain::getId).toList();
+        return Set.copyOf(mountainLikeRepository.findLikedMountainIds(userId, mountainIds));
     }
 
     private Mountain findMountainById(Long mountainId) {
