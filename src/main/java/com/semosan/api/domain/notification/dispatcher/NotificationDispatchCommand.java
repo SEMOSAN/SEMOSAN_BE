@@ -16,6 +16,8 @@ public record NotificationDispatchCommand(
         String title,
         String body,
         Map<String, Object> extras,
-        List<String> tokens
+        List<String> tokens,
+        /** 발송 시점 받는 사람의 안읽음 알림 수. 앱 아이콘 뱃지로 표시된다. */
+        int badge
 ) {
 }

@@ -14,7 +14,8 @@ public enum NotificationType {
             Set.of("actorName", "commentPreview"),
             false,
             NotificationTargetType.COMMUNITY_POST,
-            "postId"
+            "postId",
+            false
     ),
 
     COMMUNITY_REPLY(
@@ -23,7 +24,8 @@ public enum NotificationType {
             Set.of("actorName", "commentPreview"),
             false,
             NotificationTargetType.COMMUNITY_POST,
-            "postId"
+            "postId",
+            false
     ),
 
     COMMUNITY_POST_LIKE(
@@ -32,7 +34,8 @@ public enum NotificationType {
             Set.of("actorName"),
             false,
             NotificationTargetType.COMMUNITY_POST,
-            "postId"
+            "postId",
+            false
     ),
 
     SEMOFEED_EMOJI(
@@ -41,7 +44,8 @@ public enum NotificationType {
             Set.of("actorId", "actorName", "semoFeedId", "emojiType"),
             false,
             NotificationTargetType.SEMOFEED,
-            "semoFeedId"
+            "semoFeedId",
+            false
     ),
 
     /**
@@ -59,7 +63,8 @@ public enum NotificationType {
             Set.of("distance", "milestoneIndex"),
             false,
             NotificationTargetType.NONE,
-            null
+            null,
+            true
     ),
 
     /**
@@ -77,7 +82,8 @@ public enum NotificationType {
             Set.of("milestoneIndex", "milestoneDistanceM"),
             false,
             NotificationTargetType.NONE,
-            null
+            null,
+            true
     );
 
     private final String titleTemplate;
@@ -86,6 +92,7 @@ public enum NotificationType {
     private final boolean dataOnly;
     private final NotificationTargetType targetType;
     private final String targetKey;
+    private final boolean autoRead;
 
     NotificationType(
             String titleTemplate,
@@ -93,7 +100,8 @@ public enum NotificationType {
             Set<String> requiredKeys,
             boolean dataOnly,
             NotificationTargetType targetType,
-            String targetKey
+            String targetKey,
+            boolean autoRead
     ) {
         this.titleTemplate = titleTemplate;
         this.bodyTemplate = bodyTemplate;
@@ -101,6 +109,16 @@ public enum NotificationType {
         this.dataOnly = dataOnly;
         this.targetType = targetType;
         this.targetKey = targetKey;
+        this.autoRead = autoRead;
+    }
+
+    /**
+     * 저장 시점에 읽음 처리할지 여부.
+     * 트래킹 마일스톤처럼 실시간 유도용이라 알림함에 안읽음으로 남길 필요가 없는 타입은 true.
+     * 안읽음으로 두면 앱 아이콘 뱃지 숫자만 계속 불어난다.
+     */
+    public boolean isAutoRead() {
+        return autoRead;
     }
 
     public NotificationTargetType getTargetType() {

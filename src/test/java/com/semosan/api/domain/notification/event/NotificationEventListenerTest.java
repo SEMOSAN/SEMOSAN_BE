@@ -24,7 +24,8 @@ class NotificationEventListenerTest {
                 "title",
                 "body",
                 Map.of("actorName", "푸름", "commentPreview", "확인"),
-                List.of("token")
+                List.of("token"),
+                7
         );
 
         listener.onNotificationCreated(new NotificationCreatedEvent(command));
