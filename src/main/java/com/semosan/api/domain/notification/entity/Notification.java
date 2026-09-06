@@ -70,13 +70,17 @@ public class Notification extends BaseEntity {
             String body,
             Map<String, Object> extras
     ) {
+        // 트래킹 마일스톤처럼 그 순간에만 의미 있는 알림은 읽음 상태로 저장한다.
+        // 안 그러면 등산 1회에 4~6건이 안읽음으로 쌓여 앱 아이콘 뱃지를 계속 밀어올린다.
+        boolean read = type.isAutoRead();
         return Notification.builder()
                 .userId(userId)
                 .type(type)
                 .title(title)
                 .body(body)
                 .extras(extras)
-                .read(false)
+                .read(read)
+                .readAt(read ? LocalDateTime.now() : null)
                 .build();
     }
 
