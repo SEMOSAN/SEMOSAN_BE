@@ -47,20 +47,6 @@ public class CommunityNotificationService {
         }
     }
 
-    public void sendPostLikeNotification(Post post, User user) {
-        User receiver = post.getAuthor();
-        sendIfEligible(
-                receiver,
-                user,
-                NotificationType.COMMUNITY_POST_LIKE,
-                Map.of(
-                        "actorId", user.getId(),
-                        "actorName", user.displayName(),
-                        "postId", post.getId()
-                )
-        );
-    }
-
     private void sendReplyNotificationToReceiver(
             ReplyNotificationContext context,
             User receiver,
