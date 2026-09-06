@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.semosan.api.common.config.SecurityConfig;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.status.ErrorStatus;
+import com.semosan.api.common.util.ClientIpResolver;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,7 +15,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -69,7 +69,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         boolean isAuth = AUTH_PATHS.stream().anyMatch(matcher -> matcher.matches(request));
         RateLimitProperties.Rule rule = isAuth ? properties.auth() : properties.global();
         String scope = isAuth ? "auth" : "global";
-        String clientIp = clientIp(request);
+        String clientIp = ClientIpResolver.resolve(request);
 
         RateLimitResult result = rateLimiter.tryConsume(
                 scope, clientIp, rule.limit(), rule.windowSeconds());
@@ -81,15 +81,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
             return;
         }
         filterChain.doFilter(request, response);
-    }
-
-    // RequestContext.clientIp 와 동일한 X-Forwarded-For 우선 규칙
-    private String clientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (StringUtils.hasText(forwardedFor)) {
-            return forwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
     }
 
     private void sendTooManyRequests(HttpServletResponse response, long retryAfterSeconds) throws IOException {
