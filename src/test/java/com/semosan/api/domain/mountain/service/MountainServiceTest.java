@@ -109,16 +109,67 @@ class MountainServiceTest {
         assertThat(result.getContent().getFirst().likedByMe()).isFalse();
     }
 
+    // 빈 페이지에 대해 IN () 빈 컬렉션 쿼리가 나가지 않아야 한다.
+    @Test
+    void getMountainsSkipsLikeLookupWhenPageIsEmpty() {
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(mountainRepository.findByIsPublicTrue(pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        Page<MountainListResponse> result = mountainService.getMountains(1L, pageable);
+
+        assertThat(result.getContent()).isEmpty();
+        verifyNoInteractions(mountainLikeRepository);
+    }
+
     @Test
     void searchMountainsTrimsKeywordAndMapsResult() throws Exception {
         PageRequest pageable = PageRequest.of(0, 10);
         when(mountainRepository.searchByKeyword("관악", pageable))
                 .thenReturn(new PageImpl<>(List.of(mountain(1L, "관악산")), pageable, 1));
-        when(mountainLikeRepository.findLikedMountainIds(1L, List.of(1L))).thenReturn(List.of());
+        when(mountainLikeRepository.findLikedMountainIds(1L, List.of(1L))).thenReturn(List.of(1L));
 
         Page<MountainListResponse> result = mountainService.searchMountains(1L, "  관악  ", pageable);
 
         assertThat(result.getContent().getFirst().name()).isEqualTo("관악산");
+        assertThat(result.getContent().getFirst().likedByMe()).isTrue();
+    }
+
+    // 탈퇴/비활성 유저는 access token 이 남아 있어도 조회를 막아야 한다.
+    @Test
+    void getMountainsThrowsWhenUserIsNotActive() {
+        when(userReader.findActiveUserById(1L))
+                .thenThrow(new GeneralException(ErrorStatus.USER_NOT_FOUND));
+
+        assertThatThrownBy(() -> mountainService.getMountains(1L, PageRequest.of(0, 10)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+        verifyNoInteractions(mountainRepository);
+    }
+
+    @Test
+    void searchMountainsThrowsWhenUserIsNotActive() {
+        when(userReader.findActiveUserById(1L))
+                .thenThrow(new GeneralException(ErrorStatus.USER_NOT_FOUND));
+
+        assertThatThrownBy(() -> mountainService.searchMountains(1L, "관악", PageRequest.of(0, 10)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+        verifyNoInteractions(mountainRepository);
+    }
+
+    @Test
+    void getMountainDetailThrowsWhenUserIsNotActive() {
+        when(userReader.findActiveUserById(1L))
+                .thenThrow(new GeneralException(ErrorStatus.USER_NOT_FOUND));
+
+        assertThatThrownBy(() -> mountainService.getMountainDetail(1L, 1L))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.USER_NOT_FOUND);
+        verifyNoInteractions(mountainDetailQueryRepository);
     }
 
     @Test
