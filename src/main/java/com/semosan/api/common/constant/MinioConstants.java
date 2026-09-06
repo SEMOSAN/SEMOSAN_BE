@@ -19,12 +19,13 @@ public final class MinioConstants {
             "semofeed", "user", "tracking-photos"
     );
 
-    public static final Set<String> ALLOWED_EXTENSIONS = Set.of(".jpg", ".jpeg", ".png", ".webp");
-
+    /** 허용 확장자와 서명에 실을 Content-Type 의 단일 출처. 확장자 추가는 여기만 고치면 된다. */
     public static final Map<String, String> CONTENT_TYPE_MAP = Map.of(
             ".jpg", "image/jpeg",
             ".jpeg", "image/jpeg",
             ".png", "image/png",
             ".webp", "image/webp"
     );
+
+    public static final Set<String> ALLOWED_EXTENSIONS = CONTENT_TYPE_MAP.keySet();
 }
