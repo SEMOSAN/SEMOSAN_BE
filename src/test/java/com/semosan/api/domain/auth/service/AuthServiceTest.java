@@ -17,6 +17,7 @@ import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.semosan.api.domain.notification.service.FcmTokenService;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -43,13 +44,16 @@ class AuthServiceTest {
     private JwtService jwtService;
 
     @Mock
+    private FcmTokenService fcmTokenService;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userService, userReader, jwtService, eventPublisher);
+        authService = new AuthService(userService, userReader, jwtService, fcmTokenService, eventPublisher);
         ReflectionTestUtils.setField(authService, "testSecretKey", "secret");
     }
 
@@ -98,12 +102,35 @@ class AuthServiceTest {
         verify(jwtService).validateRefreshToken("refresh", 2L);
     }
 
+    // 재발급은 같은 세션의 연장이라 FCM 토큰을 지우면 푸시가 영구히 끊긴다.
+    @Test
+    void reissueDoesNotClearFcmTokens() {
+        Claims claims = mock(Claims.class);
+        User user = user(2L, OnboardingStatus.INCOMPLETE);
+        when(jwtService.validateRefreshTokenSignature("refresh")).thenReturn(claims);
+        when(claims.getSubject()).thenReturn("2");
+        when(userReader.findActiveUserById(2L)).thenReturn(user);
+        when(jwtService.issueTokens(user)).thenReturn(new TokenIssuance("new-access", "new-refresh"));
+
+        authService.reissue("refresh");
+
+        verify(fcmTokenService, never()).deleteAllByUserId(org.mockito.ArgumentMatchers.anyLong());
+    }
+
     @Test
     void logoutBlacklistsAccessTokenAndDeletesRefreshToken() {
         authService.logout(1L, "access");
 
         verify(jwtService).blacklistAccessToken("access");
         verify(jwtService).deleteRefreshToken(1L);
+    }
+
+    // 로그아웃한 기기로 푸시가 계속 가지 않도록 토큰을 정리해야 한다.
+    @Test
+    void logoutClearsFcmTokens() {
+        authService.logout(1L, "access");
+
+        verify(fcmTokenService).deleteAllByUserId(1L);
     }
 
     @Test

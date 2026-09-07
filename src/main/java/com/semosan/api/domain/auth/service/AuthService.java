@@ -8,6 +8,7 @@ import com.semosan.api.domain.auth.dto.request.LoginRequest;
 import com.semosan.api.domain.auth.dto.response.LoginResponse;
 import com.semosan.api.domain.auth.dto.response.ReissueResponse;
 import com.semosan.api.domain.auth.event.UserWithdrawCleanupRequestedEvent;
+import com.semosan.api.domain.notification.service.FcmTokenService;
 import com.semosan.api.domain.user.entity.User;
 import com.semosan.api.domain.user.enums.user.OAuthProvider;
 import com.semosan.api.domain.user.service.UserReader;
@@ -29,6 +30,7 @@ public class AuthService {
     private final UserService userService;
     private final UserReader userReader;
     private final JwtService jwtService;
+    private final FcmTokenService fcmTokenService;
     private final ApplicationEventPublisher eventPublisher;
 
     @Value("${test.secret-key}")
@@ -44,10 +46,12 @@ public class AuthService {
 
         User user = userService.findOrCreateTestUser(request.testUserId(), request.deviceType());
         TokenIssuance tokens = jwtService.issueTokens(user);
+        fcmTokenService.deleteAllByUserId(user.getId());
 
         return LoginResponse.of(user, tokens);
     }
 
+    // 재발급은 같은 세션의 연장이라 FCM 토큰을 정리하지 않는다. 여기서 지우면 푸시가 영구히 끊긴다.
     public ReissueResponse reissue(String refreshToken) {
         Claims claims = jwtService.validateRefreshTokenSignature(refreshToken);
         Long userId = Long.parseLong(claims.getSubject());
@@ -62,6 +66,7 @@ public class AuthService {
     public void logout(Long userId, String accessToken) {
         jwtService.blacklistAccessToken(accessToken);
         jwtService.deleteRefreshToken(userId);
+        fcmTokenService.deleteAllByUserId(userId);
     }
 
     @Transactional
