@@ -73,7 +73,8 @@ public class SecurityConfig {
      */
     public static final String[] ADMIN_ACCESSIBLE_URIS = {
             "/api/admin/**",
-            "/api/app-version"
+            "/api/app-version",
+            "/api/images/presigned-url"
     };
 
     @Bean
