@@ -1,5 +1,6 @@
 package com.semosan.api.domain.mountain.service;
 
+import com.semosan.api.common.util.GeoDistance;
 import com.semosan.api.domain.mountain.entity.Course;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.LineString;
@@ -17,9 +18,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class CourseSummitDistanceCalculator {
-
-    /** redis/tracking-stats-update.lua 가 distanceTotal 을 누적할 때 쓰는 값과 동일해야 두 거리가 비교 가능하다. */
-    private static final double EARTH_RADIUS_METERS = 6_371_000.0;
 
     /**
      * @return 정상까지 누적 거리(m). 계산 불가하면 null — 정상 좌표 없음 / polyline 없음 /
@@ -48,7 +46,8 @@ public class CourseSummitDistanceCalculator {
 
         double cumulative = 0.0;
         for (int i = 1; i <= nearestIdx; i++) {
-            cumulative += haversineMeters(coords[i - 1].y, coords[i - 1].x, coords[i].y, coords[i].x);
+            cumulative += GeoDistance.haversineMeters(
+                    coords[i - 1].y, coords[i - 1].x, coords[i].y, coords[i].x);
         }
         return cumulative;
     }
@@ -58,7 +57,7 @@ public class CourseSummitDistanceCalculator {
         int nearestIdx = 0;
         double nearestDistance = Double.MAX_VALUE;
         for (int i = 0; i < coords.length; i++) {
-            double distance = haversineMeters(coords[i].y, coords[i].x, summitLat, summitLng);
+            double distance = GeoDistance.haversineMeters(coords[i].y, coords[i].x, summitLat, summitLng);
             if (distance < nearestDistance) {
                 nearestDistance = distance;
                 nearestIdx = i;
@@ -67,15 +66,4 @@ public class CourseSummitDistanceCalculator {
         return nearestIdx;
     }
 
-    /** redis/tracking-stats-update.lua 의 누적 공식과 동일 — 두 거리가 같은 기준이어야 마일스톤이 맞는다. */
-    private static double haversineMeters(double lat1, double lng1, double lat2, double lng2) {
-        double rad = Math.PI / 180;
-        double dLat = (lat2 - lat1) * rad;
-        double dLng = (lng2 - lng1) * rad;
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                + Math.cos(lat1 * rad) * Math.cos(lat2 * rad)
-                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return EARTH_RADIUS_METERS * c;
-    }
 }

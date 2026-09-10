@@ -169,7 +169,9 @@ public enum SuccessStatus implements BaseStatus {
     ADMIN_SEMOFEED_LIST_SUCCESS(HttpStatus.OK, "ADM_200_19", "관리자 세모피드 목록 조회에 성공했습니다."),
     ADMIN_SEMOFEED_VISIBILITY_UPDATE_SUCCESS(HttpStatus.OK, "ADM_200_20", "세모피드 공개 상태 변경에 성공했습니다."),
     ADMIN_SEMOFEED_DELETE_SUCCESS(HttpStatus.OK, "ADM_200_21", "세모피드 강제 삭제에 성공했습니다."),
-    ADMIN_SEMOFEED_CREATE_SUCCESS(HttpStatus.CREATED, "ADM_201_4", "관리자 세모피드 업로드에 성공했습니다.");
+    ADMIN_SEMOFEED_CREATE_SUCCESS(HttpStatus.CREATED, "ADM_201_4", "관리자 세모피드 업로드에 성공했습니다."),
+    ADMIN_COURSE_DELETE_SUCCESS(HttpStatus.OK, "ADM_200_22", "코스 삭제에 성공했습니다."),
+    ADMIN_COURSE_CREATE_SUCCESS(HttpStatus.CREATED, "ADM_201_5", "코스 생성에 성공했습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

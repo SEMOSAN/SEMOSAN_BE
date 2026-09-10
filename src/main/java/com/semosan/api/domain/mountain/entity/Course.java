@@ -80,6 +80,35 @@ public class Course extends BaseEntity {
     @Column(name = "summit_ele")
     private Double summitEle;
 
+    /**
+     * 관리자가 지도에서 좌표를 찍어 만든 코스.
+     *
+     * 시드 코스와 달리 고도 정보가 없다 — 지도 클릭으로는 위경도만 얻기 때문이다.
+     * 그래서 altitudes/ascent/descent/maxAltitude/waypoints 는 모두 null 로 둔다.
+     * altitudes 가 null 이면 CourseSlopeSegmentCalculator 가 빈 세그먼트를 돌려주므로
+     * 경사도 그래프만 비고 코스 상세 자체는 정상 동작한다.
+     *
+     * 정상 좌표는 생성 후 {@link #updateSummit} 로 따로 채운다. 정상이 없으면
+     * 사진 마일스톤이 정상 기준이 아니라 distance 4등분으로 fallback 된다.
+     *
+     * @param polyline SRID 4326 으로 만든 LineString. SRID 를 빠뜨리면 geography 컬럼과
+     *                 어긋나 이후 공간 쿼리가 깨진다.
+     */
+    public static Course create(Mountain mountain, String name, Difficulty difficulty,
+                                Double distance, Integer duration, LineString polyline,
+                                String startName, String endName) {
+        return Course.builder()
+                .mountain(mountain)
+                .name(name)
+                .difficulty(difficulty)
+                .distance(distance)
+                .duration(duration)
+                .polyline(polyline)
+                .startName(startName)
+                .endName(endName)
+                .build();
+    }
+
     /** 선택한 waypoint 를 그대로 스냅샷 — 고도 없는 waypoint 면 summitEle 도 null 로 덮어쓴다. */
     public void updateSummit(Double summitLat, Double summitLng, Double summitEle) {
         this.summitLat = summitLat;
