@@ -14,6 +14,9 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
 
     List<Course> findByMountainId(Long mountainId);
 
+    // 트래킹 화면의 첫 코스 기본 선택을 산 상세 조회와 같은 ID순으로 유지한다.
+    List<Course> findByMountainIdOrderByIdAsc(Long mountainId);
+
     @Query("""
             SELECT c
             FROM Course c

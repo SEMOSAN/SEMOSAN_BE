@@ -7,6 +7,7 @@ import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.enums.Difficulty;
 import com.semosan.api.domain.mountain.repository.CourseRepository;
 import com.semosan.api.domain.mountain.repository.MountainRepository;
+import com.semosan.api.domain.mountain.repository.projection.NearbyMountainProjection;
 import com.semosan.api.domain.mountain.service.CourseSummitDistanceCalculator;
 import com.semosan.api.domain.tracking.dto.response.LiveActivityCourseResponse;
 import com.semosan.api.domain.tracking.dto.response.NearbyMountainResponse;
@@ -29,6 +30,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,7 +56,9 @@ class TrackingServiceTest {
         Mountain mountain = mountain(1L);
         Course course = course(10L, mountain);
         when(mountainRepository.findNearestByLatLng(37.5, 127.0)).thenReturn(Optional.of(mountain));
-        when(courseRepository.findByMountainId(1L)).thenReturn(List.of(course));
+        when(courseRepository.findByMountainIdOrderByIdAsc(1L)).thenReturn(List.of(course));
+        when(mountainRepository.findNearbyByLatLng(37.5, 127.0, 2_000.0))
+                .thenReturn(List.of(nearbyMountain(1L, "관악산"), nearbyMountain(2L, "삼성산")));
 
         NearbyMountainResponse response = trackingService.getNearbyMountain(2L, 37.5, 127.0);
 
@@ -63,6 +67,39 @@ class TrackingServiceTest {
         assertThat(response.mountain().name()).isEqualTo("관악산");
         assertThat(response.courses()).hasSize(1);
         assertThat(response.courses().getFirst().courseId()).isEqualTo(10L);
+        assertThat(response.nearbyMountains()).containsExactly(
+                new NearbyMountainResponse.NearbyMountainOption(1L, "관악산"),
+                new NearbyMountainResponse.NearbyMountainOption(2L, "삼성산")
+        );
+        verify(courseRepository).findByMountainIdOrderByIdAsc(1L);
+    }
+
+    @Test
+    void getNearbyMountainKeepsDefaultMountainAndCoursesWhenNoneWithinRadius() {
+        Mountain mountain = mountain(1L);
+        when(mountainRepository.findNearestByLatLng(37.4, 126.9)).thenReturn(Optional.of(mountain));
+        when(courseRepository.findByMountainIdOrderByIdAsc(1L)).thenReturn(List.of(course(10L, mountain)));
+        when(mountainRepository.findNearbyByLatLng(37.4, 126.9, 2_000.0)).thenReturn(List.of());
+
+        NearbyMountainResponse response = trackingService.getNearbyMountain(2L, 37.4, 126.9);
+
+        assertThat(response.mountain().mountainId()).isEqualTo(1L);
+        assertThat(response.courses()).extracting(NearbyMountainResponse.CourseInfo::courseId)
+                .containsExactly(10L);
+        assertThat(response.nearbyMountains()).isEmpty();
+    }
+
+    @Test
+    void getNearbyMountainSupportsFreeRecordingWhenMountainHasNoCourses() {
+        when(mountainRepository.findNearestByLatLng(37.5, 127.0)).thenReturn(Optional.of(mountain(1L)));
+        when(courseRepository.findByMountainIdOrderByIdAsc(1L)).thenReturn(List.of());
+        when(mountainRepository.findNearbyByLatLng(37.5, 127.0, 2_000.0))
+                .thenReturn(List.of(nearbyMountain(1L, "관악산")));
+
+        NearbyMountainResponse response = trackingService.getNearbyMountain(2L, 37.5, 127.0);
+
+        assertThat(response.courses()).isEmpty();
+        assertThat(response.nearbyMountains()).hasSize(1);
     }
 
     @Test
@@ -73,6 +110,7 @@ class TrackingServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.MOUNTAIN_NOT_FOUND);
+        verifyNoInteractions(courseRepository);
     }
 
     @Test
@@ -121,6 +159,20 @@ class TrackingServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.TRACKING_COURSE_POLYLINE_REQUIRED);
+    }
+
+    private NearbyMountainProjection nearbyMountain(Long id, String name) {
+        return new NearbyMountainProjection() {
+            @Override
+            public Long getMountainId() {
+                return id;
+            }
+
+            @Override
+            public String getName() {
+                return name;
+            }
+        };
     }
 
     private Mountain mountain(Long id) {

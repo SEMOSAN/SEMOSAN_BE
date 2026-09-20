@@ -22,7 +22,12 @@ public interface TrackingControllerDocs {
     @Operation(
             summary = "현재 위치 기준 가까운 산과 코스 조회 (트래킹 진입 화면)",
             description = "사용자의 디바이스 GPS 좌표(lat, lng)를 기반으로 가장 가까운 산 1개와 "
-                    + "해당 산에 등록된 코스 목록을 반환합니다. 거리 임계값은 두지 않습니다."
+                    + "해당 산의 코스 목록(ID 오름차순), 산 선택용 nearbyMountains(mountainId, name)를 반환합니다. "
+                    + "기본 mountain은 거리 제한 없이 선택합니다. nearbyMountains는 사용자 좌표에서 "
+                    + "산 대표 좌표까지 구면 거리 2,000m 이내인 공개 산만 포함하며, 가까운 순·동일 거리면 산 ID순입니다. "
+                    + "기본 산도 반경 안이면 포함하고, 코스가 없는 산도 포함합니다. "
+                    + "반경 내 산이 없으면 nearbyMountains는 빈 배열이며 기존 mountain과 courses는 유지합니다. "
+                    + "산 변경 시 GET /api/mountains/{mountainId}, 코스 선택 시 GET /api/courses/{courseId}를 호출합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

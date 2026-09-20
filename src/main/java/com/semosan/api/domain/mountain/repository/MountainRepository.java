@@ -2,6 +2,7 @@ package com.semosan.api.domain.mountain.repository;
 
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.repository.projection.MountainMapProjection;
+import com.semosan.api.domain.mountain.repository.projection.NearbyMountainProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,12 +31,39 @@ public interface MountainRepository extends JpaRepository<Mountain, Long> {
                     SELECT * FROM mountains
                     WHERE location IS NOT NULL
                       AND is_public = true
-                    ORDER BY location <-> ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography
+                    ORDER BY location <-> ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, id ASC
                     LIMIT 1
                     """,
             nativeQuery = true
     )
     Optional<Mountain> findNearestByLatLng(@Param("lat") Double lat, @Param("lng") Double lng);
+
+    /**
+     * 사용자 좌표에서 반경(m) 이내의 공개 산을 거리순, 같은 거리면 ID순으로 반환한다.
+     * ST_DWithin의 구면 거리(false)를 사용해 기존 최근접 조회(<->)와 기준을 맞춘다.
+     * location의 GiST 인덱스로 범위를 제한하고, 드롭다운에 필요한 ID와 이름만 조회한다.
+     */
+    @Query(
+            value = """
+                    SELECT id AS mountainId, name AS name
+                    FROM mountains
+                    WHERE location IS NOT NULL
+                      AND is_public = true
+                      AND ST_DWithin(
+                          location,
+                          ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+                          :radiusMeters,
+                          false
+                      )
+                    ORDER BY location <-> ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, id ASC
+                    """,
+            nativeQuery = true
+    )
+    List<NearbyMountainProjection> findNearbyByLatLng(
+            @Param("lat") Double lat,
+            @Param("lng") Double lng,
+            @Param("radiusMeters") double radiusMeters
+    );
 
     /**
      * 주어진 난이도 집합에 속하는 산을 사용자 위치에서 가까운 순으로 페이징 조회한다.

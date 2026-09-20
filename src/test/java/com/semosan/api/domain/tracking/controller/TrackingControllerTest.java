@@ -29,7 +29,7 @@ class TrackingControllerTest {
 
     @Test
     void getNearbyMountainReturnsSuccessResponse() {
-        NearbyMountainResponse nearby = new NearbyMountainResponse(null, List.of());
+        NearbyMountainResponse nearby = new NearbyMountainResponse(null, List.of(), List.of());
         when(trackingService.getNearbyMountain(1L, 37.5, 127.0)).thenReturn(nearby);
 
         ResponseEntity<ApiResponse<NearbyMountainResponse>> response =
