@@ -26,7 +26,7 @@ public class TrackingController implements TrackingControllerDocs {
 
     /**
      * 트래킹 진입 화면에서 호출.
-     * 프론트가 디바이스 GPS 좌표(lat, lng)를 보내면, 가장 가까운 산과 그 산의 코스 목록을 반환한다.
+     * 디바이스 GPS 좌표(lat, lng) 기준 기본 산·코스와 2km 이내 산 선택 목록을 반환한다.
      * 인증 필수 — 트래킹은 로그인 사용자만 시작 가능 (userId 는 Spring Security 인증 통과 강제용).
      * 사용자별 개인화는 추후 도입 시 service 로 userId 를 넘겨 활용.
      */

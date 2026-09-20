@@ -3,20 +3,34 @@ package com.semosan.api.domain.tracking.dto.response;
 import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.mountain.entity.Mountain;
 import com.semosan.api.domain.mountain.enums.Difficulty;
+import com.semosan.api.domain.mountain.repository.projection.NearbyMountainProjection;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
 public record NearbyMountainResponse(
         NearbyMountainInfo mountain,
-        List<CourseInfo> courses
+        List<CourseInfo> courses,
+        @Schema(description = "사용자 위치에서 2km 이내 공개 산 목록. 거리순, 동일 거리면 산 ID순. 없으면 빈 배열.")
+        List<NearbyMountainOption> nearbyMountains
 ) {
 
-    public static NearbyMountainResponse of(Mountain mountain, List<Course> courses) {
+    public static NearbyMountainResponse of(
+            Mountain mountain,
+            List<Course> courses,
+            List<NearbyMountainProjection> nearbyMountains
+    ) {
         return new NearbyMountainResponse(
                 NearbyMountainInfo.from(mountain),
-                courses.stream().map(CourseInfo::from).toList()
+                courses.stream().map(CourseInfo::from).toList(),
+                nearbyMountains.stream().map(NearbyMountainOption::from).toList()
         );
+    }
+
+    public record NearbyMountainOption(Long mountainId, String name) {
+        public static NearbyMountainOption from(NearbyMountainProjection mountain) {
+            return new NearbyMountainOption(mountain.getMountainId(), mountain.getName());
+        }
     }
 
     public record NearbyMountainInfo(
