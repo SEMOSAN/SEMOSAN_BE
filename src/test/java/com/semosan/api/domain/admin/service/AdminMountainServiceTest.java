@@ -280,6 +280,8 @@ class AdminMountainServiceTest {
         ReflectionTestUtils.setField(bus, "id", 40L);
         Transportation parking = Transportation.create(mountain, TransportationType.PARKING, "입구", "주차장", "주차 설명");
         ReflectionTestUtils.setField(parking, "id", 41L);
+        Transportation train = Transportation.create(mountain, TransportationType.TRAIN, "하행", "KTX", "기차 설명");
+        ReflectionTestUtils.setField(train, "id", 42L);
 
         RestaurantSection section = RestaurantSection.create(mountain, "근처 맛집");
         ReflectionTestUtils.setField(section, "id", 20L);
@@ -301,7 +303,7 @@ class AdminMountainServiceTest {
 
         when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
         when(courseRepository.findByMountainId(1L)).thenReturn(List.of(course));
-        when(transportationRepository.findByMountainId(1L)).thenReturn(List.of(bus, parking));
+        when(transportationRepository.findByMountainId(1L)).thenReturn(List.of(bus, parking, train));
         when(amenityRepository.findByMountainId(1L)).thenReturn(List.of());
         when(restaurantSectionRepository.findByMountainIdWithRestaurants(1L)).thenReturn(List.of(section));
         when(reviewService.getReviewsByMountainId(1L)).thenReturn(List.of(review));
@@ -314,6 +316,7 @@ class AdminMountainServiceTest {
         assertThat(courseInfo.endName()).isEqualTo("정상");
 
         assertThat(response.transportations().publicTransport().get("상행").getFirst().transportationId()).isEqualTo(40L);
+        assertThat(response.transportations().publicTransport().get("하행").getFirst().transportationId()).isEqualTo(42L);
         assertThat(response.transportations().parking().get("입구").getFirst().transportationId()).isEqualTo(41L);
 
         MountainDetailResponse.RestaurantSectionInfo sectionInfo = response.restaurantSections().getFirst();
