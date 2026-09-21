@@ -96,7 +96,9 @@ public record MountainDetailResponse(
     ) {
         public static TransportationGroup from(List<Transportation> transportations) {
             Map<String, List<TransportationItem>> publicTransport = transportations.stream()
-                    .filter(t -> t.getType() == TransportationType.SUBWAY || t.getType() == TransportationType.BUS)
+                    .filter(t -> t.getType() == TransportationType.SUBWAY
+                            || t.getType() == TransportationType.BUS
+                            || t.getType() == TransportationType.TRAIN)
                     .collect(Collectors.groupingBy(
                             Transportation::getDirection,
                             Collectors.mapping(TransportationItem::from, Collectors.toList())
