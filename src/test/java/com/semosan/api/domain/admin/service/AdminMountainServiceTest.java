@@ -436,6 +436,25 @@ class AdminMountainServiceTest {
     }
 
     @Test
+    void createTransportationSupportsTrainType() {
+        Mountain mountain = mountain(1L);
+        AdminTransportationRequest request =
+                new AdminTransportationRequest(TransportationType.TRAIN, "하행", "KTX", "서울역 방면");
+        when(mountainRepository.findById(1L)).thenReturn(Optional.of(mountain));
+        when(transportationRepository.save(any(Transportation.class))).thenAnswer(invocation -> {
+            Transportation transportation = invocation.getArgument(0);
+            ReflectionTestUtils.setField(transportation, "id", 31L);
+            return transportation;
+        });
+
+        adminMountainService.createTransportation(1L, request);
+
+        ArgumentCaptor<Transportation> captor = ArgumentCaptor.forClass(Transportation.class);
+        verify(transportationRepository).save(captor.capture());
+        assertThat(captor.getValue().getType()).isEqualTo(TransportationType.TRAIN);
+    }
+
+    @Test
     void updateTransportationChangesFields() {
         Transportation transportation = Transportation.create(mountain(1L),
                 TransportationType.BUS, "상행", "기존", "설명");
