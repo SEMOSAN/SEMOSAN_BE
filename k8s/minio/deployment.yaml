@@ -15,7 +15,10 @@ spec:
     spec:
       containers:
         - name: minio
-          image: minio/minio:latest
+          image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+          # 고정 태그이므로 노드에 받아둔 이미지를 재사용한다.
+          # Always 로 두면 레지스트리 장애 시 파드가 재기동되지 못한다.
+          imagePullPolicy: IfNotPresent
           args:
             - server
             - /data
