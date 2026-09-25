@@ -67,3 +67,6 @@ scripts/
 docker-compose.local.yml
 work/
 outputs/
+
+# Claude 작업 진행 기록 (개인용)
+.claude/progress/
