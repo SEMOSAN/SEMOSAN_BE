@@ -32,7 +32,7 @@ com.semosan.api
 ## 인증
 - Stateless JWT. `JwtFilter`가 `Authorization: Bearer <token>`을 검증한다.
 - WebSocket(`/ws/tracking/**`)은 HTTP 필터에서 permitAll이고, `StompAuthChannelInterceptor`가 CONNECT 프레임에서 JWT를 검증한다.
-- 퍼블릭: Swagger, OAuth 로그인, 토큰 재발급, `/api/auth/test/login`.
+- 퍼블릭: Swagger, OAuth 로그인, 토큰 재발급, `/api/auth/test/login`, `/api/admin/login`, `GET /api/app-version`. 최신 목록은 `SecurityConfig.securityFilterChain()`이 기준이다.
 
 ## 인프라
 
