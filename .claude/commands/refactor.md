@@ -22,7 +22,7 @@
 | 중복 로직 | 여러 서비스에 복제된 검증, 조회+예외, DTO 조립 코드 |
 | 계층 위반 | 컨트롤러가 repository 직접 사용, 서비스가 다른 도메인 repository를 과도하게 직접 사용 |
 | 프록시 무효화 | 같은 클래스 안에서 호출되는 `@Transactional`/`@Async` |
-| 컨벤션 위반 | `ApiResponse` 미사용, Swagger 어노테이션이 컨트롤러에 있음, 문자열 예외 대신 `ErrorStatus` 미사용 |
+| 컨벤션 위반 | `ApiResponse` 미사용, Swagger 어노테이션이 컨트롤러에 있음, `ErrorStatus` 미사용, 서비스 트랜잭션 표준(클래스 readOnly) 미적용, enum이 `enums/` 밖에 있음 |
 | 복잡도 | 긴 메서드, 깊은 중첩, 불필요한 추상화(구현이 하나뿐인 인터페이스 등) |
 | 죽은 코드 | 호출처 없는 public 메서드, 쓰이지 않는 DTO, 필드, enum 값 |
 
