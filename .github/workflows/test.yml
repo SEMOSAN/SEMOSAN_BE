@@ -37,14 +37,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      minio:
-        image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
-        env:
-          MINIO_ROOT_USER: minio-admin
-          MINIO_ROOT_PASSWORD: minio-secret-password
-        ports:
-          - 9000:9000
-
     steps:
       - uses: actions/checkout@v4
 
