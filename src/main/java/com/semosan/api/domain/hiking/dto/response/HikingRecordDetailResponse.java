@@ -3,6 +3,7 @@ package com.semosan.api.domain.hiking.dto.response;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
+import com.semosan.api.domain.mountain.entity.Course;
 import com.semosan.api.domain.tracking.entity.TrackingPhoto;
 
 import java.time.LocalDateTime;
@@ -19,7 +20,7 @@ public record HikingRecordDetailResponse(
         Long hikingRecordId,
         MountainSummary mountain,
         CourseSummary course,
-        /** 자유기록에만 값이 있다. 코스 기록은 course.name 으로 표시한다. */
+        /** 화면에 표시할 기록 이름. 사용자가 이름을 정하지 않은 코스 기록은 course.name 으로 채워진다. */
         String recordName,
         Double distanceMeters,
         Integer durationSeconds,
@@ -70,18 +71,19 @@ public record HikingRecordDetailResponse(
             String altitudes,
             List<TrackingPhoto> photos
     ) {
+        Course course = record.getCourse();
         return new HikingRecordDetailResponse(
                 record.getId(),
                 MountainSummary.of(record.getMountain().getId(), record.getMountain().getName()),
-                record.getCourse() == null
+                course == null
                         ? null
                         : CourseSummary.of(
-                                record.getCourse().getId(),
-                                record.getCourse().getName(),
-                                record.getCourse().getStartName(),
-                                record.getCourse().getEndName()
+                                course.getId(),
+                                course.getName(),
+                                course.getStartName(),
+                                course.getEndName()
                         ),
-                record.getName(),
+                resolveRecordName(record.getName(), course),
                 record.getDistance(),
                 record.getDuration(),
                 record.getMaxAltitude(),
@@ -95,5 +97,13 @@ public record HikingRecordDetailResponse(
                 altitudes,
                 photos.stream().map(PhotoMarker::from).toList()
         );
+    }
+
+    // 사용자가 이름을 정하지 않은 코스 기록은 코스명으로 대체합니다.
+    private static String resolveRecordName(String recordName, Course course) {
+        if (recordName != null) {
+            return recordName;
+        }
+        return course == null ? null : course.getName();
     }
 }

@@ -3,11 +3,13 @@ package com.semosan.api.domain.hiking.service;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.hiking.dto.request.CreateCourseDifficultyFeedbackRequest;
+import com.semosan.api.domain.hiking.dto.request.UpdateHikingRecordNameRequest;
 import com.semosan.api.domain.hiking.dto.response.CourseDifficultyFeedbackResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingMountainRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
 import com.semosan.api.domain.hiking.dto.response.HikingRecordDetailResponse;
+import com.semosan.api.domain.hiking.dto.response.UpdateHikingRecordNameResponse;
 import com.semosan.api.domain.hiking.entity.CourseDifficultyFeedback;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
 import com.semosan.api.domain.hiking.repository.CourseDifficultyFeedbackRepository;
@@ -104,6 +106,25 @@ public class HikingRecordService {
         }
 
         return HikingRecordDetailResponse.of(record, track, altitudes, photos);
+    }
+
+    // 등산 기록의 이름을 수정합니다. 코스 기록도 사용자가 정한 이름으로 덮어쓸 수 있습니다.
+    @Transactional
+    public UpdateHikingRecordNameResponse updateHikingRecordName(
+            Long userId,
+            Long hikingRecordId,
+            UpdateHikingRecordNameRequest request
+    ) {
+        User user = userReader.findActiveUserById(userId);
+        HikingRecord record = hikingRecordRepository.findById(hikingRecordId)
+                .orElseThrow(() -> new GeneralException(ErrorStatus.HIKING_RECORD_NOT_FOUND));
+
+        if (!hikingMemberRepository.existsByHikingRecordAndUser(record, user)) {
+            throw new GeneralException(ErrorStatus.HIKING_RECORD_FORBIDDEN);
+        }
+
+        record.rename(request.name().trim());
+        return UpdateHikingRecordNameResponse.from(record);
     }
 
     // 유저의 등산 기록 요약 정보를 조회합니다.

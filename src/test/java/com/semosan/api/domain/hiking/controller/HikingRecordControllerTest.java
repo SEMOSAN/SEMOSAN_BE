@@ -4,11 +4,13 @@ import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.common.status.SuccessStatus;
 import com.semosan.api.domain.hiking.dto.request.CreateCourseDifficultyFeedbackRequest;
+import com.semosan.api.domain.hiking.dto.request.UpdateHikingRecordNameRequest;
 import com.semosan.api.domain.hiking.dto.response.CourseDifficultyFeedbackResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingMountainRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
 import com.semosan.api.domain.hiking.dto.response.HikingRecordDetailResponse;
+import com.semosan.api.domain.hiking.dto.response.UpdateHikingRecordNameResponse;
 import com.semosan.api.domain.hiking.enums.DifficultyFeedbackType;
 import com.semosan.api.domain.hiking.service.HikingRecordService;
 import com.semosan.api.domain.mountain.enums.Difficulty;
@@ -77,6 +79,21 @@ class HikingRecordControllerTest {
                 .containsExactly(record);
         assertThat(hikingRecordController.getUserHikingRecordSummary(1L).getBody().getData()).isSameAs(summary);
         assertThat(hikingRecordController.getHikingRecordDetail(1L, 100L).getBody().getData()).isSameAs(detail);
+    }
+
+    @Test
+    void updateHikingRecordNameReturnsSuccessResponse() {
+        UpdateHikingRecordNameRequest request = new UpdateHikingRecordNameRequest("단풍 구경");
+        UpdateHikingRecordNameResponse updated = new UpdateHikingRecordNameResponse(100L, "단풍 구경");
+        when(hikingRecordService.updateHikingRecordName(1L, 100L, request)).thenReturn(updated);
+
+        ResponseEntity<ApiResponse<UpdateHikingRecordNameResponse>> response =
+                hikingRecordController.updateHikingRecordName(1L, 100L, request);
+
+        assertThat(response.getStatusCode())
+                .isEqualTo(SuccessStatus.UPDATE_HIKING_RECORD_NAME_SUCCESS.getHttpStatus());
+        assertThat(response.getBody().getData()).isSameAs(updated);
+        verify(hikingRecordService).updateHikingRecordName(1L, 100L, request);
     }
 
     @Test

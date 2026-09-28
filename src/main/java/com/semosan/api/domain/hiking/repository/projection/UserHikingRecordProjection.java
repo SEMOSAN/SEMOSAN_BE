@@ -16,7 +16,7 @@ public interface UserHikingRecordProjection {
 
     String getCourseName();
 
-    /** 자유기록에만 값이 있다. 화면 표시는 courseName ?? recordName. */
+    /** 사용자가 정한 이름. 이름을 정하지 않은 코스 기록은 null 이고, 응답 조립 시 courseName 으로 대체된다. */
     String getRecordName();
 
     String getPhotoReportImageUrl();

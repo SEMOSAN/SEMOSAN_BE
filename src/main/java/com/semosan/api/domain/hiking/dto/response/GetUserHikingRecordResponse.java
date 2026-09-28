@@ -13,7 +13,7 @@ public record GetUserHikingRecordResponse(
         String mountainName,
         Long courseId,
         String courseName,
-        /** 자유기록에만 값이 있다. 코스 기록은 courseName 으로 표시한다. */
+        /** 화면에 표시할 기록 이름. 사용자가 이름을 정하지 않은 코스 기록은 코스명으로 채워진다. */
         String recordName,
         List<String> imageUrls,
         Double distance,
@@ -31,12 +31,17 @@ public record GetUserHikingRecordResponse(
                 projection.getMountainName(),
                 projection.getCourseId(),
                 projection.getCourseName(),
-                projection.getRecordName(),
+                resolveRecordName(projection.getRecordName(), projection.getCourseName()),
                 buildImageUrls(projection.getPhotoReportImageUrl(), projection.getCliveImageUrl()),
                 projection.getDistance(),
                 projection.getDuration(),
                 projection.getHikedAt().toLocalDate()
         );
+    }
+
+    // 사용자가 이름을 정하지 않은 코스 기록은 코스명으로 대체합니다.
+    private static String resolveRecordName(String recordName, String courseName) {
+        return recordName != null ? recordName : courseName;
     }
 
     // 사진 URL 필드 중 존재하는 값만 응답 순서에 맞춰 모읍니다.

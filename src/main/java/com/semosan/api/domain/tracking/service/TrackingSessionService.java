@@ -200,17 +200,17 @@ public class TrackingSessionService {
     /**
      * 기록에 남길 이름을 정한다.
      *
-     *  - 코스 기록: courses.name 으로 표시되므로 이름을 두지 않는다. 값이 와도 무시한다
-     *    (자유기록에서 courseId 를 무시하는 것과 같은 방향).
-     *  - 자유기록 + 입력값 있음: 앞뒤 공백만 제거해 그대로 쓴다.
+     *  - 입력값 있음: 코스/자유 구분 없이 앞뒤 공백만 제거해 그대로 쓴다.
+     *  - 코스 기록 + 입력값 없음: null 로 둔다. 조회 응답이 코스명으로 대체하므로
+     *    여기서 courses.name 을 복사해두면 이후 코스명이 바뀌어도 옛 이름이 남는다.
      *  - 자유기록 + 입력값 없음: 같은 날 순번을 세어 기본 이름을 만든다.
      */
     private String resolveRecordName(TrackingSession session, String requestedName) {
-        if (session.getCourse() != null) {
-            return null;
-        }
         if (requestedName != null && !requestedName.isBlank()) {
             return requestedName.trim();
+        }
+        if (session.getCourse() != null) {
+            return null;
         }
         LocalDateTime hikedAt = session.getStartedAt();
         LocalDateTime dayStart = hikedAt.toLocalDate().atStartOfDay();

@@ -41,11 +41,30 @@ class GetUserHikingRecordResponseTest {
         assertThat(response.imageUrls()).isEmpty();
     }
 
+    @Test
+    void fromFallsBackToCourseNameWhenRecordHasNoName() {
+        GetUserHikingRecordResponse response = GetUserHikingRecordResponse.from(projection());
+
+        assertThat(response.recordName()).isEqualTo("연주대 코스");
+    }
+
+    @Test
+    void fromKeepsRecordNameOverCourseName() {
+        GetUserHikingRecordResponse response =
+                GetUserHikingRecordResponse.from(projection("photo-report", "clive", "단풍 구경"));
+
+        assertThat(response.recordName()).isEqualTo("단풍 구경");
+    }
+
     private UserHikingRecordProjection projection() {
         return projection("photo-report", "clive");
     }
 
     private UserHikingRecordProjection projection(String photoReportImageUrl, String cliveImageUrl) {
+        return projection(photoReportImageUrl, cliveImageUrl, null);
+    }
+
+    private UserHikingRecordProjection projection(String photoReportImageUrl, String cliveImageUrl, String recordName) {
         return new UserHikingRecordProjection() {
             @Override
             public Long getHikingRecordId() {
@@ -59,7 +78,7 @@ class GetUserHikingRecordResponseTest {
 
             @Override
             public String getRecordName() {
-                return null;
+                return recordName;
             }
 
             @Override
