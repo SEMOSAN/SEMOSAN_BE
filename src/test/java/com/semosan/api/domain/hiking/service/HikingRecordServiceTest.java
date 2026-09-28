@@ -5,6 +5,8 @@ import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
 import com.semosan.api.domain.hiking.dto.response.HikingRecordDetailResponse;
 import com.semosan.api.domain.hiking.dto.request.CreateCourseDifficultyFeedbackRequest;
+import com.semosan.api.domain.hiking.dto.request.UpdateHikingRecordNameRequest;
+import com.semosan.api.domain.hiking.dto.response.UpdateHikingRecordNameResponse;
 import com.semosan.api.domain.hiking.dto.response.CourseDifficultyFeedbackResponse;
 import com.semosan.api.domain.hiking.entity.CourseDifficultyFeedback;
 import com.semosan.api.domain.hiking.entity.HikingRecord;
@@ -301,6 +303,90 @@ class HikingRecordServiceTest {
 
         assertThat(response.track()).isNull();
         assertThat(response.altitudes()).isNull();
+    }
+
+    @Test
+    void getHikingRecordDetailFallsBackToCourseNameWhenRecordHasNoName() throws Exception {
+        User user = user(1L);
+        HikingRecord hikingRecord = hikingRecord(10L, course(mountain(20L, "관악산"), 30L, "정상 코스"));
+
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(hikingRecordRepository.findWithMountainAndCourseById(10L)).thenReturn(Optional.of(hikingRecord));
+        when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
+
+        HikingRecordDetailResponse response = hikingRecordService.getHikingRecordDetail(1L, 10L);
+
+        assertThat(response.recordName()).isEqualTo("정상 코스");
+    }
+
+    @Test
+    void getHikingRecordDetailKeepsUserNameOverCourseName() throws Exception {
+        User user = user(1L);
+        HikingRecord hikingRecord = hikingRecord(10L, course(mountain(20L, "관악산"), 30L, "정상 코스"));
+        hikingRecord.rename("단풍 구경");
+
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(hikingRecordRepository.findWithMountainAndCourseById(10L)).thenReturn(Optional.of(hikingRecord));
+        when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
+
+        HikingRecordDetailResponse response = hikingRecordService.getHikingRecordDetail(1L, 10L);
+
+        assertThat(response.recordName()).isEqualTo("단풍 구경");
+    }
+
+    @Test
+    void updateHikingRecordNameRenamesOwnedCourseRecord() throws Exception {
+        User user = user(1L);
+        HikingRecord hikingRecord = hikingRecord(10L, course(mountain(20L, "관악산"), 30L, "정상 코스"));
+
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(hikingRecordRepository.findById(10L)).thenReturn(Optional.of(hikingRecord));
+        when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(true);
+
+        UpdateHikingRecordNameResponse response = hikingRecordService.updateHikingRecordName(
+                1L,
+                10L,
+                new UpdateHikingRecordNameRequest("  단풍 구경  ")
+        );
+
+        assertThat(response.hikingRecordId()).isEqualTo(10L);
+        assertThat(response.recordName()).isEqualTo("단풍 구경");
+        assertThat(hikingRecord.getName()).isEqualTo("단풍 구경");
+    }
+
+    @Test
+    void updateHikingRecordNameThrowsWhenRecordMissing() {
+        when(userReader.findActiveUserById(1L)).thenReturn(user(1L));
+        when(hikingRecordRepository.findById(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> hikingRecordService.updateHikingRecordName(
+                1L,
+                10L,
+                new UpdateHikingRecordNameRequest("단풍 구경")
+        ))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.HIKING_RECORD_NOT_FOUND);
+    }
+
+    @Test
+    void updateHikingRecordNameThrowsWhenRecordNotOwned() throws Exception {
+        User user = user(1L);
+        HikingRecord hikingRecord = hikingRecord(10L, null);
+
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(hikingRecordRepository.findById(10L)).thenReturn(Optional.of(hikingRecord));
+        when(hikingMemberRepository.existsByHikingRecordAndUser(hikingRecord, user)).thenReturn(false);
+
+        assertThatThrownBy(() -> hikingRecordService.updateHikingRecordName(
+                1L,
+                10L,
+                new UpdateHikingRecordNameRequest("단풍 구경")
+        ))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.HIKING_RECORD_FORBIDDEN);
+        assertThat(hikingRecord.getName()).isNull();
     }
 
     @Test

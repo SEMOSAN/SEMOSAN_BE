@@ -393,15 +393,28 @@ class TrackingSessionServiceTest {
     }
 
     @Test
-    void completeIgnoresNameForCourseRecording() {
+    void completeStoresRequestedNameForCourseRecording() {
         Mountain mountain = mountain(10L);
         TrackingSession session = completableSession(course(20L, mountain));
         when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.of(session));
         stubCompleteDependencies();
 
-        trackingSessionService.complete(1L, 100L, "무시되어야 하는 이름");
+        trackingSessionService.complete(1L, 100L, "  단풍 구경  ");
 
-        // 코스 기록은 courses.name 으로 표시되므로 별도 이름을 두지 않는다.
+        assertThat(savedRecord().getName()).isEqualTo("단풍 구경");
+        verify(hikingRecordRepository, never()).countFreeRecordsByUserAndDay(any(), any(), any());
+    }
+
+    @Test
+    void completeLeavesNameNullWhenCourseRecordingNameIsBlank() {
+        Mountain mountain = mountain(10L);
+        TrackingSession session = completableSession(course(20L, mountain));
+        when(trackingSessionRepository.findByIdWithRelations(100L)).thenReturn(Optional.of(session));
+        stubCompleteDependencies();
+
+        trackingSessionService.complete(1L, 100L, "   ");
+
+        // 코스명은 조회 응답에서 대체하므로 여기서 복사해두지 않는다.
         assertThat(savedRecord().getName()).isNull();
         verify(hikingRecordRepository, never()).countFreeRecordsByUserAndDay(any(), any(), any());
     }

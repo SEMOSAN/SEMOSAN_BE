@@ -3,11 +3,13 @@ package com.semosan.api.domain.hiking.controller.docs;
 import com.semosan.api.common.response.ApiResponse;
 import com.semosan.api.common.response.PageResponse;
 import com.semosan.api.domain.hiking.dto.request.CreateCourseDifficultyFeedbackRequest;
+import com.semosan.api.domain.hiking.dto.request.UpdateHikingRecordNameRequest;
 import com.semosan.api.domain.hiking.dto.response.CourseDifficultyFeedbackResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingMountainRecordResponse;
 import com.semosan.api.domain.hiking.dto.response.GetUserHikingRecordSummaryResponse;
 import com.semosan.api.domain.hiking.dto.response.HikingRecordDetailResponse;
+import com.semosan.api.domain.hiking.dto.response.UpdateHikingRecordNameResponse;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -122,6 +124,40 @@ public interface HikingRecordControllerDocs {
             @AuthenticationPrincipal Long userId,
             @Parameter(description = "등산 기록 ID", required = true)
             @PathVariable Long hikingRecordId
+    );
+
+    @Operation(
+            summary = "등산 기록 이름 수정",
+            description = "본인이 참여한 등산 기록의 이름을 수정합니다. " +
+                    "코스 기록도 사용자가 정한 이름으로 덮어쓸 수 있으며, 이름을 정하지 않은 코스 기록은 조회 시 코스명으로 표시됩니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "등산 기록 이름 수정 성공"
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "이름이 비어 있거나 30자를 초과함",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403",
+                    description = "본인이 참여한 등산 기록이 아님",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "등산 기록을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ApiResponse.class))
+            )
+    })
+    ResponseEntity<ApiResponse<UpdateHikingRecordNameResponse>> updateHikingRecordName(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal Long userId,
+            @Parameter(description = "등산 기록 ID", required = true)
+            @PathVariable Long hikingRecordId,
+            @Valid @RequestBody UpdateHikingRecordNameRequest request
     );
 
     @Operation(

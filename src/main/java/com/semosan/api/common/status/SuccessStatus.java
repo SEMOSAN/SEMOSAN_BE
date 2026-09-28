@@ -52,6 +52,7 @@ public enum SuccessStatus implements BaseStatus {
     GET_HIKING_RECORD_LIST_SUCCESS(HttpStatus.OK, "HIKING_200_3", "나의 등산 기록 목록 조회에 성공했습니다."),
     GET_HIKING_RECORD_LIST_BY_MOUNTAIN_SUCCESS(HttpStatus.OK, "HIKING_200_4", "특정 산의 나의 등산 기록 목록 조회에 성공했습니다."),
     GET_HIKING_RECORD_DETAIL_SUCCESS(HttpStatus.OK, "HIKING_200_5", "등산 기록 상세 조회에 성공했습니다."),
+    UPDATE_HIKING_RECORD_NAME_SUCCESS(HttpStatus.OK, "HIKING_200_6", "등산 기록 이름 수정에 성공했습니다."),
     CREATE_COURSE_DIFFICULTY_FEEDBACK_SUCCESS(HttpStatus.CREATED, "HIKING_201_1", "코스 난이도 피드백 저장에 성공했습니다."),
 
     /**
