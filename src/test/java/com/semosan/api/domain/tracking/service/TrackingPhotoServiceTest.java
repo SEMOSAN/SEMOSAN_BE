@@ -117,6 +117,18 @@ class TrackingPhotoServiceTest {
     }
 
     @Test
+    void uploadRethrowsWhenViolationIsNotTheMilestoneUniqueConstraint() {
+        TrackingSession session = session(10L, 1L, TrackingSessionStatus.IN_PROGRESS);
+        when(trackingSessionRepository.findById(10L)).thenReturn(Optional.of(session));
+        when(trackingPhotoRepository.existsByTrackingSession_IdAndMilestoneIndex(10L, 0)).thenReturn(false);
+        when(trackingPhotoRepository.saveAndFlush(any(TrackingPhoto.class)))
+                .thenThrow(new DataIntegrityViolationException("value too long for column image_url"));
+
+        assertThatThrownBy(() -> trackingPhotoService.upload(1L, 10L, uploadRequest(0)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     void listBySessionReturnsPhotosOrderedByRepositoryResult() {
         TrackingSession session = session(10L, 1L, TrackingSessionStatus.IN_PROGRESS);
         TrackingPhoto first = photo(session, 0);

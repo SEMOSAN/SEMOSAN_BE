@@ -1,5 +1,6 @@
 package com.semosan.api.domain.tracking.service;
 
+import com.semosan.api.common.exception.ConstraintViolationUtils;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.tracking.dto.request.TrackingPhotoUploadRequest;
@@ -25,6 +26,8 @@ public class TrackingPhotoService {
 
     private static final Set<TrackingSessionStatus> ACTIVE_STATES =
             EnumSet.of(TrackingSessionStatus.IN_PROGRESS, TrackingSessionStatus.PAUSED);
+
+    private static final String PHOTO_MILESTONE_UNIQUE_CONSTRAINT = "uk_tracking_photos_session_milestone";
 
     private final TrackingPhotoRepository trackingPhotoRepository;
     private final TrackingSessionRepository trackingSessionRepository;
@@ -54,7 +57,10 @@ public class TrackingPhotoService {
             TrackingPhoto saved = trackingPhotoRepository.saveAndFlush(photo);
             return TrackingPhotoResponse.from(saved);
         } catch (DataIntegrityViolationException e) {
-            throw new GeneralException(ErrorStatus.TRACKING_PHOTO_DUPLICATE);
+            if (ConstraintViolationUtils.isViolation(e, PHOTO_MILESTONE_UNIQUE_CONSTRAINT)) {
+                throw new GeneralException(ErrorStatus.TRACKING_PHOTO_DUPLICATE);
+            }
+            throw e;
         }
     }
 
