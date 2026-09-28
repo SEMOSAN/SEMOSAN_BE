@@ -14,13 +14,16 @@ import java.time.LocalDateTime;
  * 트래킹 진행 중 마일스톤 도달 시 사용자가 촬영해 업로드한 사진의 메타.
  * 실제 이미지 바이너리는 MinIO 에 보관되고 본 테이블엔 URL 만 저장.
  * 한 트래킹 세션이 N 개의 사진(=마일스톤 수)을 가질 수 있다 — N 의 상한은 정책상 6.
+ * 한 마일스톤에는 사진이 1장만 남는다 (재촬영 없음) — 유니크 제약으로 보장한다.
  */
 @Table(
         name = "tracking_photos",
         indexes = {
-                @Index(name = "idx_tracking_photos_session", columnList = "tracking_session_id"),
-                @Index(name = "idx_tracking_photos_session_milestone",
-                        columnList = "tracking_session_id, milestone_index")
+                @Index(name = "idx_tracking_photos_session", columnList = "tracking_session_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_tracking_photos_session_milestone",
+                        columnNames = {"tracking_session_id", "milestone_index"})
         }
 )
 @Getter

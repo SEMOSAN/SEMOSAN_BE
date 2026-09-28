@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
@@ -49,7 +50,7 @@ class TrackingPhotoServiceTest {
         TrackingPhotoUploadRequest request = uploadRequest(0);
         when(trackingSessionRepository.findById(10L)).thenReturn(Optional.of(session));
         when(trackingPhotoRepository.existsByTrackingSession_IdAndMilestoneIndex(10L, 0)).thenReturn(false);
-        when(trackingPhotoRepository.save(any(TrackingPhoto.class))).thenAnswer(invocation -> {
+        when(trackingPhotoRepository.saveAndFlush(any(TrackingPhoto.class))).thenAnswer(invocation -> {
             TrackingPhoto photo = invocation.getArgument(0);
             ReflectionTestUtils.setField(photo, "id", 100L);
             return photo;
@@ -62,7 +63,7 @@ class TrackingPhotoServiceTest {
         assertThat(response.milestoneIndex()).isZero();
         assertThat(response.imageUrl()).isEqualTo("image.jpg");
         ArgumentCaptor<TrackingPhoto> captor = ArgumentCaptor.forClass(TrackingPhoto.class);
-        verify(trackingPhotoRepository).save(captor.capture());
+        verify(trackingPhotoRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getTrackingSession()).isSameAs(session);
     }
 
@@ -71,7 +72,7 @@ class TrackingPhotoServiceTest {
         TrackingSession session = session(10L, 1L, TrackingSessionStatus.PAUSED);
         when(trackingSessionRepository.findById(10L)).thenReturn(Optional.of(session));
         when(trackingPhotoRepository.existsByTrackingSession_IdAndMilestoneIndex(10L, 1)).thenReturn(false);
-        when(trackingPhotoRepository.save(any(TrackingPhoto.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(trackingPhotoRepository.saveAndFlush(any(TrackingPhoto.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         TrackingPhotoResponse response = trackingPhotoService.upload(1L, 10L, uploadRequest(1));
 
@@ -99,6 +100,32 @@ class TrackingPhotoServiceTest {
                 .isInstanceOf(GeneralException.class)
                 .extracting("errorStatus")
                 .isEqualTo(ErrorStatus.TRACKING_PHOTO_DUPLICATE);
+    }
+
+    @Test
+    void uploadThrowsWhenUniqueConstraintRejectsConcurrentSave() {
+        TrackingSession session = session(10L, 1L, TrackingSessionStatus.IN_PROGRESS);
+        when(trackingSessionRepository.findById(10L)).thenReturn(Optional.of(session));
+        when(trackingPhotoRepository.existsByTrackingSession_IdAndMilestoneIndex(10L, 0)).thenReturn(false);
+        when(trackingPhotoRepository.saveAndFlush(any(TrackingPhoto.class)))
+                .thenThrow(new DataIntegrityViolationException("uk_tracking_photos_session_milestone"));
+
+        assertThatThrownBy(() -> trackingPhotoService.upload(1L, 10L, uploadRequest(0)))
+                .isInstanceOf(GeneralException.class)
+                .extracting("errorStatus")
+                .isEqualTo(ErrorStatus.TRACKING_PHOTO_DUPLICATE);
+    }
+
+    @Test
+    void uploadRethrowsWhenViolationIsNotTheMilestoneUniqueConstraint() {
+        TrackingSession session = session(10L, 1L, TrackingSessionStatus.IN_PROGRESS);
+        when(trackingSessionRepository.findById(10L)).thenReturn(Optional.of(session));
+        when(trackingPhotoRepository.existsByTrackingSession_IdAndMilestoneIndex(10L, 0)).thenReturn(false);
+        when(trackingPhotoRepository.saveAndFlush(any(TrackingPhoto.class)))
+                .thenThrow(new DataIntegrityViolationException("value too long for column image_url"));
+
+        assertThatThrownBy(() -> trackingPhotoService.upload(1L, 10L, uploadRequest(0)))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test

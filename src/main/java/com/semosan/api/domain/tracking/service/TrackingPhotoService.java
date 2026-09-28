@@ -1,5 +1,6 @@
 package com.semosan.api.domain.tracking.service;
 
+import com.semosan.api.common.exception.ConstraintViolationUtils;
 import com.semosan.api.common.exception.GeneralException;
 import com.semosan.api.common.status.ErrorStatus;
 import com.semosan.api.domain.tracking.dto.request.TrackingPhotoUploadRequest;
@@ -10,6 +11,7 @@ import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
 import com.semosan.api.domain.tracking.repository.TrackingPhotoRepository;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,8 @@ public class TrackingPhotoService {
 
     private static final Set<TrackingSessionStatus> ACTIVE_STATES =
             EnumSet.of(TrackingSessionStatus.IN_PROGRESS, TrackingSessionStatus.PAUSED);
+
+    private static final String PHOTO_MILESTONE_UNIQUE_CONSTRAINT = "uk_tracking_photos_session_milestone";
 
     private final TrackingPhotoRepository trackingPhotoRepository;
     private final TrackingSessionRepository trackingSessionRepository;
@@ -47,8 +51,17 @@ public class TrackingPhotoService {
                 request.lng(),
                 request.altitude()
         );
-        TrackingPhoto saved = trackingPhotoRepository.save(photo);
-        return TrackingPhotoResponse.from(saved);
+        try {
+            // exists 체크와 save 사이에 끼어든 동시 요청은 유니크 제약에서만 걸러진다.
+            // 커밋까지 미루면 예외를 여기서 잡을 수 없어 flush 까지 함께 수행한다.
+            TrackingPhoto saved = trackingPhotoRepository.saveAndFlush(photo);
+            return TrackingPhotoResponse.from(saved);
+        } catch (DataIntegrityViolationException e) {
+            if (ConstraintViolationUtils.isViolation(e, PHOTO_MILESTONE_UNIQUE_CONSTRAINT)) {
+                throw new GeneralException(ErrorStatus.TRACKING_PHOTO_DUPLICATE);
+            }
+            throw e;
+        }
     }
 
     public List<TrackingPhotoResponse> listBySession(Long userId, Long sessionId) {
