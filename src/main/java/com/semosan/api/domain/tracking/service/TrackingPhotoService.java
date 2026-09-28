@@ -10,6 +10,7 @@ import com.semosan.api.domain.tracking.enums.TrackingSessionStatus;
 import com.semosan.api.domain.tracking.repository.TrackingPhotoRepository;
 import com.semosan.api.domain.tracking.repository.TrackingSessionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,8 +48,14 @@ public class TrackingPhotoService {
                 request.lng(),
                 request.altitude()
         );
-        TrackingPhoto saved = trackingPhotoRepository.save(photo);
-        return TrackingPhotoResponse.from(saved);
+        try {
+            // exists 체크와 save 사이에 끼어든 동시 요청은 유니크 제약에서만 걸러진다.
+            // 커밋까지 미루면 예외를 여기서 잡을 수 없어 flush 까지 함께 수행한다.
+            TrackingPhoto saved = trackingPhotoRepository.saveAndFlush(photo);
+            return TrackingPhotoResponse.from(saved);
+        } catch (DataIntegrityViolationException e) {
+            throw new GeneralException(ErrorStatus.TRACKING_PHOTO_DUPLICATE);
+        }
     }
 
     public List<TrackingPhotoResponse> listBySession(Long userId, Long sessionId) {
