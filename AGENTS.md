@@ -26,6 +26,16 @@
 - Prefer existing services, repositories, DTOs, and response conventions over introducing new abstractions.
 - When adding code, avoid duplicating business rules, payload construction, validation checks, formatting, or helper logic across services. Extract shared behavior into an appropriate existing service/helper or a narrowly scoped new component, and keep callers focused on orchestration.
 
+## Code Rules (source of truth: `.claude/rules/`)
+Detailed code rules live in `.claude/rules/` (shared with Claude Code). Read the relevant files before editing; they override general guidance here if they conflict.
+- Always: `.claude/rules/common/git.md`
+- Any `src/main/java` change: `.claude/rules/common/layering.md` (layering, ErrorStatus, entity/enum, repository, service `@Transactional(readOnly = true)` standard)
+- Controllers or DTOs: `.claude/rules/common/api-convention.md`
+- Entities or `db/migration`: `.claude/rules/common/migration.md` (never modify a committed `V*.sql`; add a new version instead)
+- Tests: `.claude/rules/common/testing.md`
+- Domain-specific: `.claude/rules/domain/<domain>.md` for `tracking`, `mountain`, `notification`
+- Reference docs: `.claude/docs/architecture.md`, `.claude/docs/tracking-flow.md`
+
 ## Commands
 - Use `rg` first for searching.
 - Run focused tests before broad tests when checking a narrow change.
