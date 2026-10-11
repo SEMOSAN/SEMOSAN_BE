@@ -42,9 +42,11 @@ public interface MountainLikeRepository extends JpaRepository<MountainLike, Long
             @Param("mountainIds") Collection<Long> mountainIds
     );
 
+    /** 정렬이 없으면 페이지 간 중복·누락이 생긴다. ORDER BY 가 박혀 있어 Pageable.sort 는 무시됨 (서버 정책 우선). */
     @EntityGraph(attributePaths = "mountain")
     @Query(
-            value = "SELECT ml FROM MountainLike ml WHERE ml.user.id = :userId",
+            value = "SELECT ml FROM MountainLike ml WHERE ml.user.id = :userId "
+                    + "ORDER BY ml.createdAt DESC, ml.id DESC",
             countQuery = "SELECT COUNT(ml) FROM MountainLike ml WHERE ml.user.id = :userId"
     )
     Page<MountainLike> findAllByUserId(@Param("userId") Long userId, Pageable pageable);

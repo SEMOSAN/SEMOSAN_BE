@@ -9,6 +9,7 @@ import com.semosan.api.domain.mountain.repository.MountainRepository;
 import com.semosan.api.domain.user.service.UserReader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,7 +45,9 @@ public class MountainLikeService {
     public Page<LikedMountainResponse> getLikedMountains(Long userId, Pageable pageable) {
         // 탈퇴 후 남은 access token으로 조회되는 것을 방지합니다.
         userReader.findActiveUserById(userId);
-        return mountainLikeRepository.findAllByUserId(userId, pageable)
+        // 정렬은 쿼리에 고정되어 있다. Pageable.sort 를 그대로 넘기면 JPQL 의 ORDER BY 뒤에 덧붙는다.
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        return mountainLikeRepository.findAllByUserId(userId, unsorted)
                 .map(LikedMountainResponse::from);
     }
 
