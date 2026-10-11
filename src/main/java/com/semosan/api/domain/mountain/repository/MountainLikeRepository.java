@@ -11,17 +11,19 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 public interface MountainLikeRepository extends JpaRepository<MountainLike, Long> {
 
     boolean existsByUser_IdAndMountain_Id(Long userId, Long mountainId);
 
-    Optional<MountainLike> findByUser_IdAndMountain_Id(Long userId, Long mountainId);
-
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM MountainLike ml WHERE ml.user.id = :userId")
     void deleteByUser_Id(@Param("userId") Long userId);
+
+    /** delete(entity) 는 영향 행이 0이면 StaleStateException 이라, 동시 삭제를 흡수하려면 벌크 delete 여야 한다. */
+    @Modifying
+    @Query("DELETE FROM MountainLike ml WHERE ml.user.id = :userId AND ml.mountain.id = :mountainId")
+    int deleteByUser_IdAndMountain_Id(@Param("userId") Long userId, @Param("mountainId") Long mountainId);
 
     /**
      * 유니크 제약(user_id, mountain_id) 충돌 시 예외 없이 무시한다. 동시 좋아요 요청에서
@@ -42,9 +44,11 @@ public interface MountainLikeRepository extends JpaRepository<MountainLike, Long
             @Param("mountainIds") Collection<Long> mountainIds
     );
 
+    /** 정렬이 없으면 페이지 간 중복·누락이 생긴다. ORDER BY 가 박혀 있어 Pageable.sort 는 무시됨 (서버 정책 우선). */
     @EntityGraph(attributePaths = "mountain")
     @Query(
-            value = "SELECT ml FROM MountainLike ml WHERE ml.user.id = :userId",
+            value = "SELECT ml FROM MountainLike ml WHERE ml.user.id = :userId "
+                    + "ORDER BY ml.createdAt DESC, ml.id DESC",
             countQuery = "SELECT COUNT(ml) FROM MountainLike ml WHERE ml.user.id = :userId"
     )
     Page<MountainLike> findAllByUserId(@Param("userId") Long userId, Pageable pageable);
