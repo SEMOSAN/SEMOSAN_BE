@@ -27,17 +27,12 @@ public class MountainLikeService {
         userReader.findActiveUserById(userId);
         validateMountainExists(mountainId);
 
-        boolean liked = mountainLikeRepository.findByUser_IdAndMountain_Id(userId, mountainId)
-                .map(existing -> {
-                    mountainLikeRepository.delete(existing);
-                    return false;
-                })
-                // ON CONFLICT DO NOTHING이라 동시 요청이 겹쳐도 예외 없이 0 row로 끝난다.
-                .orElseGet(() -> {
-                    mountainLikeRepository.insertIgnoreConflict(userId, mountainId);
-                    return true;
-                });
-        return new MountainLikeToggleResponse(liked);
+        if (mountainLikeRepository.deleteByUser_IdAndMountain_Id(userId, mountainId) > 0) {
+            return new MountainLikeToggleResponse(false);
+        }
+        // ON CONFLICT DO NOTHING이라 동시 요청이 겹쳐도 예외 없이 0 row로 끝난다.
+        mountainLikeRepository.insertIgnoreConflict(userId, mountainId);
+        return new MountainLikeToggleResponse(true);
     }
 
     // 로그인한 사용자가 좋아요한 산 목록을 조회합니다.

@@ -24,10 +24,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.lang.reflect.Constructor;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,7 +52,7 @@ class MountainLikeServiceTest {
 
         when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(mountainRepository.existsById(10L)).thenReturn(true);
-        when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L)).thenReturn(Optional.empty());
+        when(mountainLikeRepository.deleteByUser_IdAndMountain_Id(1L, 10L)).thenReturn(0);
 
         MountainLikeToggleResponse response = mountainLikeService.toggleMountainLike(1L, 10L);
 
@@ -74,17 +74,15 @@ class MountainLikeServiceTest {
     @Test
     void toggleMountainLikeDeletesLikeWhenAlreadyLiked() {
         User user = user(1L);
-        Mountain mountain = mountain(10L);
-        MountainLike mountainLike = MountainLike.create(user, mountain);
 
         when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(mountainRepository.existsById(10L)).thenReturn(true);
-        when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L)).thenReturn(Optional.of(mountainLike));
+        when(mountainLikeRepository.deleteByUser_IdAndMountain_Id(1L, 10L)).thenReturn(1);
 
         MountainLikeToggleResponse response = mountainLikeService.toggleMountainLike(1L, 10L);
 
         assertThat(response.liked()).isFalse();
-        verify(mountainLikeRepository).delete(mountainLike);
+        verify(mountainLikeRepository, never()).insertIgnoreConflict(1L, 10L);
     }
 
     // ON CONFLICT DO NOTHING이라 동시 요청이 겹치면 insert row가 0개라 예외 없이 liked=true로 흡수된다.
@@ -94,12 +92,27 @@ class MountainLikeServiceTest {
 
         when(userReader.findActiveUserById(1L)).thenReturn(user);
         when(mountainRepository.existsById(10L)).thenReturn(true);
-        when(mountainLikeRepository.findByUser_IdAndMountain_Id(1L, 10L)).thenReturn(Optional.empty());
+        when(mountainLikeRepository.deleteByUser_IdAndMountain_Id(1L, 10L)).thenReturn(0);
         when(mountainLikeRepository.insertIgnoreConflict(1L, 10L)).thenReturn(0);
 
         MountainLikeToggleResponse response = mountainLikeService.toggleMountainLike(1L, 10L);
 
         assertThat(response.liked()).isTrue();
+    }
+
+    @Test
+    void toggleMountainLikeAbsorbsConcurrentDeleteWithoutException() {
+        User user = user(1L);
+
+        when(userReader.findActiveUserById(1L)).thenReturn(user);
+        when(mountainRepository.existsById(10L)).thenReturn(true);
+        when(mountainLikeRepository.deleteByUser_IdAndMountain_Id(1L, 10L)).thenReturn(0);
+        when(mountainLikeRepository.insertIgnoreConflict(1L, 10L)).thenReturn(1);
+
+        MountainLikeToggleResponse response = mountainLikeService.toggleMountainLike(1L, 10L);
+
+        assertThat(response.liked()).isTrue();
+        verify(mountainLikeRepository).deleteByUser_IdAndMountain_Id(1L, 10L);
     }
 
     @Test

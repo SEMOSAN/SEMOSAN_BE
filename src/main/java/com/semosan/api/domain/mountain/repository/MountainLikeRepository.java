@@ -11,17 +11,19 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 public interface MountainLikeRepository extends JpaRepository<MountainLike, Long> {
 
     boolean existsByUser_IdAndMountain_Id(Long userId, Long mountainId);
 
-    Optional<MountainLike> findByUser_IdAndMountain_Id(Long userId, Long mountainId);
-
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM MountainLike ml WHERE ml.user.id = :userId")
     void deleteByUser_Id(@Param("userId") Long userId);
+
+    /** delete(entity) 는 영향 행이 0이면 StaleStateException 이라, 동시 삭제를 흡수하려면 벌크 delete 여야 한다. */
+    @Modifying
+    @Query("DELETE FROM MountainLike ml WHERE ml.user.id = :userId AND ml.mountain.id = :mountainId")
+    int deleteByUser_IdAndMountain_Id(@Param("userId") Long userId, @Param("mountainId") Long mountainId);
 
     /**
      * 유니크 제약(user_id, mountain_id) 충돌 시 예외 없이 무시한다. 동시 좋아요 요청에서
