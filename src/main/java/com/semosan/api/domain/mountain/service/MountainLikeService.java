@@ -41,7 +41,10 @@ public class MountainLikeService {
         // 탈퇴 후 남은 access token으로 조회되는 것을 방지합니다.
         userReader.findActiveUserById(userId);
         // 정렬은 쿼리에 고정되어 있다. Pageable.sort 를 그대로 넘기면 JPQL 의 ORDER BY 뒤에 덧붙는다.
-        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        // unpaged 는 getPageNumber() 자체가 UnsupportedOperationException 이라 그대로 넘긴다.
+        Pageable unsorted = pageable.isUnpaged()
+                ? Pageable.unpaged()
+                : PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         return mountainLikeRepository.findAllByUserId(userId, unsorted)
                 .map(LikedMountainResponse::from);
     }
