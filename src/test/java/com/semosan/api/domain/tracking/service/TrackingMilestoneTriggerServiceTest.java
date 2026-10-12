@@ -5,6 +5,8 @@ import com.semosan.api.domain.notification.service.NotificationService;
 import com.semosan.api.domain.tracking.entity.TrackingSession;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,6 +27,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -66,14 +69,14 @@ class TrackingMilestoneTriggerServiceTest {
         TrackingSession session = mock(TrackingSession.class);
         when(session.getId()).thenReturn(1L);
         when(milestoneCalculator.calculate(session))
-                .thenReturn(new TrackingMilestoneCalculator.MilestonePlan(List.of(100.0, 200.0), 200.0));
+                .thenReturn(new TrackingMilestoneCalculator.MilestonePlan(List.of(100.49, 200.98), 200.98));
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
         service().initializeMilestones(session);
 
-        verify(valueOperations).set("tracking:session:1:milestones", "100.0,200.0");
+        verify(valueOperations).set("tracking:session:1:milestones", "100.49,200.98");
         verify(redisTemplate).expire("tracking:session:1:milestones", Duration.ofHours(24));
-        verify(valueOperations).set("tracking:session:1:summit:mark", "200.0");
+        verify(valueOperations).set("tracking:session:1:summit:mark", "200.98");
         verify(redisTemplate).expire("tracking:session:1:summit:mark", Duration.ofHours(24));
     }
 
@@ -123,7 +126,7 @@ class TrackingMilestoneTriggerServiceTest {
         verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/photo-window"), (Object) payloadCaptor.capture());
         assertThat(payloadCaptor.getValue())
                 .containsEntry("milestoneIndex", 0)
-                .containsEntry("milestoneDistance", 100.0)
+                .containsEntry("milestoneDistance", 100)
                 .containsEntry("status", "OPEN");
         verify(notificationService).send(
                 eq(10L),
@@ -170,6 +173,38 @@ class TrackingMilestoneTriggerServiceTest {
         verify(messagingTemplate, never()).convertAndSend(eq("/topic/tracking/1/summit"), (Object) any(Map.class));
     }
 
+    @ParameterizedTest
+    @CsvSource({"100.499999999, 100", "100.5, 101", "100.987654321, 101"})
+    void evaluateRoundsPhotoDistanceForWebSocketAndNotification(double milestone, int roundedMeters) {
+        mockLoadedMilestones(String.valueOf(milestone), Set.of(), Set.of());
+        when(valueOperations.get("tracking:session:1:summit:mark")).thenReturn("none");
+        when(setOperations.add("tracking:session:1:photo:opened", "0")).thenReturn(1L);
+        when(setOperations.add("tracking:session:1:photo:closed", "0")).thenReturn(1L);
+        TrackingMilestoneTriggerService service = service();
+
+        service.evaluate(1L, 10L, milestone * 0.9 - 0.0001);
+        verifyNoInteractions(messagingTemplate, notificationService);
+
+        service.evaluate(1L, 10L, milestone);
+        when(setOperations.members("tracking:session:1:photo:opened")).thenReturn(Set.of("0"));
+        service.evaluate(1L, 10L, milestone * 1.1 + 0.0001);
+
+        ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(messagingTemplate, times(2)).convertAndSend(
+                eq("/topic/tracking/1/photo-window"), (Object) payloadCaptor.capture());
+        assertThat(payloadCaptor.getAllValues()).allSatisfy(payload -> assertThat(payload)
+                .containsEntry("milestoneIndex", 0)
+                .containsEntry("milestoneDistance", roundedMeters));
+        assertThat(payloadCaptor.getAllValues()).extracting(payload -> payload.get("status"))
+                .containsExactly("OPEN", "CLOSED");
+        verify(notificationService).send(
+                10L,
+                NotificationType.TRACKING_PHOTO_MILESTONE,
+                Map.of("distance", roundedMeters, "milestoneIndex", 0),
+                roundedMeters + "m 돌파! 인증 사진을 남겨보세요!"
+        );
+    }
+
     @Test
     void evaluateSendsSummitAndFinalPhotoTogetherAtStoredSummitMark() {
         // 정상 좌표가 있는 코스는 4/4 마일스톤이 곧 정상이라 두 알림이 같은 지점에서 함께 나간다.
@@ -190,9 +225,9 @@ class TrackingMilestoneTriggerServiceTest {
         verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) summitCaptor.capture());
         assertThat(summitCaptor.getValue())
                 .containsEntry("milestoneIndex", 3)
-                .containsEntry("milestoneDistanceM", 500.0);
+                .containsEntry("milestoneDistanceM", 500);
         verify(notificationService).send(10L, NotificationType.TRACKING_SUMMIT_REACHED,
-                Map.of("milestoneIndex", 3, "milestoneDistanceM", 500.0));
+                Map.of("milestoneIndex", 3, "milestoneDistanceM", 500));
     }
 
     @Test
@@ -208,9 +243,9 @@ class TrackingMilestoneTriggerServiceTest {
         verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) summitCaptor.capture());
         assertThat(summitCaptor.getValue())
                 .containsEntry("milestoneIndex", 1)
-                .containsEntry("milestoneDistanceM", 200.0);
+                .containsEntry("milestoneDistanceM", 200);
         verify(notificationService).send(10L, NotificationType.TRACKING_SUMMIT_REACHED,
-                Map.of("milestoneIndex", 1, "milestoneDistanceM", 200.0));
+                Map.of("milestoneIndex", 1, "milestoneDistanceM", 200));
     }
 
     @Test
@@ -285,7 +320,7 @@ class TrackingMilestoneTriggerServiceTest {
         verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/photo-window"), (Object) payloadCaptor.capture());
         assertThat(payloadCaptor.getValue())
                 .containsEntry("milestoneIndex", 0)
-                .containsEntry("milestoneDistance", 100.0)
+                .containsEntry("milestoneDistance", 100)
                 .containsEntry("status", "CLOSED");
         verify(setOperations).add("tracking:session:1:photo:closed", "0");
         verify(redisTemplate).expire("tracking:session:1:photo:closed", Duration.ofHours(24));
@@ -372,10 +407,32 @@ class TrackingMilestoneTriggerServiceTest {
         verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) payloadCaptor.capture());
         assertThat(payloadCaptor.getValue())
                 .containsEntry("milestoneIndex", 3)
-                .containsEntry("milestoneDistanceM", 200.0)
-                .containsEntry("halfwayMark", 200.0);
+                .containsEntry("milestoneDistanceM", 200)
+                .containsEntry("halfwayMark", 200);
         verify(notificationService).send(10L, NotificationType.TRACKING_SUMMIT_REACHED,
-                Map.of("milestoneIndex", 3, "milestoneDistanceM", 200.0));
+                Map.of("milestoneIndex", 3, "milestoneDistanceM", 200));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"200.499999999, 200", "200.5, 201", "200.987654321, 201"})
+    void evaluateSummitRoundsPayloadAfterReachingOriginalDistance(double summitMark, int roundedMeters) {
+        when(redisTemplate.opsForSet()).thenReturn(setOperations);
+        when(setOperations.add("tracking:session:1:summit:notified", "1")).thenReturn(1L);
+        TrackingMilestoneTriggerService service = service();
+
+        service.evaluateSummit(1L, 10L, summitMark - 0.0001, summitMark, 3);
+        verifyNoInteractions(redisTemplate, messagingTemplate, notificationService);
+
+        service.evaluateSummit(1L, 10L, summitMark, summitMark, 3);
+
+        ArgumentCaptor<Map<String, Object>> payloadCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(messagingTemplate).convertAndSend(eq("/topic/tracking/1/summit"), (Object) payloadCaptor.capture());
+        assertThat(payloadCaptor.getValue())
+                .containsEntry("milestoneIndex", 3)
+                .containsEntry("milestoneDistanceM", roundedMeters)
+                .containsEntry("halfwayMark", roundedMeters);
+        verify(notificationService).send(10L, NotificationType.TRACKING_SUMMIT_REACHED,
+                Map.of("milestoneIndex", 3, "milestoneDistanceM", roundedMeters));
     }
 
     @Test
@@ -385,7 +442,7 @@ class TrackingMilestoneTriggerServiceTest {
         doThrow(new RuntimeException("fcm fail"))
                 .when(notificationService)
                 .send(10L, NotificationType.TRACKING_SUMMIT_REACHED,
-                        Map.of("milestoneIndex", 3, "milestoneDistanceM", 200.0));
+                        Map.of("milestoneIndex", 3, "milestoneDistanceM", 200));
 
         service().evaluateSummit(1L, 10L, 200.0, 200.0, 3);
 
