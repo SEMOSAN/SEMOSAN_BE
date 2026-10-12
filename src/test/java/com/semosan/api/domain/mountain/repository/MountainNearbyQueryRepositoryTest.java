@@ -40,16 +40,16 @@ class MountainNearbyQueryRepositoryTest {
     @Test
     void includesSelectedMountainAndBoundaryButExcludesOutsideRadius() {
         Long center = insertMountainAtDistance("현재 산", 0, true);
-        Long inside = insertMountainAtDistance("경계 안", 1_999.99, true);
-        Long boundary = insertMountainAtDistance("2km 경계", 2_000, true);
-        insertMountainAtDistance("경계 밖", 2_000.01, true);
+        Long inside = insertMountainAtDistance("경계 안", 19_999.99, true);
+        Long boundary = insertMountainAtDistance("20km 경계", 20_000, true);
+        insertMountainAtDistance("경계 밖", 20_000.01, true);
 
         List<NearbyMountainProjection> result = findNearby();
 
         assertThat(result).extracting(NearbyMountainProjection::getMountainId)
                 .containsExactly(center, inside, boundary);
         assertThat(result).extracting(NearbyMountainProjection::getName)
-                .containsExactly("현재 산", "경계 안", "2km 경계");
+                .containsExactly("현재 산", "경계 안", "20km 경계");
         assertThat(mountainRepository.findNearestByLatLng(LAT, LNG).orElseThrow().getId()).isEqualTo(center);
     }
 
@@ -68,7 +68,7 @@ class MountainNearbyQueryRepositoryTest {
 
     @Test
     void sortsByDistanceThenIdConsistentlyWithDefaultMountain() {
-        Long far = insertMountainAtDistance("먼 산", 1_500, true);
+        Long far = insertMountainAtDistance("먼 산", 15_000, true);
         Long nearFirst = insertMountainAtDistance("가까운 산 1", 300, true);
         Long nearSecond = insertMountainAtDistance("가까운 산 2", 300, true);
 
@@ -79,7 +79,7 @@ class MountainNearbyQueryRepositoryTest {
 
     @Test
     void keepsNearestMountainAvailableWhenNoneWithinRadius() {
-        Long outside = insertMountainAtDistance("반경 밖 기본 산", 3_000, true);
+        Long outside = insertMountainAtDistance("반경 밖 기본 산", 30_000, true);
 
         assertThat(findNearby()).isEmpty();
         assertThat(mountainRepository.findNearestByLatLng(LAT, LNG).orElseThrow().getId()).isEqualTo(outside);
@@ -98,7 +98,7 @@ class MountainNearbyQueryRepositoryTest {
     }
 
     private List<NearbyMountainProjection> findNearby() {
-        return mountainRepository.findNearbyByLatLng(LAT, LNG, 2_000);
+        return mountainRepository.findNearbyByLatLng(LAT, LNG, 20_000);
     }
 
     private Long insertMountainAtDistance(String name, double meters, boolean isPublic) {
