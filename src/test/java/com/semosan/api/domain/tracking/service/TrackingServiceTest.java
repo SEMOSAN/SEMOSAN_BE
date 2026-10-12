@@ -57,7 +57,7 @@ class TrackingServiceTest {
         Course course = course(10L, mountain);
         when(mountainRepository.findNearestByLatLng(37.5, 127.0)).thenReturn(Optional.of(mountain));
         when(courseRepository.findByMountainIdOrderByIdAsc(1L)).thenReturn(List.of(course));
-        when(mountainRepository.findNearbyByLatLng(37.5, 127.0, 2_000.0))
+        when(mountainRepository.findNearbyByLatLng(37.5, 127.0, 20_000.0))
                 .thenReturn(List.of(nearbyMountain(1L, "관악산"), nearbyMountain(2L, "삼성산")));
 
         NearbyMountainResponse response = trackingService.getNearbyMountain(2L, 37.5, 127.0);
@@ -79,7 +79,7 @@ class TrackingServiceTest {
         Mountain mountain = mountain(1L);
         when(mountainRepository.findNearestByLatLng(37.4, 126.9)).thenReturn(Optional.of(mountain));
         when(courseRepository.findByMountainIdOrderByIdAsc(1L)).thenReturn(List.of(course(10L, mountain)));
-        when(mountainRepository.findNearbyByLatLng(37.4, 126.9, 2_000.0)).thenReturn(List.of());
+        when(mountainRepository.findNearbyByLatLng(37.4, 126.9, 20_000.0)).thenReturn(List.of());
 
         NearbyMountainResponse response = trackingService.getNearbyMountain(2L, 37.4, 126.9);
 
@@ -93,7 +93,7 @@ class TrackingServiceTest {
     void getNearbyMountainSupportsFreeRecordingWhenMountainHasNoCourses() {
         when(mountainRepository.findNearestByLatLng(37.5, 127.0)).thenReturn(Optional.of(mountain(1L)));
         when(courseRepository.findByMountainIdOrderByIdAsc(1L)).thenReturn(List.of());
-        when(mountainRepository.findNearbyByLatLng(37.5, 127.0, 2_000.0))
+        when(mountainRepository.findNearbyByLatLng(37.5, 127.0, 20_000.0))
                 .thenReturn(List.of(nearbyMountain(1L, "관악산")));
 
         NearbyMountainResponse response = trackingService.getNearbyMountain(2L, 37.5, 127.0);

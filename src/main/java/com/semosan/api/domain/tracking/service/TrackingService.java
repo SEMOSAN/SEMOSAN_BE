@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class TrackingService {
 
-    private static final double NEARBY_MOUNTAIN_RADIUS_METERS = 2_000.0;
+    private static final double NEARBY_MOUNTAIN_RADIUS_METERS = 20_000.0;
 
     private final MountainRepository mountainRepository;
     private final CourseRepository courseRepository;
@@ -27,7 +27,7 @@ public class TrackingService {
 
     /**
      * 사용자의 현재 좌표 기준 가장 가까운 산 1개와 그 산의 코스 목록을 반환한다.
-     * 기본 산은 거리 제한 없이 선택하고, 산 선택 목록은 사용자 위치에서 2km 이내로 제한한다.
+     * 기본 산은 거리 제한 없이 선택하고, 산 선택 목록은 사용자 위치에서 20km 이내로 제한한다.
      * 반경 안에 산이 없어도 기본 산과 코스는 유지하고 nearbyMountains만 빈 배열로 반환한다.
      * 산 데이터가 비어있거나 location 이 null 인 산만 존재할 경우 MOUNTAIN_NOT_FOUND 로 응답.
      */

@@ -11,7 +11,7 @@ import java.util.List;
 public record NearbyMountainResponse(
         NearbyMountainInfo mountain,
         List<CourseInfo> courses,
-        @Schema(description = "사용자 위치에서 2km 이내 공개 산 목록. 거리순, 동일 거리면 산 ID순. 없으면 빈 배열.")
+        @Schema(description = "사용자 위치에서 20km 이내 공개 산 목록. 거리순, 동일 거리면 산 ID순. 없으면 빈 배열.")
         List<NearbyMountainOption> nearbyMountains
 ) {
 
