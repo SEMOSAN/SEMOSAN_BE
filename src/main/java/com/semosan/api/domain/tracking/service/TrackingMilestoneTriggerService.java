@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
  *    정상 좌표가 없는 코스만 종전 정책대로 "코스 절반" 을 정상 근처로 본다.
  *    채널: WebSocket(/topic/.../summit) + FCM. Redis Set 으로 1회 idempotent 보장.
  *
- * TODO: 푸시 본문 단위 — 현재 m 단위 정수. 코스 마일스톤이 정수가 아닐 때 km 단위 포맷 고려.
+ * 알림에 전달하는 거리는 정수 미터로 반올림하며, Redis 저장값과 도달 판정은 원본 정밀도를 유지한다.
  */
 @Slf4j
 @Service
@@ -156,16 +156,16 @@ public class TrackingMilestoneTriggerService {
     }
 
     private void sendOpen(Long sessionId, Long userId, int idx, double mi, boolean courseMode) {
+        int distanceMeters = (int) Math.round(mi);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("milestoneIndex", idx);
-        payload.put("milestoneDistance", mi);
+        payload.put("milestoneDistance", distanceMeters);
         payload.put("status", "OPEN");
         payload.put("openedAt", LocalDateTime.now().toString());
         messagingTemplate.convertAndSend(photoTopic(sessionId), (Object) payload);
-        log.info("Photo window OPEN: sessionId={} idx={} milestone={}m", sessionId, idx, (int) Math.round(mi));
+        log.info("Photo window OPEN: sessionId={} idx={} milestone={}m", sessionId, idx, distanceMeters);
 
         try {
-            int distanceMeters = (int) Math.round(mi);
             String body = courseModeBody(courseMode, idx, distanceMeters);
             // milestoneIndex 를 함께 실어야 백그라운드에서 푸시로 진입한 클라이언트가
             // 사진 업로드 API(POST /api/tracking/sessions/{id}/photos) 에 그대로 넘길 수 있다.
@@ -206,13 +206,14 @@ public class TrackingMilestoneTriggerService {
     }
 
     private void sendClosed(Long sessionId, int idx, double mi) {
+        int distanceMeters = (int) Math.round(mi);
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("milestoneIndex", idx);
-        payload.put("milestoneDistance", mi);
+        payload.put("milestoneDistance", distanceMeters);
         payload.put("status", "CLOSED");
         payload.put("closedAt", LocalDateTime.now().toString());
         messagingTemplate.convertAndSend(photoTopic(sessionId), (Object) payload);
-        log.info("Photo window CLOSED: sessionId={} idx={} milestone={}m", sessionId, idx, (int) Math.round(mi));
+        log.info("Photo window CLOSED: sessionId={} idx={} milestone={}m", sessionId, idx, distanceMeters);
     }
 
     /**
@@ -244,17 +245,18 @@ public class TrackingMilestoneTriggerService {
     }
 
     private void sendSummit(Long sessionId, Long userId, double summitMark, int summitMilestoneIndex) {
+        int distanceMeters = (int) Math.round(summitMark);
         Map<String, Object> payload = new LinkedHashMap<>();
         // 정상 인증 사진 업로드(POST /api/tracking/sessions/{id}/photos) 가 두 값을 필수로 받는다.
         payload.put("milestoneIndex", summitMilestoneIndex);
-        payload.put("milestoneDistanceM", summitMark);
+        payload.put("milestoneDistanceM", distanceMeters);
         // halfwayMark 는 의미가 "코스 절반" 에서 "정상까지 거리" 로 바뀌었지만
         // 이미 배포된 클라이언트가 읽고 있어 이름은 그대로 둔다.
-        payload.put("halfwayMark", summitMark);
+        payload.put("halfwayMark", distanceMeters);
         payload.put("reachedAt", LocalDateTime.now().toString());
         messagingTemplate.convertAndSend(summitTopic(sessionId), (Object) payload);
         log.info("Summit reached: sessionId={} userId={} idx={} summitMark={}m",
-                sessionId, userId, summitMilestoneIndex, (int) Math.round(summitMark));
+                sessionId, userId, summitMilestoneIndex, distanceMeters);
 
         try {
             notificationService.send(
@@ -262,7 +264,7 @@ public class TrackingMilestoneTriggerService {
                     NotificationType.TRACKING_SUMMIT_REACHED,
                     Map.of(
                             "milestoneIndex", summitMilestoneIndex,
-                            "milestoneDistanceM", summitMark
+                            "milestoneDistanceM", distanceMeters
                     )
             );
         } catch (Exception e) {
