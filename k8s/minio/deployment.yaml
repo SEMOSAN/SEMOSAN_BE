@@ -13,11 +13,29 @@ spec:
       labels:
         app: minio
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      initContainers:
+        # hostPath 볼륨은 fsGroup 이 적용되지 않아서 데이터 디렉토리 소유권을 직접 맞춘다.
+        - name: init-data-permission
+          image: ghcr.io/semosan/minio@sha256:451fe6858cb770cc9d0e77ba811ce287420f781c7c1b806a386f6896471a349c
+          imagePullPolicy: IfNotPresent
+          command:
+            - chown
+            - -R
+            - "1001:1001"
+            - /data
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          volumeMounts:
+            - name: minio-data
+              mountPath: /data
       containers:
         - name: minio
           # MinIO 공식 이미지가 quay.io/Docker Hub에서 모두 내려가서(2026-10 기준 둘 다 pull 불가)
-          # Bitnami 레거시 아카이브 이미지를 사용한다 — upstream minio 바이너리 포함, 더 이상 업데이트되지 않는 동결 이미지.
-          image: docker.io/bitnamilegacy/minio:latest
+          # Bitnami 레거시 아카이브를 GHCR 로 미러링해 다이제스트로 고정했다.
+          image: ghcr.io/semosan/minio@sha256:451fe6858cb770cc9d0e77ba811ce287420f781c7c1b806a386f6896471a349c
           imagePullPolicy: IfNotPresent
           # bitnami 초기화 스크립트(/bitnami/minio/data 경로 강제)를 우회하고
           # 기존과 동일하게 /data 를 데이터 디렉토리로 사용하기 위해 entrypoint 를 직접 지정한다.
@@ -28,10 +46,11 @@ spec:
             - /data
             - --console-address
             - ":9001"
-          # bitnami 이미지는 기본 uid 1001(non-root)인데 hostPath(/data/minio)는 root 소유라 권한 문제가 생긴다.
           securityContext:
-            runAsUser: 0
-            runAsGroup: 0
+            runAsUser: 1001
+            runAsGroup: 1001
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
           ports:
             - containerPort: 9000
             - containerPort: 9001
