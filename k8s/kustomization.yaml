@@ -16,4 +16,4 @@ resources:
   - monitoring/prometheusrule.yaml
 images:
   - name: ghcr.io/semosan/semosan_be
-    newTag: ae0e07ca129b8116f9f3428bed3462d9ba49b96d
+    newTag: 24087a1e2f2fb547d2e706e92eb5d89feee5cde6
