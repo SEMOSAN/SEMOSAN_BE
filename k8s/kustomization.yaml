@@ -13,6 +13,7 @@ resources:
   - redis/pvc.yaml
   - minio/deployment.yaml
   - minio/service.yaml
+  - monitoring/prometheusrule.yaml
 images:
   - name: ghcr.io/semosan/semosan_be
     newTag: ae0e07ca129b8116f9f3428bed3462d9ba49b96d
